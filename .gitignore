@@ -1,0 +1,13 @@
+/codec/stbaseline/_shared_vendor/baseline/
+/runtime-windows/
+/build/
+/.venv/
+/runs/
+__pycache__/
+*.pyc
+*.nbc
+*.nbi
+*.dll
+*.exe
+*.obj
+*.pdb
