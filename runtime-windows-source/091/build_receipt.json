@@ -1,0 +1,14 @@
+{
+  "abi_version": 1,
+  "outputs": {
+    "slide_jxl091.dll": {
+      "bytes": 377856,
+      "sha256": "3c340c545efd3e274b0f9bbb96459b5cf75a834586e428c9acc51d56591eb896"
+    },
+    "slide_jxl091.exe": {
+      "bytes": 660480,
+      "sha256": "cd7db86c1ded8406bdf3326b1065b1abe1276a2c620a4ca17efc242682abb525"
+    }
+  },
+  "release_profile": "local-source-v1"
+}

@@ -1,5 +1,16 @@
 # STPyramid Archive
 
+## Choose a version
+
+| Version | Git branch | Fixed tag | Scope |
+|---|---|---|---|
+| Maximum compression | [main](https://github.com/zt97152023-ai/stpyramid-archive/tree/main) | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF+L1 candidate search and Shared Count integration |
+| Fast fused v1 | [fast-fused-v1](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1) | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | One selected encoder per tile for the native RGB image pyramid |
+
+This branch adds the fused image encoder, using the original container and a compatible decoder. The [fast Windows quick start](results/fast-fused-v1/README.md) covers encoding, verification, ROI reads and TIFF restoration. [Methods](results/fast-fused-v1/METHODS.md) and [ten-slide results](results/fast-fused-v1/RESULTS.md) report the image component. The integrated commands below still use the maximum-compression image path and Shared Count.
+
+## Maximum-compression integrated workflow
+
 Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its spatial-transcriptomics H5AD in one lossless directory package. The image encoder selects complete records from direct JPEG XL e9 and the 089/091/HF1 native-pyramid paths. The Count encoder uses the pinned Shared_local backend. This release wrapper was qualified on Windows with a synthetic end-to-end test and a read-only replay of the historical NCBI218 integrated archive.
 
 ## Inputs and recovery scope

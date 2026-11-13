@@ -4,6 +4,7 @@
 Only the two candidate axes change; all native L>=2 are independent JXL9.
 """
 import copy
+from collections import OrderedDict
 import importlib.util
 import json
 from pathlib import Path
@@ -103,23 +104,29 @@ def choose(current, candidates):
     return winner
 
 
-def _record_array(catalog, direct, retained):
+def _record_array(catalog, direct, retained, *, fixed_l1=False):
     levels = catalog['levels']; geometry(levels)
     descs = list(base._descriptors(levels))
-    if any(not isinstance(v, (list, tuple)) or len(v) != len(descs) for v in (direct, retained)):
-        raise ValueError('Complete direct/retained record arrays required')
-    for desc, d, r in zip(descs, direct, retained):
-        if any(not isinstance(v, (tuple, list)) or len(v) != 2 for v in (d, r)):
+    arrays = (retained,) if direct is None else (retained, direct)
+    if any(not isinstance(v, (list, tuple)) or len(v) != len(descs) for v in arrays):
+        raise ValueError('Complete record arrays required')
+    for gid, (desc, r) in enumerate(zip(descs, retained)):
+        d = direct[gid] if direct is not None else None
+        records = (r,) if direct is None else (d, r)
+        if any(not isinstance(v, (tuple, list)) or len(v) != 2 for v in records):
             raise ValueError('Expected (route,bytes)')
         level = desc[1]
         allowed = {JXL, ANCHORED089, CONDITIONAL091} if level == 0 else ({JXL, ANCHORED089} if level == 1 else {JXL})
-        if d[0] != JXL or r[0] not in allowed: raise ValueError('Invalid retained champion route')
-        for route, blob in (d, r):
+        if fixed_l1 and level == 1:
+            allowed.add(CONDITIONAL091)
+        if r[0] not in allowed or (d is not None and d[0] != JXL):
+            raise ValueError('Invalid retained champion route')
+        for route, blob in records:
             view = validate_blob(route, blob, levels, desc)
             if view is not None and view['raw_sha256'] != catalog['tiles'][desc[0]]['native_sha256']:
                 raise ValueError('Retained record source identity differs')
-        if level >= 2 and tuple(r) != tuple(d): raise ValueError('Independent retained layers changed')
-        if r[0] == JXL and tuple(r) != tuple(d): raise ValueError('Retained JXL bytes changed')
+        if d is not None and r[0] == JXL and tuple(r) != tuple(d):
+            raise ValueError('Retained JXL bytes changed')
     return descs
 
 
@@ -129,9 +136,16 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
 
     hf_records maps each global L0 gid to its new route6 candidate. L1 records
     are control|conditional/<local_gid>.bin from l1_adapter.build_native.
+    With no direct candidates, retained or l1_conditional may supply final records.
+    The existing l1_conditional reader gets the final L1 route from the index.
     """
     high, low = axes(profile)
-    levels = catalog['levels']; descs = _record_array(catalog, direct, retained)
+    fixed_l1 = direct is None and profile == 'l1_conditional'
+    if direct is None and profile != 'retained' and not fixed_l1:
+        raise ValueError('This profile requires direct candidates')
+    if fixed_l1 and any(value is not None for value in (hf_records, l1_native_dir, oldL1native)):
+        raise ValueError('Fixed L1 packaging takes only final selected records')
+    levels = catalog['levels']; descs = _record_array(catalog, direct, retained, fixed_l1=fixed_l1)
     n0, n01 = starts(levels)[1:3]
     if set(runtime_pins) != {'089', '091', 'hf'} or any(not isinstance(v, dict) or not v for v in runtime_pins.values()):
         raise ValueError('Three runtime pin maps required')
@@ -142,7 +156,7 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
     if metadata.stat().st_size != expected['bytes'] or metadata.stat().st_size > scan.MAX_SOURCE_METADATA_BYTES or sha256(metadata) != expected['sha256']:
         raise ValueError('Frozen source metadata changed')
     inputs = [census]
-    if low is not None:
+    if low is not None and not fixed_l1:
         l1_native_dir, oldL1native = _plain(l1_native_dir, directory=True), _plain(oldL1native, directory=True)
         inputs.extend((l1_native_dir, oldL1native))
     target = _plain(target)
@@ -165,7 +179,7 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
                         raise ValueError('HF candidate source binding')
                     selected = choose(selected, [candidate])
                     if selected[0] == HF: selected_hf.append(gid)
-                if level == 1 and low is not None:
+                if level == 1 and low is not None and not fixed_l1:
                     rid = local_id(levels, desc)
                     oldblob = old._read_bounded(_plain(oldL1native/'anchored'/f'{rid:06d}.bin'), old.MAX_PAYLOAD)
                     oldview = validate_blob(ANCHORED089, oldblob, levels, desc)
@@ -181,6 +195,8 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
                     selected = choose(selected, [direct[gid], (ANCHORED089, oldblob), (route, blob)])
                     if selected[0] == route: selected_l1.append(gid)
                 route, blob = selected
+                if fixed_l1 and level == 1 and route == CONDITIONAL091:
+                    selected_l1.append(gid)
                 validate_blob(route, blob, levels, desc)
                 routes.append(route)
                 index.write(ENTRY.pack(bank.tell(), len(blob), route, zlib.crc32(blob))); bank.write(blob)
@@ -194,15 +210,40 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
         manifest = {'format': FORMAT, 'profile': profile, 'image_only': True, 'parameters': FIXED,
                     'image': {'path': 'images.bank', 'index': 'images.index', 'anchor_index': 'anchors.index',
                               'source_metadata': 'source.json', 'levels': copy.deepcopy(levels)},
-                    'retained_routes': [record[0] for record in retained], 'routes': counts,
+                    'retained_routes': [
+                        JXL if fixed_l1 and desc[1] == 1 and record[0] == CONDITIONAL091 else record[0]
+                        for desc, record in zip(descs, retained)
+                    ], 'routes': counts,
                     'files': {name: {'bytes': (target/name).stat().st_size, 'sha256': sha256(target/name)} for name in sorted(MEMBERS)},
                     'build': {'native_runtimes': copy.deepcopy(runtime_pins), 'wrapper_sha256': sha256(Path(__file__)),
                               'source_census_sha256': sha256(_plain(census/'catalog.json')),
-                              'timing_scope': 'Incremental HF/L1 candidates; reused old encoding times historical'}}
+                              'timing_scope': ('Fixed selected records; encode stages timed by caller' if direct is None else
+                                               'Incremental HF/L1 candidates; reused old encoding times historical')}}
         write_json(target/'manifest.json', manifest); marker.unlink()
         return {'new_hf_L0': selected_hf, 'new_091_L1': selected_l1, 'routes': counts}
     except BaseException as exc:
         write_json(target/'failure.json', {'type': type(exc).__name__, 'error': str(exc)}); raise
+
+
+class _ScanReferenceCache:
+    """Bound decoded parent pixels for one sequential native-level scan."""
+
+    def __init__(self):
+        self.tiles = OrderedDict()
+        self.bytes = 0
+
+    def get(self, gid):
+        pixels = self.tiles.get(gid)
+        if pixels is not None:
+            self.tiles.move_to_end(gid)
+        return pixels
+
+    def put(self, gid, pixels):
+        while self.bytes + pixels.nbytes > FIXED['cache_bytes']:
+            _, oldest = self.tiles.popitem(last=False)
+            self.bytes -= oldest.nbytes
+        self.tiles[gid] = pixels
+        self.bytes += pixels.nbytes
 
 
 class Reader(prior.Reader):
@@ -238,7 +279,8 @@ class Reader(prior.Reader):
                      'logical_tiles_read', 'decoded_pixels', 'requested_pixels', 'cache_hits',
                      'last_query_cache_bytes', 'last_query_unique_payloads', 'reference_tiles_decoded',
                      'reference_pixels', 'reference_bank_bytes', 'native_tiles_decoded', 'native089_tiles_decoded',
-                     'native091_tiles_decoded', 'native_hf_tiles_decoded', 'anchor_requests', 'anchor_cache_hits', 'max_observed_depth'):
+                     'native091_tiles_decoded', 'native_hf_tiles_decoded', 'anchor_requests', 'anchor_cache_hits',
+                     'max_observed_depth', 'scan_parent_cache_peak_bytes'):
             setattr(self, name, 0)
         self.runtime_load_seconds = self.native_decode_seconds = 0.
 
@@ -275,13 +317,18 @@ class Reader(prior.Reader):
             if aid != NO_ANCHOR and (self._descriptors[aid][1] != level+1 or (level == 1 and entries[aid][2] != JXL)): raise ValueError('Reference DAG')
         self._entries = entries; self._bank = MeteredFile(_plain(self.root/'images.bank'))
 
-    def _tile(self, gid, cache=None, cache_state=None, depth=0):
+    def _tile(self, gid, cache=None, cache_state=None, depth=0, *, scan_cache=None):
         import imagecodecs
         self._setup()
         if not base._integer(gid) or not 0 <= gid < len(self._entries) or type(depth) is not int or not 0 <= depth <= 2: raise ValueError('Tile/depth bound')
         self.max_observed_depth = max(self.max_observed_depth, depth); self.logical_tiles_read += 1
         if cache is not None and gid in cache:
             self.cache_hits += 1; return cache[gid]
+        if depth and scan_cache is not None:
+            pixels = scan_cache.get(gid)
+            if pixels is not None:
+                self.cache_hits += 1
+                return pixels
         offset, length, route, crc = self._entries[gid]
         self._bank.seek(offset); blob = self._bank.read(length)
         if len(blob) != length or zlib.crc32(blob) != crc: raise ValueError('Tile integrity')
@@ -293,8 +340,10 @@ class Reader(prior.Reader):
         else:
             validate_blob(route, blob, self.manifest['image']['levels'], desc)
             aid, ys, xs = anchor_layout(self.manifest['image']['levels'], desc)
-            self.anchor_requests += 1; self.anchor_cache_hits += cache is not None and aid in cache
-            parent = self._tile(aid, cache, cache_state, depth+1)
+            self.anchor_requests += 1
+            self.anchor_cache_hits += ((cache is not None and aid in cache)
+                                       or (scan_cache is not None and aid in scan_cache.tiles))
+            parent = self._tile(aid, cache, cache_state, depth+1, scan_cache=scan_cache)
             anchor = np.ascontiguousarray(parent[ys[:, None], xs[None, :]])
             pins = self.manifest['build']['native_runtimes']
             if route == ANCHORED089:
@@ -318,11 +367,31 @@ class Reader(prior.Reader):
             cache_state['decoded'].add(gid)
             if cache_state['bytes']+pixels.nbytes <= FIXED['cache_bytes']:
                 cache[gid] = pixels; cache_state['bytes'] += pixels.nbytes
+        if depth and scan_cache is not None:
+            scan_cache.put(gid, pixels)
+            self.scan_parent_cache_peak_bytes = max(self.scan_parent_cache_peak_bytes, scan_cache.bytes)
         return pixels
+
+    def _stripes(self, info):
+        height, width, _ = info['shape']
+        level = info['level']
+        tile_size = base.TILE
+        columns = (width + tile_size - 1) // tile_size
+        scan_cache = _ScanReferenceCache() if level < 2 else None
+        for ty, y in enumerate(range(0, height, tile_size)):
+            stripe_height = min(tile_size, height - y)
+            stripe = np.empty((stripe_height, width, 3), np.uint8)
+            for tx, x in enumerate(range(0, width, tile_size)):
+                gid = self._level_start[level] + ty * columns + tx
+                pixels = self._tile(gid, scan_cache=scan_cache)
+                stripe[:, x:x + pixels.shape[1]] = pixels
+                self.requested_pixels += stripe_height * pixels.shape[1]
+            yield stripe
 
     def metrics(self):
         result = super().metrics()
         result['native_hf_tiles_decoded'] = self.native_hf_tiles_decoded
+        result['scan_parent_cache_peak_bytes'] = self.scan_parent_cache_peak_bytes
         result['codec_scope'] = 'Native MS L0 or091 L0/L1; every reference remains exact and paid'
         return result
 

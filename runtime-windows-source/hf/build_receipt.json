@@ -1,0 +1,16 @@
+{
+  "abi_version": 1,
+  "outputs": {
+    "slide_hf1.dll": {
+      "bytes": 381952,
+      "sha256": "2fc61ef54e1476978c87f9953294e63799d6d4fe74471fcce6de10a74286d26b"
+    },
+    "slide_hf1.exe": {
+      "bytes": 664064,
+      "sha256": "7f758f39a799228b5ae58718fc492b423e203e72df189c1032abe3e5bde6c828"
+    }
+  },
+  "release_profile": "local-source-v1",
+  "representation": "dense_magnitude_sign_v1",
+  "schema": "wsi-hf1-runtime-build-1"
+}

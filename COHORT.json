@@ -1,0 +1,599 @@
+{
+  "rule": "NCBI224 development anchor plus three ST, four Visium and two Xenium whole TIFFs. Per platform rank by L0 pixel area ascending, then sample ID, and retain at most one per normalized HEST dataset title across the cohort. Size-aware validation. Require an existing HF+L1 archive, source identity and compatible native geometry. No rates, candidate routes or timings used for selection.",
+  "eligible": 116,
+  "development_anchor": "NCBI224",
+  "samples": [
+    {
+      "sample": "NCBI224",
+      "study": "Spatiotemporal dynamics of molecular pathology in amyotrophic lateral sclerosis",
+      "study_url": "https://www.science.org/doi/10.1126/science.aav9776",
+      "platform": "Spatial Transcriptomics",
+      "source": "inputs/wsis/NCBI224.tif",
+      "source_sha256": "4a57dd4b80189182f1f200143c1b6a6ce91290157f53cf88c09749464386e3ba",
+      "source_bytes": 114253155,
+      "historical_hf_l1": "inputs/historical/NCBI224/ours/image",
+      "historical_direct": "inputs/historical/NCBI224/baseline/image",
+      "native_shapes": [
+        [
+          12363,
+          11614,
+          3
+        ],
+        [
+          6181,
+          5807,
+          3
+        ],
+        [
+          3090,
+          2903,
+          3
+        ],
+        [
+          1545,
+          1451,
+          3
+        ],
+        [
+          772,
+          725,
+          3
+        ],
+        [
+          386,
+          362,
+          3
+        ],
+        [
+          193,
+          181,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "243f620a70bc1a125342c85c6a4bc1a5291726d6b74712c2f4a723b1cc1cc4c3",
+        "c518a473594007b11f9bffe21cd9a901b2e88b41ec1b0b11299a380d5617a1f8",
+        "1f8f78063be13bb62bfc3654a000dde6b46049672ee1a91e0c96ade3df677a83",
+        "3e8ca5a2ac61af272e05563bb20a492031c65d965a5c73e29ea86772f070d5be",
+        "82071c3f5463707a4c18e573828c2a3817940f88cffd0b0c31d7f58ec7c3dd83",
+        "4c30a1c27efa1b6d0fdc07755f872535bd7cba350d9498f192727fe6824f9f45",
+        "83e63c190d453da90a8516da63e6253a13ebbb3b94064b1bf1beeca29595e674"
+      ],
+      "l0_pixels": 143583882
+    },
+    {
+      "sample": "SPA45",
+      "study": "A spatiotemporal organ-wide gene expression and cell atlas of the developing human heart",
+      "study_url": "https://www.sciencedirect.com/science/article/pii/S0092867419312826",
+      "platform": "Spatial Transcriptomics",
+      "source": "inputs/wsis/SPA45.tif",
+      "source_sha256": "50d81d53f0b823f572ad7a99b9d3fa3ce8afc07792be9842008ab13ef9951ff8",
+      "source_bytes": 92642701,
+      "historical_hf_l1": "inputs/historical/SPA45/ours/image",
+      "historical_direct": "inputs/historical/SPA45/baseline/image",
+      "native_shapes": [
+        [
+          8602,
+          9830,
+          3
+        ],
+        [
+          4301,
+          4915,
+          3
+        ],
+        [
+          2150,
+          2457,
+          3
+        ],
+        [
+          1075,
+          1228,
+          3
+        ],
+        [
+          537,
+          614,
+          3
+        ],
+        [
+          268,
+          307,
+          3
+        ],
+        [
+          134,
+          153,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "2087fb7808600dbd09da8335edfdb409797ab1bcc1080a459b71a67a6a1e225d",
+        "6768cab37e029ee76aa6a34383592f0d3daad29380a57cc9d5cd08d4d0fb9469",
+        "e7c0984786c8ff8544bed88200a91d00ae80d70ad2d310b7ac398aa02ea1a549",
+        "ed485e95ecfc030c5690f96734de8ab1e79bfc98f389c06184a95b0fb3947357",
+        "a45771af36166c0858719b943e4c51d5cb677674212d5fd14abb7b1747c8f2f1",
+        "602319d7875bd9d5994d0e9613619994377d365e2249edc4789c1a8507732cb5",
+        "4f4f473f9cc59ca225d578e053ef07afdc85d261594456d30640f62495f45890"
+      ],
+      "l0_pixels": 84557660
+    },
+    {
+      "sample": "SPA61",
+      "study": "Integrating spatial gene expression and breast tumour morphology via deep learning",
+      "study_url": "https://www.science.org/doi/10.1126/science.aaf2403",
+      "platform": "Spatial Transcriptomics",
+      "source": "inputs/wsis/SPA61.tif",
+      "source_sha256": "6ee22bfa02e8780caa466f6c0286121b32a21a4977805a7fe8142e5c9f9ce077",
+      "source_bytes": 117067169,
+      "historical_hf_l1": "inputs/historical/SPA61/ours/image",
+      "historical_direct": "inputs/historical/SPA61/baseline/image",
+      "native_shapes": [
+        [
+          9852,
+          9286,
+          3
+        ],
+        [
+          4926,
+          4643,
+          3
+        ],
+        [
+          2463,
+          2321,
+          3
+        ],
+        [
+          1231,
+          1160,
+          3
+        ],
+        [
+          615,
+          580,
+          3
+        ],
+        [
+          307,
+          290,
+          3
+        ],
+        [
+          153,
+          145,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "a7a0d9f011963484403639b7ff0ece43dfdeeb6baa2d5da5f08538d7fbb7a924",
+        "e315e2db7c0c5d6a1cf15c99dec06ff00d7ec2d4c1fa5b2d2a11f0080ae63eac",
+        "762e49b8f4666fc9a10fe8fa9e1e1e18825c677c05f39170add73c3e23caec16",
+        "c44b4279e37046db9415f05539caaa23be5d2287d343cd1a843d727f8eecb0a8",
+        "be59cec288f559a8dd8e84df7d4d008c8edad0f14728628cd0c89f973c3a277e",
+        "21bc0b3e0feda5ffb0564a7a4be7d4dd76eabf9a818823f9010a3202f2cf1d59",
+        "70ad074f46567b9d279dd654e67bfe33d72474b72ab6dda6fe1d97364d2649df"
+      ],
+      "l0_pixels": 91485672
+    },
+    {
+      "sample": "SPA127",
+      "study": "Spatial deconvolution of HER2-positive breast cancer delineates tumor-associated cell type interactions",
+      "study_url": "https://pubmed.ncbi.nlm.nih.gov/34650042/",
+      "platform": "Spatial Transcriptomics",
+      "source": "inputs/wsis/SPA127.tif",
+      "source_sha256": "d26a972d4f5c1e8f877cb90bf0ff318667f7a0b262ee319cc0f1f2d7640cb448",
+      "source_bytes": 225710309,
+      "historical_hf_l1": "inputs/historical/SPA127/ours/image",
+      "historical_direct": "inputs/historical/SPA127/baseline/image",
+      "native_shapes": [
+        [
+          9855,
+          9307,
+          3
+        ],
+        [
+          4927,
+          4653,
+          3
+        ],
+        [
+          2463,
+          2326,
+          3
+        ],
+        [
+          1231,
+          1163,
+          3
+        ],
+        [
+          615,
+          581,
+          3
+        ],
+        [
+          307,
+          290,
+          3
+        ],
+        [
+          153,
+          145,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "710e46621c84935a89dca577e7d6e0d1cf474f6a449b2f42b8369da990e3eb69",
+        "863a70d0fa1f4f7243560b81c15310cd8cee3f838716b21b6a312b5d918d9a2f",
+        "7b2503c5868b3114cb59b0eb6b8d77703bbf378e182809a399537a611935dac2",
+        "a0622053dc86aad74da7b5484e37de770be440bd9c9a7e70c12ed5501fae9c89",
+        "e4eaf971be85c20574d1acc9e2a2970c899abaa063b4fec74c749066cfb5165f",
+        "0a59852360b12bbf8a021e67e78ad8e70527f1aedf3b5fa8a4750b3281456e2b",
+        "0d42db35e07f6713a9e6293638267687a34d775fc5ee70960a618ed095a0c57e"
+      ],
+      "l0_pixels": 91720485
+    },
+    {
+      "sample": "NCBI815",
+      "study": "SARS-CoV-2 Niches in Human Placenta Revealed by Spatial Transcriptomics",
+      "study_url": "https://pubmed.ncbi.nlm.nih.gov/37423216/",
+      "platform": "Visium",
+      "source": "inputs/wsis/NCBI815.tif",
+      "source_sha256": "ad6c4a34c90f6e5ae1dd495d0e72deae802b4fd9824e3c634582d31bd49d66c4",
+      "source_bytes": 62811107,
+      "historical_hf_l1": "inputs/historical/NCBI815/ours/image",
+      "historical_direct": "inputs/historical/NCBI815/baseline/image",
+      "native_shapes": [
+        [
+          9238,
+          9564,
+          3
+        ],
+        [
+          4619,
+          4782,
+          3
+        ],
+        [
+          2309,
+          2391,
+          3
+        ],
+        [
+          1154,
+          1195,
+          3
+        ],
+        [
+          577,
+          597,
+          3
+        ],
+        [
+          288,
+          298,
+          3
+        ],
+        [
+          144,
+          149,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "880ae78cdf681ddbf0437caeab0e56f46d195eaabff83c39433206b8471a0afe",
+        "864d0097539bfd3cfc6fa63909c0ac301557c04655c8204f1918069b29d6b055",
+        "54117250ad683790fc97026421ecf3fc05d2de57371e54dd65a0d8ac77f6e2a2",
+        "57b4ffbc387608dea534f61144c3a0d6d5507a258cdf90cb817a0932b85c7e36",
+        "de93c70d0166673d2d60863af34caee5de37522a82f9cbe1b75e8a00510a2de6",
+        "3ffa9d7259403a6adea54a3e8ffcc97f8315642ba44c408ce38e3e61f2f2e4d8",
+        "2b8cc8741a71e1174e55e30ebdb1c4c4db61c12b5154ca35d331f6e19261e348"
+      ],
+      "l0_pixels": 88352232
+    },
+    {
+      "sample": "NCBI791",
+      "study": "Zika virus co-opts miRNA networks to persist in placental microenvironments detected by spatial transcriptomics [visium]",
+      "study_url": "https://pubmed.ncbi.nlm.nih.gov/37598997/",
+      "platform": "Visium",
+      "source": "inputs/wsis/NCBI791.tif",
+      "source_sha256": "b2c91e592d42cad4d5521ad6cc24b31150ef33bf6c24124ae5868fafd829abd9",
+      "source_bytes": 119436351,
+      "historical_hf_l1": "inputs/historical/NCBI791/ours/image",
+      "historical_direct": "inputs/historical/NCBI791/baseline/image",
+      "native_shapes": [
+        [
+          9450,
+          9921,
+          3
+        ],
+        [
+          4725,
+          4960,
+          3
+        ],
+        [
+          2362,
+          2480,
+          3
+        ],
+        [
+          1181,
+          1240,
+          3
+        ],
+        [
+          590,
+          620,
+          3
+        ],
+        [
+          295,
+          310,
+          3
+        ],
+        [
+          147,
+          155,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "aee220bc4c45376cd44cfef2076c2ad0dc80031554dfbe102a90a088c760fcd7",
+        "dca34398d68f410a8ef5cca2e5568e7f41ef013f611015b35574fe3ed98d35a7",
+        "32ced4146e08dc39f292ff77adbd75a304603140f55c0402ca66b17c028eedb9",
+        "40c7e7330933cb12ea9d7a2643757f78d5d21feb9f2af7ca014ce728332f70f6",
+        "66b35e45880428e443d4a908424a6220bdfc2f51926d5f937e4bdaa3c30177fb",
+        "d71c67581ae36e31aebb0f9ba960d10d77183d48cca09509cce650625058cc50",
+        "5a5a8fefaf67d3a4ba72c27d26506fa4aeb61fac42eef0b95848b3500960b684"
+      ],
+      "l0_pixels": 93753450
+    },
+    {
+      "sample": "NCBI697",
+      "study": "Spatial localization with Spatial Transcriptomics for an atlas of healthy and injured cell states and niches in the human kidney [Visium ST]",
+      "study_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10356613/",
+      "platform": "Visium",
+      "source": "inputs/wsis/NCBI697.tif",
+      "source_sha256": "a1f48a0e96a5eff0359678b975da3246bd1dcaa58c9ff3aa1f90653c719ef04c",
+      "source_bytes": 212883033,
+      "historical_hf_l1": "inputs/historical/NCBI697/ours/image",
+      "historical_direct": "inputs/historical/NCBI697/baseline/image",
+      "native_shapes": [
+        [
+          10474,
+          11292,
+          3
+        ],
+        [
+          5237,
+          5646,
+          3
+        ],
+        [
+          2618,
+          2823,
+          3
+        ],
+        [
+          1309,
+          1411,
+          3
+        ],
+        [
+          654,
+          705,
+          3
+        ],
+        [
+          327,
+          352,
+          3
+        ],
+        [
+          163,
+          176,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "a543951f1c4317def7b27bc066aa448d280f0415abf4b3cd155090c082e1818d",
+        "90e865edf47b5d646b172f8599928de974aa1a331cef7a83f364dd97c066225b",
+        "765b106cd2ce64da9479a15adbda8b40e2594fee6f660aa61e774b7e924262e6",
+        "a207f17c0561647deb93789954f27dd58dce34834e054fbc1658b7815264c3ca",
+        "0ed9724314d9c4e9ff9bc5b2d8133407f29e1d58d598db4eeebe9e18e9935184",
+        "e1fc5daeae20f5ca71248798cac50e4cb83b6d3faf84bf6930d25b1a8a9e4a0d",
+        "45c93bffd96f5966de4c2e51ef3c8752ec7fb3794958144bb03cb62efb002d6f"
+      ],
+      "l0_pixels": 118272408
+    },
+    {
+      "sample": "TENX28",
+      "study": "Human Colorectal Cancer: Targeted, Gene Signature Panel",
+      "study_url": null,
+      "platform": "Visium",
+      "source": "inputs/wsis/TENX28.tif",
+      "source_sha256": "3eb7d01c7d3736f326bd989a1d200a771389db1d3f0e59ff30fdff15f81a8e0a",
+      "source_bytes": 359956737,
+      "historical_hf_l1": "inputs/historical/TENX28/ours/image",
+      "historical_direct": "inputs/historical/TENX28/baseline/image",
+      "native_shapes": [
+        [
+          13332,
+          13332,
+          3
+        ],
+        [
+          6666,
+          6666,
+          3
+        ],
+        [
+          3333,
+          3333,
+          3
+        ],
+        [
+          1666,
+          1666,
+          3
+        ],
+        [
+          833,
+          833,
+          3
+        ],
+        [
+          416,
+          416,
+          3
+        ],
+        [
+          208,
+          208,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "ba3615473f1eaca7e17bdacc04f5ec4b8fc1a4bf1bff81a202fcf44616f6a2d7",
+        "72a7c0b2c443a259f8ba4e3ae4938e8c50574e1cc9bd909ba9cf16fe8e35354d",
+        "0a93462c8eb4e0d89f2b8cf6df6ca6c1ea35cdd0f02b37ffa9b0a04c0fee2be1",
+        "b6a3507d27858b37e559c8ba443da7b8797b05dcd8a612bc5cb1850e9c08cc69",
+        "a3847cfc5582aa20be6305f1f8ddd82c0bd7d7c15590d0e463c0a90d3fdd4e89",
+        "8561c068936af747a97b0f3271384325a26f945df6b745ba3843a209443ebb83",
+        "cf39f55abf664d4dc561d14971561979b379cd888ed135d5b24cf5ef80ac3388"
+      ],
+      "l0_pixels": 177742224
+    },
+    {
+      "sample": "TENX105",
+      "study": "Human Kidney Preview Data (Xenium Human Multi-Tissue and Cancer Panel)",
+      "study_url": null,
+      "platform": "Xenium",
+      "source": "inputs/wsis/TENX105.tif",
+      "source_sha256": "5323b83119314636121cfcd40549eb480d8a545d2feaaee590d488f9051713d8",
+      "source_bytes": 526956926,
+      "historical_hf_l1": "inputs/historical/TENX105/ours/image",
+      "historical_direct": "inputs/historical/TENX105/baseline/image",
+      "native_shapes": [
+        [
+          27323,
+          8832,
+          3
+        ],
+        [
+          13661,
+          4416,
+          3
+        ],
+        [
+          6830,
+          2208,
+          3
+        ],
+        [
+          3415,
+          1104,
+          3
+        ],
+        [
+          1707,
+          552,
+          3
+        ],
+        [
+          853,
+          276,
+          3
+        ],
+        [
+          426,
+          138,
+          3
+        ],
+        [
+          213,
+          69,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "2bf0b009b37fba96173d7e0d7bbafbc4536f3d99bf2e5f494eb43e21482fed54",
+        "5dff89a7c1caf271a9b6a4b95f64e74458e42f71e2175c1ed7cec7e3566d0284",
+        "e6268a68e25f52768752b89c48654811e39f1648ea7382130c31ff5ec9ff3c8e",
+        "88ad9d1bb585ae350c5a63ad520c99dcbe76aba8b4f05e54afc8fede6a53635f",
+        "5a90b65d9b4409952cd1b2d45336fb3871fca8b146506136b3b2b78997575c94",
+        "85a4ab46e3ed04fbd6840684bf13695b51a8bceb7110dcab154729bbb6650362",
+        "757fff50e7bb3fab76020e055fec46eea17789228b023431e47504a29b575dce",
+        "33db517ab4bbf2371e8dfcc96ae7305c5d322f3f5870caaa1435f226eea74cc5"
+      ],
+      "l0_pixels": 241316736
+    },
+    {
+      "sample": "TENX119",
+      "study": "Human Heart Data with Xenium Human Multi-Tissue and Cancer Panel",
+      "study_url": null,
+      "platform": "Xenium",
+      "source": "inputs/wsis/TENX119.tif",
+      "source_sha256": "d14acdad16f63b7b6dfe4eca5f4558d4401f2ca971bcb083daacb19df62a4ea3",
+      "source_bytes": 560390079,
+      "historical_hf_l1": "inputs/historical/TENX119/ours/image",
+      "historical_direct": "inputs/historical/TENX119/baseline/image",
+      "native_shapes": [
+        [
+          10645,
+          24544,
+          3
+        ],
+        [
+          5322,
+          12272,
+          3
+        ],
+        [
+          2661,
+          6136,
+          3
+        ],
+        [
+          1330,
+          3068,
+          3
+        ],
+        [
+          665,
+          1534,
+          3
+        ],
+        [
+          332,
+          767,
+          3
+        ],
+        [
+          166,
+          383,
+          3
+        ],
+        [
+          83,
+          191,
+          3
+        ]
+      ],
+      "native_rgb_sha256": [
+        "17167a4c0e5641a48b1e9f3b6e83b1bfeca6c16e81806dc517c777b90db6df1a",
+        "511f6697533b47d05b4a63285a16db88e503460bffb842e7a48c499034316124",
+        "ab8fcf7475a73d5f7ca4be03cb8b777fff118be3a7c4b34db2e0a030dd9bf930",
+        "23981acb12259984f36ea68393777b72f554c9d3b59c725d2359b39f1e7775f0",
+        "bcc25e7bd1c9ba5553abb6616979cc75f0098c72863edccd5c97471a55ac40af",
+        "9959d39b338b6c5308ad67a1304f40316f4332abd81c630bbf72df0ed2d38daf",
+        "4392d4225f4b495188953896262020ce057bc0182c135552bac8550d709b37ad",
+        "ff911f8c7d5f07ba2970aeadf7d44cfdadbef49e0265c7333702f88af2bc29ef"
+      ],
+      "l0_pixels": 261270880
+    }
+  ]
+}

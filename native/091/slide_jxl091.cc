@@ -1,6 +1,6 @@
 // STBASELINE-091: parent-conditioned Squeeze details, NOT a .jxl file.
 // New isolated Modular operators link immutable libjxl 0.12.0/074. Each tile
-// reuses its qualified089 correction; both arms emit only V then H details.
+// encodes V then H details. The direct path builds the correction in memory.
 #define NOMINMAX
 #include "platform.h"
 #include <algorithm>
@@ -233,7 +233,7 @@ bool SafeName(const std::string& s) {
   return !s.empty() && s != "." && s != ".." &&
     s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-") == std::string::npos;
 }
-std::vector<Tile> ReadIndex(const fs::path& spool) {
+std::vector<Tile> ReadIndex(const fs::path& spool, bool expects_old = true) {
   auto bytes = ReadFile(spool / "index.tsv", 128 * 1024 * 1024);
   std::istringstream input(std::string(bytes.begin(), bytes.end()));
   std::string line; std::vector<Tile> result;
@@ -243,14 +243,19 @@ std::vector<Tile> ReadIndex(const fs::path& spool) {
     Need(!line.empty() && line.size() < 1024 && line.back() != '\t', "invalid spool row");
     std::istringstream row(line); std::vector<std::string> fields; std::string field;
     while (std::getline(row, field, '\t')) fields.push_back(field);
-    Need(fields.size() == 9, "index needs gid level x y w h rgb_filename anchor_filename old089_record_filename");
+    Need(fields.size() == (expects_old ? 9 : 8),
+         "index needs gid level x y w h rgb_filename anchor_filename and, for legacy encoding, old089_record_filename");
     Need(result.size() < kMaxGroups, "too many tiles");
     Tile t{Number(fields[0]), Number(fields[1]), Number(fields[2]), Number(fields[3]),
-           Number(fields[4]), Number(fields[5]), fields[6], fields[7], fields[8]};
+           Number(fields[4]), Number(fields[5]), fields[6], fields[7],
+           expects_old ? fields[8] : std::string{}};
     Dimensions(t.w, t.h);
-    Need(t.id == result.size() && t.level == 0 && t.x % kTile == 0 && t.y % kTile == 0,
+    const bool valid_id = expects_old ? t.id == result.size() :
+        t.id < kMaxGroups && (result.empty() || t.id > result.back().id);
+    Need(valid_id && t.level == 0 && t.x % kTile == 0 && t.y % kTile == 0,
          "invalid L0 ID/level/tile origin");
-    Need(SafeName(t.rgb_name) && SafeName(t.anchor_name) && SafeName(t.old_name), "unsafe spool filename");
+    Need(SafeName(t.rgb_name) && SafeName(t.anchor_name) &&
+             (!expects_old || SafeName(t.old_name)), "unsafe spool filename");
     Need(positions.emplace(t.x, t.y).second, "duplicate tile origin");
     result.push_back(std::move(t));
   }
@@ -668,6 +673,64 @@ std::string StreamReceipt(const Stream& s,const DecodedInfo& d,bool reused) {
   }
   o<<'}'; return o.str();
 }
+jxl::Image PrepareKnown(Memory& memory, const Tile& tile,
+                        const jxl::Image& transformed, const jxl::Image& low) {
+  auto known = KnownShape(&memory.mm, tile.w, tile.h);
+  for (size_t c = 0; c < 3; ++c) {
+    CopyChannel(transformed.channel[6 + c], &known.channel[3 + c]);
+    CopyChannel(transformed.channel[3 + c], &known.channel[9 + c]);
+  }
+  FillPrefix(&known, low, false);
+  auto hlow = HorizontalLow(low, known);
+  FillPrefix(&known, hlow, true);
+  CheckKnown(known);
+  return known;
+}
+
+void EncodeDirect(const fs::path& spool, const fs::path& output) {
+  Need(fs::is_directory(spool) && !fs::is_symlink(spool), "invalid spool");
+  Need(!fs::exists(output) && fs::is_directory(output.parent_path()), "fresh091 output required");
+  const auto tiles = ReadIndex(spool, false);
+  Need(fs::create_directory(output) && fs::create_directory(output / "conditional"),
+       "direct091 output create");
+  uint64_t correction_bytes = 0, detail_bytes = 0, record_bytes = 0;
+  for (const auto& tile : tiles) {
+    Memory memory;
+    const auto rgb = ReadFile(spool / tile.rgb_name, kTile * kTile * 3);
+    const auto anchor = ReadFile(spool / tile.anchor_name, kTile * kTile * 3 / 4);
+    const uint32_t aw = (tile.w + 1) / 2, ah = (tile.h + 1) / 2;
+    auto transformed = ToColor(&memory.mm, AsView(rgb), tile.w, tile.h);
+    Check(jxl::FwdSqueeze(transformed, Squeezes(), nullptr), "direct091 forward");
+    Need(transformed.channel.size() == 9 && transformed.transform.empty(), "direct091 Squeeze layout");
+    auto low = SelectChannels(transformed, {0, 1, 2});
+    const auto reference = ToColor(&memory.mm, AsView(anchor), aw, ah);
+    auto correction = Shape(&memory.mm, tile.w, tile.h, StreamKind::Correction);
+    for (size_t c = 0; c < 3; ++c) {
+      for (size_t y = 0; y < ah; ++y) {
+        for (size_t x = 0; x < aw; ++x) {
+          correction.channel[c].Row(y)[x] = low.channel[c].Row(y)[x] - reference.channel[c].Row(y)[x];
+        }
+      }
+    }
+    const auto lp = EncodeStream(memory, correction, StreamKind::Correction, tile.id);
+    const auto known = PrepareKnown(memory, tile, transformed, low);
+    const auto detail = EncodeKnown(memory, known, tile.id, true);
+    const auto record = Record(tile, true, Hash(AsView(rgb)), Hash(AsView(anchor)),
+                               PrefixHash(known, false), PrefixHash(known, true), lp, detail);
+    DecodeInfo decoded;
+    Need(DecodeTile(AsView(record), AsView(anchor), tile.id, tile.w, tile.h, &decoded) == rgb,
+         "immediate direct091 reconstruction");
+    Need(lp.coefficient_sha == decoded.low.coefficient_sha && detail.coefficient_sha == decoded.detail.coefficient_sha,
+         "direct091 reconstructed coefficients differ");
+    WriteNew(output / Name("conditional/", tile.id), AsView(record));
+    correction_bytes += lp.bytes.size();
+    detail_bytes += detail.bytes.size();
+    record_bytes += record.size();
+  }
+  std::cout << "{\"ok\":true,\"groups\":" << tiles.size() << ",\"correction_bytes\":" << correction_bytes
+            << ",\"detail_bytes\":" << detail_bytes << ",\"record_bytes\":" << record_bytes << "}\n";
+}
+
 void Encode(const fs::path& spool,const fs::path& output) {
   Need(fs::is_directory(spool) && !fs::is_symlink(spool),"invalid spool");
   Need(!fs::exists(output) && fs::is_directory(output.parent_path()),"fresh091 output required");
@@ -686,9 +749,7 @@ void Encode(const fs::path& spool,const fs::path& output) {
     lp.coefficient_sha=old_info.coefficient_sha;
     auto transformed=ToColor(&memory.mm,AsView(rgb),t.w,t.h); Check(jxl::FwdSqueeze(transformed,Squeezes(),nullptr),"091 forward");
     Need(CoefficientHash(SelectChannels(transformed,{0,1,2}))==CoefficientHash(low),"old correction does not reconstruct current LL");
-    auto known=KnownShape(&memory.mm,t.w,t.h);
-    for(size_t c=0;c<3;++c) { CopyChannel(transformed.channel[6+c],&known.channel[3+c]); CopyChannel(transformed.channel[3+c],&known.channel[9+c]); }
-    FillPrefix(&known,low,false); auto hlow=HorizontalLow(low,known); FillPrefix(&known,hlow,true); CheckKnown(known);
+    auto known=PrepareKnown(memory,t,transformed,low);
     const auto pv=PrefixHash(known,false),ph=PrefixHash(known,true),hf_sha=DetailHash(known);
     const Stream arms[2]={EncodeKnown(memory,known,t.id,false),EncodeKnown(memory,known,t.id,true)};
     Bytes records[2]; DecodeInfo decoded[2]; std::string paths[2];
@@ -737,12 +798,13 @@ int main(int argc,char** argv) {
     if(argc==2 && std::string(argv[1])=="tree_selfcheck") { TreeSelfcheck(); return 0; }
     if(argc==2 && std::string(argv[1])=="context_selfcheck") { ContextSelfcheck(); return 0; }
     if(argc==4 && std::string(argv[1])=="encode") { Encode(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
+    if(argc==4 && std::string(argv[1])=="encode_direct") { EncodeDirect(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
     if(argc==5 && std::string(argv[1])=="decode") {
       auto blob=ReadFile(fs::u8path(argv[2]),kMaxRecordBytes); Cursor cursor{AsView(blob)}; auto h=ReadHeader(&cursor);
       auto anchor=ReadFile(fs::u8path(argv[3]),kTile*kTile*3/4); DecodeInfo info;
       auto rgb=DecodeTile(AsView(blob),AsView(anchor),h.gid,h.w,h.h,&info); WriteNew(fs::u8path(argv[4]),AsView(rgb));
       std::cout<<"{\"decoded_tiles\":1,\"rgb_bytes\":"<<rgb.size()<<"}\n"; return 0;
     }
-    throw std::runtime_error("usage: encode spool newout | decode record anchor newrgb | tree_selfcheck | context_selfcheck");
+    throw std::runtime_error("usage: encode spool newout | encode_direct spool newout | decode record anchor newrgb | tree_selfcheck | context_selfcheck");
   } catch(const std::exception& e) { std::cerr<<"FAIL: "<<e.what()<<'\n'; return 1; }
 }

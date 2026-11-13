@@ -3,6 +3,9 @@
 /build/
 /.venv/
 /runs/
+/inputs/
+/cohort_run/
+/historical-runtime/
 __pycache__/
 *.pyc
 *.nbc
