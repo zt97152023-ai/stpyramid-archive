@@ -13,39 +13,15 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 ROOT = Path(__file__).resolve().parent
-MODES = {"Count＋图像（极致压缩）": "integrated", "仅图像（快速融合）": "image"}
-STAGES = {
-    "native_image_census": "扫描原生图像层", "read_source_and_census": "扫描原生图像层",
-    "verify_census": "核对图块信息", "pin_runtimes": "检查解码运行时",
-    "shared_count_encode": "编码 Count 空间块", "direct_JXL9_all_tiles_including_immediate_decode_check": "编码直接 JPEG XL 图块",
-    "P089_direct_dependency_package_assembly": "写入直接编码参考", "P089_correction_source_package_assembly": "组装低频校正来源",
-    "L0_091_all_candidate_adapter_including_checks": "生成 L0 条件候选",
-    "L0_HF_all_candidate_adapter_including_checks": "生成 L0 HF 候选",
-    "L1_091_all_candidate_adapter_including_checks": "生成 L1 条件候选",
-    "retained_089_091_strict_paid_record_selection": "比较候选记录大小",
-    "direct_selection_and_image_package_assembly": "组装直接编码归档",
-    "hf_l1_conditional_selection_and_image_package_assembly": "组装极致版图像归档",
-    "collect_conditional_and_encode_direct_tiles": "汇总条件记录并编码其余图块",
-    "assemble_image_package": "写入图像归档", "assemble_complete_archive": "组装 Count＋图像归档",
-    "verify_counts_pixels_and_files": "无损核验 Count、图像与元数据",
-    "verify_image_archive": "无损核验所有图像层", "verify_archive": "核验归档",
-    "restore_archive": "恢复归档内容",
-}
-for _level in (0, 1):
-    STAGES.update({
-        f"prepare_native_L{_level}": f"准备 L{_level} 父层参考",
-        f"encode_fused_L{_level}": f"编码 L{_level} 条件图块",
-        f"P089_L{_level}_source_spooling": f"准备 L{_level} 父层参考",
-        f"P089_L{_level}_native_all_candidates": f"生成 L{_level} 的 089 候选",
-        f"P089_L{_level}_native_receipt_validation": f"核验 L{_level} 的 089 候选",
-    })
+sys.path.insert(0, str(ROOT))
+from desktop_i18n import ACTIONS, LANGUAGES, MODES, stage_name, translate
 
 
 @dataclass
 class Job:
-    label: str
+    name: str
     request: dict
-    state: str = "等待"
+    state: str = "Queued"
     result: dict = field(default_factory=dict)
     scratch: str = ""
     error: str = ""
@@ -62,20 +38,57 @@ def file_size(size):
 class ArchiveApp:
     def __init__(self, root):
         self.root = root
+        self.language = "en"
+        self._labels = []
+        self._status = "Waiting for jobs"
+        self._stage = None
         self.jobs = {}
         self.next_id = 1
         self.events = Queue()
         self.active = None
         self.process = None
         self.running = self.cancelling = self.closing = False
-        self.root.title("STPyramid · 空间转录组归档")
-        self.root.minsize(860, 650)
+        self._label(self.root.title, "STPyramid · Spatial transcriptomics archive")
+        self.root.minsize(965, 650)
         self.root.geometry("1100x690")
         self.root.configure(background="#edf2f5")
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self._style()
         self._layout()
         self.root.after(75, self._drain_events)
+
+    def _text(self, text, **values):
+        return translate(self.language, text, **values)
+
+    def _label(self, setter, text):
+        setter(self._text(text))
+        self._labels.append((setter, text))
+
+    def _label_widget(self, widget, text):
+        self._label(lambda value: widget.configure(text=value), text)
+        return widget
+
+    def _change_language(self, _):
+        mode = self.mode_picker.current()
+        self.language = LANGUAGES[self.language_picker.get()]
+        for setter, text in self._labels:
+            setter(self._text(text))
+        self.mode_picker.configure(values=[self._text(text) for text in MODES.values()])
+        self.mode_picker.current(mode)
+        for item, job in self.jobs.items():
+            self._set_state(item, job.state)
+        self._set_status(self._status, self._stage)
+
+    def _job_title(self, job):
+        return f"{self._text(ACTIONS[job.request['action']])} · {job.name}"
+
+    def _set_status(self, text, stage=None):
+        self._status, self._stage = text, stage
+        if text is not None:
+            self.current.set(self._text(text))
+        elif self.active is not None:
+            title = self._job_title(self.jobs[self.active])
+            self.current.set(f"{title} · {stage_name(self.language, stage)}" if stage else title)
 
     def _style(self):
         font = ("Microsoft YaHei UI", 10)
@@ -99,20 +112,27 @@ class ArchiveApp:
     def _layout(self):
         header = ttk.Frame(self.root, padding=(22, 16, 22, 10))
         header.pack(fill="x")
+        self.language_picker = ttk.Combobox(header, values=tuple(LANGUAGES), state="readonly", width=12)
+        self.language_picker.current(0)
+        self.language_picker.pack(side="right", anchor="n")
+        self.language_picker.bind("<<ComboboxSelected>>", self._change_language)
         ttk.Label(header, text="STPyramid", font=("Microsoft YaHei UI", 22, "bold")).pack(anchor="w")
-        ttk.Label(header, text="空间转录组无损压缩与归档", style="Sub.TLabel").pack(anchor="w", pady=(2, 0))
+        self._label_widget(ttk.Label(header, style="Sub.TLabel"),
+                           "Lossless spatial transcriptomics compression and archiving").pack(anchor="w", pady=(2, 0))
 
         body = ttk.Frame(self.root, padding=(22, 4, 22, 18))
         body.pack(fill="both", expand=True)
         body.columnconfigure(0, weight=4, minsize=390)
-        body.columnconfigure(1, weight=5, minsize=410)
+        body.columnconfigure(1, weight=5, minsize=460)
         body.rowconfigure(0, weight=1)
         tabs = ttk.Notebook(body)
         tabs.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
         compression = ttk.Frame(tabs, padding=12)
         reading = ttk.Frame(tabs, padding=12)
-        tabs.add(compression, text="压缩归档")
-        tabs.add(reading, text="核验与恢复")
+        tabs.add(compression)
+        tabs.add(reading)
+        self._label(lambda value: tabs.tab(compression, text=value), "Compress & archive")
+        self._label(lambda value: tabs.tab(reading, text=value), "Verify & restore")
         self._compression_controls(compression)
         self._reading_controls(reading)
 
@@ -121,14 +141,14 @@ class ArchiveApp:
         panel.columnconfigure(0, weight=1)
         panel.rowconfigure(1, weight=2)
         panel.rowconfigure(6, weight=1)
-        ttk.Label(panel, text="任务队列", font=("Microsoft YaHei UI", 12, "bold")).grid(
+        self._label_widget(ttk.Label(panel, font=("Microsoft YaHei UI", 12, "bold")), "Job queue").grid(
             row=0, column=0, sticky="w", pady=(4, 8))
         columns = ("job", "state", "size")
         queue_frame = ttk.Frame(panel)
         queue_frame.grid(row=1, column=0, sticky="nsew")
         self.tree = ttk.Treeview(queue_frame, columns=columns, show="headings", selectmode="browse", height=6)
-        for column, title, width in zip(columns, ("任务", "状态", "完整包大小"), (205, 74, 103)):
-            self.tree.heading(column, text=title, anchor="w")
+        for column, title, width in zip(columns, ("Job", "Status", "Archive size"), (205, 89, 103)):
+            self._label(lambda value, col=column: self.tree.heading(col, text=value, anchor="w"), title)
             self.tree.column(column, width=width, minwidth=width, stretch=column == "job")
         scroll = ttk.Scrollbar(queue_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
@@ -137,18 +157,18 @@ class ArchiveApp:
         self.tree.bind("<<TreeviewSelect>>", lambda _: self._update_buttons())
         buttons = ttk.Frame(panel)
         buttons.grid(row=2, column=0, sticky="ew", pady=8)
-        self.start_button = ttk.Button(buttons, text="开始队列", style="Primary.TButton", command=self.start_queue)
-        self.cancel_button = ttk.Button(buttons, text="取消当前", command=self.cancel)
-        self.remove_button = ttk.Button(buttons, text="移除任务", command=self.remove)
-        self.open_button = ttk.Button(buttons, text="打开目录", command=self.open_directory)
+        self.start_button = self._label_widget(ttk.Button(buttons, style="Primary.TButton", command=self.start_queue), "Start queue")
+        self.cancel_button = self._label_widget(ttk.Button(buttons, command=self.cancel), "Cancel current")
+        self.remove_button = self._label_widget(ttk.Button(buttons, command=self.remove), "Remove job")
+        self.open_button = self._label_widget(ttk.Button(buttons, command=self.open_directory), "Open folder")
         for button in (self.start_button, self.cancel_button, self.remove_button, self.open_button):
             button.pack(side="left", padx=(0, 5))
-        self.current = tk.StringVar(value="等待添加任务")
+        self.current = tk.StringVar(value=self._text(self._status))
         ttk.Label(panel, textvariable=self.current, style="Sub.TLabel", wraplength=440).grid(
             row=3, column=0, sticky="ew", pady=(6, 4))
         self.progress = ttk.Progressbar(panel, mode="determinate")
         self.progress.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(panel, text="运行日志").grid(row=5, column=0, sticky="w", pady=(0, 4))
+        self._label_widget(ttk.Label(panel), "Activity log").grid(row=5, column=0, sticky="w", pady=(0, 4))
         log_frame = ttk.Frame(panel)
         log_frame.grid(row=6, column=0, sticky="nsew")
         self.log = tk.Text(log_frame, height=6, wrap="word", state="disabled", background="#ffffff",
@@ -160,54 +180,57 @@ class ArchiveApp:
         self._update_buttons()
 
     def _path_control(self, frame, row, label, variable, browse=None):
-        ttk.Label(frame, text=label).grid(row=row, column=0, columnspan=2, sticky="w", pady=(8, 4))
+        self._label_widget(ttk.Label(frame), label).grid(row=row, column=0, columnspan=2, sticky="w", pady=(8, 4))
         entry = ttk.Entry(frame, textvariable=variable)
         entry.grid(row=row + 1, column=0, sticky="ew", ipady=4)
         if browse is None:
             entry.grid_configure(columnspan=2)
             return (entry,)
-        button = ttk.Button(frame, text="浏览…", command=browse)
+        button = self._label_widget(ttk.Button(frame, command=browse), "Browse…")
         button.grid(row=row + 1, column=1, padx=(7, 0))
         return entry, button
 
     def _compression_controls(self, frame):
         frame.columnconfigure(0, weight=1)
-        self.mode = tk.StringVar(value=next(iter(MODES)))
         self.image, self.counts, self.metadata, self.output_root, self.archive_name = [tk.StringVar() for _ in range(5)]
         self.keep_work = tk.BooleanVar()
-        ttk.Label(frame, text="压缩模式").grid(row=0, column=0, sticky="w", pady=(0, 4))
-        modes = ttk.Combobox(frame, textvariable=self.mode, values=tuple(MODES), state="readonly")
-        modes.grid(row=1, column=0, columnspan=2, sticky="ew", ipady=4)
-        self._path_control(frame, 2, "整片图像（TIFF / BigTIFF）", self.image, self._select_image)
-        self.count_controls = self._path_control(frame, 4, "表达与坐标（H5AD）", self.counts,
+        self._label_widget(ttk.Label(frame), "Compression mode").grid(row=0, column=0, sticky="w", pady=(0, 4))
+        self.mode_picker = ttk.Combobox(frame, values=tuple(MODES.values()), state="readonly")
+        self.mode_picker.current(0)
+        self.mode_picker.grid(row=1, column=0, columnspan=2, sticky="ew", ipady=4)
+        self._path_control(frame, 2, 'Whole-slide image (TIFF / BigTIFF)', self.image, self._select_image)
+        self.count_controls = self._path_control(frame, 4, 'Expression and coordinates (H5AD)', self.counts,
                                                lambda: self._select_file(self.counts, [("H5AD", "*.h5ad")]))
-        self.count_controls += self._path_control(frame, 6, "附加元数据（JSON，可选）", self.metadata,
+        self.count_controls += self._path_control(frame, 6, 'Metadata attachment (optional JSON)', self.metadata,
                                                 lambda: self._select_file(self.metadata, [("JSON", "*.json")]))
-        modes.bind("<<ComboboxSelected>>", self._mode_changed)
-        self._path_control(frame, 8, "归档输出目录", self.output_root, lambda: self._select_directory(self.output_root))
-        self._path_control(frame, 10, "归档名称", self.archive_name)
-        ttk.Checkbutton(frame, text="保留成功任务的中间文件", variable=self.keep_work).grid(
+        self.mode_picker.bind("<<ComboboxSelected>>", self._mode_changed)
+        self._path_control(frame, 8, 'Archive output folder', self.output_root, lambda: self._select_directory(self.output_root))
+        self._path_control(frame, 10, 'Archive name', self.archive_name)
+        self._label_widget(ttk.Checkbutton(frame, variable=self.keep_work), "Keep intermediate files after success").grid(
             row=12, column=0, columnspan=2, sticky="w", pady=(8, 5))
-        ttk.Button(frame, text="加入压缩队列", style="Primary.TButton", command=self.add_encode).grid(
+        self._label_widget(ttk.Button(frame, style="Primary.TButton", command=self.add_encode), "Add compression job").grid(
             row=13, column=0, columnspan=2, sticky="ew", pady=(4, 0))
 
     def _reading_controls(self, frame):
         frame.columnconfigure(0, weight=1)
         self.read_source, self.restore_output, self.decode_runtime = [tk.StringVar() for _ in range(3)]
-        self._path_control(frame, 0, "归档目录（含 manifest.json）", self.read_source, self._select_archive)
-        self._path_control(frame, 2, "恢复输出路径", self.restore_output, self._select_restore_parent)
-        self._path_control(frame, 4, "历史归档运行时目录（可选）", self.decode_runtime,
+        self._path_control(frame, 0, 'Archive folder (contains manifest.json)', self.read_source, self._select_archive)
+        self._path_control(frame, 2, 'Restore output path', self.restore_output, self._select_restore_parent)
+        self._path_control(frame, 4, 'Decoder runtime folder (optional)', self.decode_runtime,
                            lambda: self._select_directory(self.decode_runtime))
-        for col, action, label in ((0, "verify", "加入核验队列"), (1, "restore", "加入恢复队列")):
-            ttk.Button(frame, text=label, command=lambda action=action: self.add_read(action)).grid(
+        for col, action, label in ((0, "verify", 'Add verification job'), (1, "restore", 'Add restoration job')):
+            self._label_widget(ttk.Button(frame, command=lambda action=action: self.add_read(action)), label).grid(
                 row=6, column=col, sticky="ew", padx=(0, 5), pady=(12, 0))
 
     def _mode_changed(self, _):
         for control in self.count_controls:
-            control.state(["!disabled"] if MODES[self.mode.get()] == "integrated" else ["disabled"])
+            control.state(["!disabled"] if self._selected_mode() == "integrated" else ["disabled"])
+
+    def _selected_mode(self):
+        return tuple(MODES)[self.mode_picker.current()]
 
     def _select_file(self, variable, types):
-        value = filedialog.askopenfilename(parent=self.root, filetypes=types + [("所有文件", "*")])
+        value = filedialog.askopenfilename(parent=self.root, filetypes=types + [(self._text("All files"), "*")])
         if value:
             variable.set(value)
         return value
@@ -224,7 +247,7 @@ class ArchiveApp:
             path = Path(value)
             self.archive_name.set(path.stem)
             if not self.output_root.get():
-                self.output_root.set(str(path.parent / "STPyramid归档"))
+                self.output_root.set(str(path.parent / "STPyramid-archives"))
             sibling = path.with_suffix(".h5ad")
             self.counts.set(str(sibling) if sibling.is_file() else "")
             sibling = path.with_suffix(".json")
@@ -234,52 +257,53 @@ class ArchiveApp:
         value = self._select_directory(self.read_source)
         if value:
             archive = Path(value)
-            self.restore_output.set(str(archive.with_name(f"{archive.stem}-已恢复")))
+            self.restore_output.set(str(archive.with_name(f"{archive.stem}-restored")))
 
     def _select_restore_parent(self):
         value = filedialog.askdirectory(parent=self.root, mustexist=True)
         if value:
             suffix = Path(self.read_source.get()).stem or "STPyramid"
-            self.restore_output.set(str(Path(value) / f"{suffix}-已恢复"))
+            self.restore_output.set(str(Path(value) / f"{suffix}-restored"))
 
     def add_encode(self):
         image, counts, meta, output_root, name = (field.get().strip() for field in
                                                    (self.image, self.counts, self.metadata, self.output_root, self.archive_name))
-        mode = MODES[self.mode.get()]
+        mode = self._selected_mode()
         if not image or not Path(image).is_file():
-            return self._warn("请选择有效的 TIFF 文件。")
+            return self._warn('Select a valid TIFF file.')
         if mode == "integrated" and (not counts or not Path(counts).is_file() or (meta and not Path(meta).is_file())):
-            return self._warn("请选择有效的 H5AD 文件和可选的 JSON 附件。")
+            return self._warn('Select a valid H5AD file and, optionally, a JSON attachment.')
         name = name.removesuffix(".stpyramid")
         if (not output_root or not name or re.search(r'[<>:"/\\|?*\x00-\x1f]', name)
                 or name.endswith((".", " ")) or Path(f"{name}.stpyramid").is_reserved()):
-            return self._warn("请填写输出目录和有效的归档名称。")
+            return self._warn('Enter an output folder and a valid archive name.')
         output = Path(output_root) / f"{name}.stpyramid"
-        self._add_job(f"压缩 · {name}", {"action": "encode", "mode": mode, "image": image, "counts": counts,
+        self._add_job(name, {"action": "encode", "mode": mode, "image": image, "counts": counts,
                     "metadata": meta, "output": str(output.absolute()), "keep_work": self.keep_work.get()})
 
     def add_read(self, action):
         source, output, runtime = (v.get().strip() for v in (self.read_source, self.restore_output, self.decode_runtime))
         if not source or not (Path(source) / "manifest.json").is_file():
-            return self._warn("请选择含 manifest.json 的归档目录。")
+            return self._warn('Select an archive folder containing manifest.json.')
         if action == "restore" and not output:
-            return self._warn("请填写恢复输出路径。")
-        label = "恢复" if action == "restore" else "核验"
-        self._add_job(f"{label} · {Path(source).name}", {"action": action, "archive": source, "output": output, "runtime": runtime})
+            return self._warn('Enter a restore output path.')
+        self._add_job(Path(source).name, {"action": action, "archive": source, "output": output, "runtime": runtime})
 
-    def _add_job(self, label, request):
+    def _add_job(self, name, request):
         if request["action"] != "verify":
             output = Path(request["output"]).resolve()
             if output.exists() or output.is_symlink() or any(
-                    job.state in ("等待", "处理中") and job.request["action"] != "verify"
+                    job.state in ('Queued', 'Running') and job.request["action"] != "verify"
                     and Path(job.request["output"]).resolve() == output for job in self.jobs.values()):
-                return self._warn("输出路径已存在或已在队列中。请选择新路径。")
+                return self._warn('The output path already exists or is queued. Choose a new path.')
         item = str(self.next_id)
         self.next_id += 1
-        self.jobs[item] = Job(label, request)
-        self.tree.insert("", "end", iid=item, values=(label, "等待", ""))
+        self.jobs[item] = Job(name, request)
+        self.tree.insert("", "end", iid=item)
+        self._set_state(item, "Queued")
         self.tree.selection_set(item)
-        self.current.set("可开始队列" if self.active is None else self.current.get())
+        if self.active is None:
+            self._set_status("Ready to start")
         self._update_buttons()
 
     def start_queue(self):
@@ -288,17 +312,17 @@ class ArchiveApp:
             self._start_next()
 
     def _start_next(self):
-        item = next((item for item, job in self.jobs.items() if job.state == "等待"), None)
+        item = next((item for item, job in self.jobs.items() if job.state == 'Queued'), None)
         if item is None or not self.running:
             self.running = False
-            self.current.set("队列已结束" if item is None else "队列已暂停")
+            self._set_status("Queue finished" if item is None else "Queue paused")
             self._update_buttons()
             return
         job = self.jobs[item]
         self.active = item
-        self._set_state(item, "处理中")
-        self.current.set(job.label)
-        self._log(job.label)
+        self._set_state(item, 'Running')
+        self._set_status(None)
+        self._log(self._job_title(job))
         self.progress.configure(mode="indeterminate", value=0)
         self.progress.start(20)
         worker_python = Path(sys.executable).with_name("python.exe")
@@ -311,7 +335,8 @@ class ArchiveApp:
             self.events.put((item, {"error": str(exc)}))
             self.events.put((item, {"exit": 1}))
         else:
-            Thread(target=self._read_worker, args=(item, self.process, job.request), daemon=True).start()
+            request = dict(job.request, language=self.language)
+            Thread(target=self._read_worker, args=(item, self.process, request), daemon=True).start()
         self._update_buttons()
 
     def _read_worker(self, item, process, request):
@@ -346,12 +371,11 @@ class ArchiveApp:
     def _handle_event(self, item, event):
         job = self.jobs[item]
         if "begin" in event:
-            stage = STAGES.get(event["begin"], event["begin"])
-            self.current.set(f"{job.label} · {stage}")
-            self._log(stage)
+            self._set_status(None, event["begin"])
+            self._log(stage_name(self.language, event["begin"]))
         elif "end" in event:
-            stage = STAGES.get(event["end"], event["end"])
-            self._log(f"{stage} · {event['seconds']:.1f} 秒")
+            stage = stage_name(self.language, event["end"])
+            self._log(f"{stage} · {event['seconds']:.1f} s")
         elif "scratch" in event:
             job.scratch = event["scratch"]
         elif "result" in event:
@@ -361,20 +385,20 @@ class ArchiveApp:
             self._log(job.error)
         elif "cancel_error" in event:
             self.cancelling = self.closing = False
-            self.current.set("取消失败，当前任务仍在运行")
-            self._log(event["cancel_error"])
+            self._set_status("The job is still running because cancellation failed.")
+            self._log(self._text(event["cancel_error"]))
             self._update_buttons()
         elif "message" in event:
             self._log(event["message"])
         elif "exit" in event:
             succeeded = event["exit"] == 0 and bool(job.result)
-            state = "已完成" if succeeded else "已取消" if self.cancelling else "失败"
+            state = 'Completed' if succeeded else 'Cancelled' if self.cancelling else 'Failed'
             self._set_state(item, state)
-            self._log(f"{job.label} · {state}")
+            self._log(f"{self._job_title(job)} · {self._text(state)}")
             if succeeded:
                 self._log(job.result["output"])
             elif job.scratch and Path(job.scratch).is_dir():
-                self._log(f"中间文件保存在 {job.scratch}")
+                self._log(self._text("Intermediate files retained at {path}", path=job.scratch))
             self.active = self.process = None
             self.cancelling = False
             self.progress.stop()
@@ -388,7 +412,7 @@ class ArchiveApp:
         job = self.jobs[item]
         job.state = state
         size = file_size(job.result["bytes"]) if "bytes" in job.result else ""
-        self.tree.item(item, values=(job.label, state, size))
+        self.tree.item(item, values=(self._job_title(job), self._text(state), size))
 
     def _log(self, message):
         if message:
@@ -398,7 +422,7 @@ class ArchiveApp:
             self.log.configure(state="disabled")
 
     def _warn(self, message):
-        messagebox.showwarning("STPyramid", message, parent=self.root)
+        messagebox.showwarning("STPyramid", self._text(message), parent=self.root)
 
     def _selected(self):
         return next(iter(self.tree.selection()), None)
@@ -406,7 +430,7 @@ class ArchiveApp:
     def _update_buttons(self):
         item = self._selected()
         job = self.jobs.get(item)
-        self.start_button.configure(state="normal" if not self.running and any(j.state == "等待" for j in self.jobs.values()) else "disabled")
+        self.start_button.configure(state="normal" if not self.running and any(j.state == 'Queued' for j in self.jobs.values()) else "disabled")
         self.cancel_button.configure(state="normal" if self.active and not self.cancelling else "disabled")
         self.remove_button.configure(state="normal" if item and item != self.active else "disabled")
         self.open_button.configure(state="normal" if job and item != self.active and (job.result or job.scratch) else "disabled")
@@ -432,7 +456,7 @@ class ArchiveApp:
             return
         self.running = False
         self.cancelling = True
-        self.current.set("正在取消当前任务")
+        self._set_status("Cancelling the current job")
         self._update_buttons()
         Thread(target=self._terminate_worker, args=(self.active, self.process), daemon=True).start()
 
@@ -443,14 +467,14 @@ class ArchiveApp:
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                     creationflags=subprocess.CREATE_NO_WINDOW, timeout=10)
             if status.returncode and process.poll() is None:
-                self.events.put((item, {"cancel_error": "Windows 未能结束当前任务。"}))
+                self.events.put((item, {"cancel_error": 'Windows could not terminate the current job.'}))
         except (OSError, subprocess.TimeoutExpired) as exc:
             self.events.put((item, {"cancel_error": str(exc)}))
 
     def close(self):
         if self.active is None:
             self.root.destroy()
-        elif messagebox.askyesno("退出 STPyramid", "取消当前任务并退出？", parent=self.root):
+        elif messagebox.askyesno(self._text("Exit STPyramid"), self._text("Cancel the current job and exit?"), parent=self.root):
             self.closing = True
             self.cancel()
 

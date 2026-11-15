@@ -6,30 +6,51 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parent
 RUNTIME = ROOT / "runtime-windows-source"
 sys.path[:0] = [str(ROOT / "codec"), str(ROOT)]
+from desktop_i18n import translate
+from fetch_count_runtime import count_source_ready, fetch_count_source
+
+
+def prepare_count_runtime(language, emit):
+    if count_source_ready():
+        return
+    stage = "prepare_count_runtime"
+    emit({"begin": stage})
+    started = time.perf_counter()
+    try:
+        fetch_count_source()
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(translate(language,
+            "Could not download the pinned Count runtime. Check your internet connection, then start the job again. {error}",
+            error=exc)) from exc
+    emit({"end": stage, "seconds": time.perf_counter() - started})
 
 
 def encode_job(job, emit):
     from container_compare import _fresh, _plain
 
+    language = job.get("language", "en")
     image = _plain(job["image"])
     if not image.is_file():
-        raise ValueError("请选择 TIFF 图像文件。")
+        raise ValueError(translate(language, "Select a TIFF image file."))
     mode = job["mode"]
     sources = [image]
     if mode == "integrated":
         counts = _plain(job["counts"])
         metadata = _plain(job["metadata"]) if job.get("metadata") else None
         if not counts.is_file() or (metadata is not None and not metadata.is_file()):
-            raise ValueError("请选择 H5AD 文件和有效的 JSON 附件。")
+            raise ValueError(translate(language, "Select an H5AD file and a valid JSON attachment."))
         sources += [counts] + ([metadata] if metadata is not None else [])
     elif mode != "image":
-        raise ValueError("未知压缩模式。")
+        raise ValueError(translate(language, "Unknown compression mode."))
 
     output = _fresh(job["output"], *sources)
+    if mode == "integrated":
+        prepare_count_runtime(language, emit)
     output.parent.mkdir(parents=True, exist_ok=True)
     scratch = Path(tempfile.mkdtemp(prefix=".stpyramid-", dir=output.parent)).resolve()
     emit({"scratch": str(scratch)})
@@ -55,7 +76,7 @@ def encode_job(job, emit):
         with archive.Reader(candidate, *RUNTIMES) as reader:
             verification = reader.verify()
         if not verification["ok"]:
-            raise ValueError("图像无损核验失败。")
+            raise ValueError(translate(language, "Lossless image verification failed."))
         total_bytes = result["bytes"]
         levels = verification["levels"]
         candidate.rename(_fresh(output, *sources))
@@ -66,7 +87,7 @@ def encode_job(job, emit):
             try:
                 shutil.rmtree(scratch)
             except OSError as exc:
-                emit({"message": f"归档已保存，临时目录清理失败。{exc}"})
+                emit({"message": translate(language, "Archive saved. Could not remove the temporary folder. {error}", error=exc)})
     return {"output": str(output), "bytes": total_bytes, "levels": len(levels)}
 
 
@@ -75,6 +96,7 @@ def read_job(job, emit):
     import joint_next
     from integrated_encode import runtime_dirs
 
+    language = job.get("language", "en")
     root = container_compare._plain(job["archive"])
     manifest = container_compare._json(root / "manifest.json")
     runtime = runtime_dirs(Path(job.get("runtime") or RUNTIME))
@@ -84,16 +106,18 @@ def read_job(job, emit):
     elif manifest.get("format") == joint_next.FORMAT:
         reader = joint_next.Reader(root, *runtime)
     else:
-        raise ValueError("请选择由 STPyramid 写出的归档目录。")
+        raise ValueError(translate(language, "Select an archive folder created by STPyramid."))
 
     with reader:
+        if manifest.get("count", {}).get("kind") == "Shared_local":
+            prepare_count_runtime(language, emit)
         if job["action"] == "restore":
             emit({"begin": "restore_archive"})
             return {"output": str(reader.restore(Path(job["output"])))}
         emit({"begin": "verify_archive"})
         result = reader.verify()
         if not result["ok"]:
-            raise ValueError("归档核验失败。")
+            raise ValueError(translate(language, "Archive verification failed."))
         return {"output": str(root), "bytes": result["ledger"]["total_package_bytes"]}
 
 
@@ -103,6 +127,10 @@ def main():
         os.environ[name] = "1"
     os.environ.pop("ST074_S", None)
     os.environ.pop("ST074_T", None)
+    # Numba's cache filenames can exceed the Windows path limit inside a
+    # deeply nested portable installation.
+    cache_root = Path(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir())
+    os.environ.setdefault("NUMBA_CACHE_DIR", str(cache_root / "STPyramid" / "numba-cache"))
     protocol = sys.stdout
 
     def emit(event):
@@ -117,7 +145,7 @@ def main():
             elif action in ("verify", "restore"):
                 result = read_job(job, emit)
             else:
-                raise ValueError("未知归档操作。")
+                raise ValueError(translate(job.get("language", "en"), "Unknown archive operation."))
         emit({"result": result})
     except Exception as exc:
         emit({"error": f"{type(exc).__name__}: {exc}"})

@@ -1,8 +1,6 @@
 """Build a relocatable Windows desktop directory from the qualified Python environment."""
 import argparse
-import hashlib
 from importlib import metadata
-import json
 import os
 from pathlib import Path
 import shutil
@@ -14,7 +12,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 DISTRIBUTIONS = ("numpy", "scipy", "h5py", "tifffile", "imagecodecs", "psutil", "numba", "llvmlite", "Pillow",
                  "zstandard")
-SCRIPTS = ("desktop_app.py", "desktop_worker.py", "native_tile_encoder.py", "pyramid_image_archive.py", "THIRD_PARTY.md")
+SCRIPTS = ("desktop_app.py", "desktop_i18n.py", "desktop_worker.py", "fetch_count_runtime.py",
+           "native_tile_encoder.py", "pyramid_image_archive.py", "THIRD_PARTY.md")
 CACHE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.nbc", "*.nbi")
 
 
@@ -53,15 +52,8 @@ def install_app(output):
         rel = file.relative_to(ROOT)
         if file.is_file() and file.suffix in {".py", ".json", ".R"} and "_shared_vendor" not in rel.parts:
             copy_file(file, output / rel)
-    vendor = Path("codec/stbaseline/_shared_vendor")
-    manifest = vendor / "SOURCE.json"
+    manifest = Path("codec/stbaseline/_shared_vendor/SOURCE.json")
     copy_file(ROOT / manifest, output / manifest)
-    for pin in json.loads((ROOT / manifest).read_text(encoding="utf-8-sig"))["files"]:
-        relative = vendor / pin["path"]
-        source = ROOT / relative
-        if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != pin["sha256"]:
-            raise RuntimeError("Run fetch_count_runtime.py with the qualified local environment before packaging.")
-        copy_file(source, output / relative)
     shutil.copytree(ROOT / "runtime-windows-source", output / "runtime-windows-source")
     copy_file(ROOT / "bin/slide_jxl091.exe", output / "bin/slide_jxl091.exe")
     for name in ("upstream/libjxl/LICENSE", "upstream/libjxl/PATENTS", "upstream/libjxl/third_party/brotli/LICENSE",
@@ -74,7 +66,7 @@ def build(output, make_zip):
     if sys.platform != "win32" or sys.version_info[:2] != (3, 12) or struct.calcsize("P") != 8:
         raise RuntimeError("Use the qualified Windows x64 CPython 3.12 environment.")
     output = output.resolve()
-    zip_path = output.with_suffix(".zip")
+    zip_path = output.with_name(output.name + ".zip")
     if make_zip and zip_path.exists():
         raise FileExistsError(zip_path)
     compiler = Path(os.environ["WINDIR"]) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe"
@@ -83,8 +75,9 @@ def build(output, make_zip):
     install_app(output / "app")
     subprocess.run([str(compiler), "/nologo", "/target:winexe", "/platform:x64", "/reference:System.Windows.Forms.dll",
                     f"/out:{output / 'STPyramid.exe'}", str(ROOT / "desktop/Launcher.cs")], check=True)
-    guide = (ROOT / "desktop/使用说明.txt").read_text(encoding="utf-8")
-    (output / "使用说明.txt").write_text(guide, encoding="utf-8-sig")
+    for name in ("README-EN.txt", "使用说明.txt"):
+        guide = (ROOT / "desktop" / name).read_text(encoding="utf-8")
+        (output / name).write_text(guide, encoding="utf-8-sig")
     if make_zip:
         shutil.make_archive(str(zip_path.with_suffix("")), "zip", output.parent, output.name)
     return output
