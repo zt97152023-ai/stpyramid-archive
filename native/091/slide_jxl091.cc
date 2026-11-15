@@ -426,7 +426,7 @@ jxl::Image SelectChannels(const jxl::Image& image, const std::vector<size_t>& id
   }
   return result;
 }
-Digest PrefixHash(const jxl::Image& image,bool horizontal) {
+Digest ReferenceChannelHash(const jxl::Image& image,bool horizontal) {
   return CoefficientHash(SelectChannels(image,horizontal?std::vector<size_t>{6,7,8}:std::vector<size_t>{0,1,2}));
 }
 Digest DetailHash(const jxl::Image& image) {
@@ -448,14 +448,14 @@ void CheckKnown(const jxl::Image& image) {
       Need(ch.Row(y)[x]>=lo && ch.Row(y)[x]<=hi,"known coefficient range");
   }
 }
-void FillPrefix(jxl::Image* image,const jxl::Image& parent,bool horizontal) {
+void FillReferenceChannels(jxl::Image* image,const jxl::Image& parent,bool horizontal) {
   for(size_t c=0;c<3;++c) {
     auto& dst=image->channel[(horizontal?6:0)+c]; const auto& src=parent.channel[c];
     Need(dst.w<=src.w && dst.h<=src.h && dst.hshift==src.hshift && dst.vshift==src.vshift,"parent projection shape");
     for(size_t y=0;y<dst.h;++y) if(dst.w) std::copy(src.Row(y),src.Row(y)+dst.w,dst.Row(y));
   }
 }
-jxl::Image HorizontalLow(const jxl::Image& low,const jxl::Image& known) {
+jxl::Image ReconstructHorizontalLowpass(const jxl::Image& low,const jxl::Image& known) {
   auto image=SelectChannels(low,{0,1,2});
   auto vertical=SelectChannels(known,{3,4,5});
   for(auto& ch:vertical.channel) image.channel.push_back(std::move(ch));
@@ -488,7 +488,7 @@ std::pair<size_t,size_t> ParentSplits(const jxl::Tree& tree,const jxl::Image& im
   }
   return {nodes.size(),pairs};
 }
-Stream EncodeKnown(Memory& memory,const jxl::Image& image,uint32_t gid,bool enabled) {
+Stream EncodeDetailStream(Memory& memory,const jxl::Image& image,uint32_t gid,bool enabled) {
   CheckKnown(image); Stream result; result.coefficients=TargetCount(image); result.coefficient_sha=DetailHash(image);
   if(!result.coefficients) { Need(image.w==1 && image.h==1,"empty known profile"); result.sha=Hash(AsView(result.bytes)); return result; }
   auto options=KnownOptions(); const jxl::st091::KnownContext context{enabled,nullptr,nullptr,&result.target_values};
@@ -510,18 +510,18 @@ struct StageState {
 jxl::Status PrepareHorizontal(jxl::Image& image,void* opaque) {
   auto& state=*static_cast<StageState*>(opaque);
   Need(!state.horizontal,"horizontal stage invoked twice");
-  Need(PrefixHash(image,false)==state.prefix_v,"decoder overwrote known vertical prefix");
+  Need(ReferenceChannelHash(image,false)==state.prefix_v,"decoder overwrote known vertical prefix");
   // Reject hostile decoded V values before integer inverse arithmetic. H
   // targets and their not-yet-built prefixes are still initialized zero here.
   CheckKnown(image);
-  auto horizontal=HorizontalLow(*state.low,image); FillPrefix(&image,horizontal,true);
-  Need(PrefixHash(image,true)==state.expected,"horizontal parent SHA mismatch");
+  auto horizontal=ReconstructHorizontalLowpass(*state.low,image); FillReferenceChannels(&image,horizontal,true);
+  Need(ReferenceChannelHash(image,true)==state.expected,"horizontal parent SHA mismatch");
   state.horizontal=std::make_unique<jxl::Image>(std::move(horizontal)); return true;
 }
-std::pair<jxl::Image,jxl::Image> DecodeKnown(Memory& memory,const StreamView& stream,const jxl::Image& low,
+std::pair<jxl::Image,jxl::Image> DecodeDetailStream(Memory& memory,const StreamView& stream,const jxl::Image& low,
     uint32_t gid,bool enabled,const Digest& prefix_v,const Digest& prefix_h,DecodedInfo* info) {
-  auto image=KnownShape(&memory.mm,uint32_t(low.w),uint32_t(low.h)); FillPrefix(&image,low,false);
-  Need(PrefixHash(image,false)==prefix_v,"vertical parent SHA mismatch");
+  auto image=KnownShape(&memory.mm,uint32_t(low.w),uint32_t(low.h)); FillReferenceChannels(&image,low,false);
+  Need(ReferenceChannelHash(image,false)==prefix_v,"vertical parent SHA mismatch");
   StageState stage{&low,prefix_h,nullptr,prefix_v};
   if(!TargetCount(image)) {
     Need(image.w==1 && image.h==1 && stream.bits==0 && stream.bytes.size()==0,"empty HF bounds");
@@ -549,7 +549,7 @@ std::pair<jxl::Image,jxl::Image> DecodeKnown(Memory& memory,const StreamView& st
   }
   Need(bool(stage.horizontal),"missing horizontal reconstruction");
   Need(info->target_values==TargetCount(image),"decoder consumed non-HF values");
-  Need(PrefixHash(image,false)==prefix_v && PrefixHash(image,true)==prefix_h,"decoder overwrote known prefix");
+  Need(ReferenceChannelHash(image,false)==prefix_v && ReferenceChannelHash(image,true)==prefix_h,"decoder overwrote known prefix");
   CheckKnown(image); info->coefficient_sha=DetailHash(image);
   return {std::move(image),std::move(*stage.horizontal)};
 }
@@ -601,13 +601,13 @@ void ContextSelfcheck() {
   std::cout<<"{\"ok\":true,\"target_channels\":[3,4,5,9,10,11],\"known_channels\":[0,1,2,6,7,8],\"parent_gate_zero\":true,\"causal_reference_equal\":true,\"prefix_readonly\":true,\"malformed_rejected\":[\"property36\",\"group_id\"]}\n";
 }
 struct Header { uint32_t mode,gid,w,h,aw,ah; Digest raw,anchor,vertical,horizontal; };
-Header ReadHeader(Cursor* cursor) {
+Header ReadTileRecordHeader(Cursor* cursor) {
   cursor->Magic("S091TIL1"); Need(cursor->U32()==1,"unknown091 profile");
   Header h{cursor->U32(),cursor->U32(),cursor->U32(),cursor->U32(),cursor->U32(),cursor->U32(),{},{},{},{}};
   h.raw=cursor->D(); h.anchor=cursor->D(); h.vertical=cursor->D(); h.horizontal=cursor->D(); Dimensions(h.w,h.h);
   Need(h.mode<=1 && h.gid<kMaxGroups && h.aw==(h.w+1)/2 && h.ah==(h.h+1)/2,"invalid091 identity"); return h;
 }
-jxl::Image RestoreLow(Memory& memory,const StreamView& lp,View anchor,uint32_t gid,uint32_t w,uint32_t h,DecodedInfo* info) {
+jxl::Image RestoreLowpassCoefficients(Memory& memory,const StreamView& lp,View anchor,uint32_t gid,uint32_t w,uint32_t h,DecodedInfo* info) {
   auto low=DecodeStream(memory,lp,w,h,gid,StreamKind::Correction,info);
   auto color=ToColor(&memory.mm,anchor,(w+1)/2,(h+1)/2);
   for(size_t c=0;c<3;++c) for(size_t y=0;y<low.channel[c].h;++y) for(size_t x=0;x<low.channel[c].w;++x) {
@@ -617,14 +617,14 @@ jxl::Image RestoreLow(Memory& memory,const StreamView& lp,View anchor,uint32_t g
   CheckShape(low,w,h,StreamKind::Lowpass); return low;
 }
 struct DecodeInfo { DecodedInfo detail,low; };
-Bytes DecodeTile(View record,View anchor,uint32_t gid,uint32_t w,uint32_t h,DecodeInfo* stats) {
-  Need(record.size()>=260 && record.size()<=kMaxRecordBytes,"091 record bounds"); Cursor cursor{record}; const auto header=ReadHeader(&cursor);
+Bytes DecodeTileRecord(View record,View anchor,uint32_t gid,uint32_t w,uint32_t h,DecodeInfo* stats) {
+  Need(record.size()>=260 && record.size()<=kMaxRecordBytes,"091 record bounds"); Cursor cursor{record}; const auto header=ReadTileRecordHeader(&cursor);
   Need(header.gid==gid && header.w==w && header.h==h,"091 requested identity differs");
   Need(anchor.data() && anchor.size()==size_t(header.aw)*header.ah*3 && Hash(anchor)==header.anchor,"091 anchor mismatch");
   const auto lp=ReadStream(&cursor,false), hf=ReadStream(&cursor,w==1 && h==1);
   Need(cursor.pos==record.size(),"trailing091 bytes"); Memory memory;
-  auto low=RestoreLow(memory,lp,anchor,gid,w,h,&stats->low);
-  auto stages=DecodeKnown(memory,hf,low,gid,header.mode!=0,header.vertical,header.horizontal,&stats->detail);
+  auto low=RestoreLowpassCoefficients(memory,lp,anchor,gid,w,h,&stats->low);
+  auto stages=DecodeDetailStream(memory,hf,low,gid,header.mode!=0,header.vertical,header.horizontal,&stats->detail);
   auto image=std::move(stages.second); auto horizontal=SelectChannels(stages.first,{9,10,11});
   for(auto& ch:horizontal.channel) image.channel.push_back(std::move(ch));
   Check(jxl::InvSqueeze(image,{Squeezes()[0]},nullptr),"inverse horizontal stage");
@@ -638,7 +638,7 @@ Bytes DecodeTile(View record,View anchor,uint32_t gid,uint32_t w,uint32_t h,Deco
   }
   Need(Hash(AsView(rgb))==header.raw,"091 final RGB SHA"); return rgb;
 }
-Stream OldCorrection(View record,const Tile& tile,const Digest& raw,const Digest& anchor) {
+Stream ReadStored089Correction(View record,const Tile& tile,const Digest& raw,const Digest& anchor) {
   Need(record.size()>=196 && record.size()<=2*kMaxStreamBytes+196,"old089 size"); Cursor cursor{record}; cursor.Magic("S089TIL1");
   Need(cursor.U32()==1 && cursor.U32()==1,"old089 anchored profile required");
   Need(cursor.U32()==tile.id && cursor.U32()==tile.w && cursor.U32()==tile.h && cursor.U32()==(tile.w+1)/2 && cursor.U32()==(tile.h+1)/2,"old089 identity");
@@ -648,7 +648,7 @@ Stream OldCorrection(View record,const Tile& tile,const Digest& raw,const Digest
   result.bytes.assign(lp.bytes.data(),lp.bytes.data()+lp.bytes.size()); result.bits=lp.bits; result.sha=lp.sha;
   result.coefficients=size_t((tile.w+1)/2)*((tile.h+1)/2)*3; return result;
 }
-Bytes Record(const Tile& tile,bool enabled,const Digest& raw,const Digest& anchor,
+Bytes SerializeTileRecord(const Tile& tile,bool enabled,const Digest& raw,const Digest& anchor,
              const Digest& vertical,const Digest& horizontal,const Stream& low,const Stream& hf) {
   Bytes output{'S','0','9','1','T','I','L','1'};
   for(uint32_t n:{1u,uint32_t(enabled),tile.id,tile.w,tile.h,(tile.w+1)/2,(tile.h+1)/2}) Put32(output,n);
@@ -673,21 +673,67 @@ std::string StreamReceipt(const Stream& s,const DecodedInfo& d,bool reused) {
   }
   o<<'}'; return o.str();
 }
-jxl::Image PrepareKnown(Memory& memory, const Tile& tile,
+jxl::Image PrepareDetailChannels(Memory& memory, const Tile& tile,
                         const jxl::Image& transformed, const jxl::Image& low) {
   auto known = KnownShape(&memory.mm, tile.w, tile.h);
   for (size_t c = 0; c < 3; ++c) {
     CopyChannel(transformed.channel[6 + c], &known.channel[3 + c]);
     CopyChannel(transformed.channel[3 + c], &known.channel[9 + c]);
   }
-  FillPrefix(&known, low, false);
-  auto hlow = HorizontalLow(low, known);
-  FillPrefix(&known, hlow, true);
+  FillReferenceChannels(&known, low, false);
+  auto hlow = ReconstructHorizontalLowpass(low, known);
+  FillReferenceChannels(&known, hlow, true);
   CheckKnown(known);
   return known;
 }
 
-void EncodeDirect(const fs::path& spool, const fs::path& output) {
+jxl::Image ComputeLowpassCorrection(Memory& memory, const Tile& tile,
+                                     const jxl::Image& lowpass, View parent_rgb) {
+  const uint32_t width = (tile.w + 1) / 2;
+  const uint32_t height = (tile.h + 1) / 2;
+  const auto reference = ToColor(&memory.mm, parent_rgb, width, height);
+  auto correction = Shape(&memory.mm, tile.w, tile.h, StreamKind::Correction);
+  for (size_t channel = 0; channel < 3; ++channel) {
+    for (size_t y = 0; y < height; ++y) {
+      for (size_t x = 0; x < width; ++x) {
+        correction.channel[channel].Row(y)[x] =
+            lowpass.channel[channel].Row(y)[x] - reference.channel[channel].Row(y)[x];
+      }
+    }
+  }
+  return correction;
+}
+
+struct EncodedTileRecord {
+  Bytes bytes;
+  size_t correction_bytes;
+  size_t detail_bytes;
+};
+
+EncodedTileRecord EncodeParentConditionedTile(const Tile& tile, const Bytes& rgb,
+                                              const Bytes& parent_rgb) {
+  Memory memory;
+  auto transformed = ToColor(&memory.mm, AsView(rgb), tile.w, tile.h);
+  Check(jxl::FwdSqueeze(transformed, Squeezes(), nullptr), "direct091 forward");
+  Need(transformed.channel.size() == 9 && transformed.transform.empty(), "direct091 Squeeze layout");
+  const auto lowpass = SelectChannels(transformed, {0, 1, 2});
+  const auto correction = ComputeLowpassCorrection(memory, tile, lowpass, AsView(parent_rgb));
+  const auto correction_stream = EncodeStream(memory, correction, StreamKind::Correction, tile.id);
+  const auto detail_channels = PrepareDetailChannels(memory, tile, transformed, lowpass);
+  const auto detail_stream = EncodeDetailStream(memory, detail_channels, tile.id, true);
+  auto record = SerializeTileRecord(tile, true, Hash(AsView(rgb)), Hash(AsView(parent_rgb)),
+                       ReferenceChannelHash(detail_channels, false), ReferenceChannelHash(detail_channels, true),
+                       correction_stream, detail_stream);
+  DecodeInfo decoded;
+  Need(DecodeTileRecord(AsView(record), AsView(parent_rgb), tile.id, tile.w, tile.h, &decoded) == rgb,
+       "immediate direct091 reconstruction");
+  Need(correction_stream.coefficient_sha == decoded.low.coefficient_sha &&
+       detail_stream.coefficient_sha == decoded.detail.coefficient_sha,
+       "direct091 reconstructed coefficients differ");
+  return {std::move(record), correction_stream.bytes.size(), detail_stream.bytes.size()};
+}
+
+void EncodeTilesFromRgb(const fs::path& spool, const fs::path& output) {
   Need(fs::is_directory(spool) && !fs::is_symlink(spool), "invalid spool");
   Need(!fs::exists(output) && fs::is_directory(output.parent_path()), "fresh091 output required");
   const auto tiles = ReadIndex(spool, false);
@@ -695,43 +741,19 @@ void EncodeDirect(const fs::path& spool, const fs::path& output) {
        "direct091 output create");
   uint64_t correction_bytes = 0, detail_bytes = 0, record_bytes = 0;
   for (const auto& tile : tiles) {
-    Memory memory;
     const auto rgb = ReadFile(spool / tile.rgb_name, kTile * kTile * 3);
-    const auto anchor = ReadFile(spool / tile.anchor_name, kTile * kTile * 3 / 4);
-    const uint32_t aw = (tile.w + 1) / 2, ah = (tile.h + 1) / 2;
-    auto transformed = ToColor(&memory.mm, AsView(rgb), tile.w, tile.h);
-    Check(jxl::FwdSqueeze(transformed, Squeezes(), nullptr), "direct091 forward");
-    Need(transformed.channel.size() == 9 && transformed.transform.empty(), "direct091 Squeeze layout");
-    auto low = SelectChannels(transformed, {0, 1, 2});
-    const auto reference = ToColor(&memory.mm, AsView(anchor), aw, ah);
-    auto correction = Shape(&memory.mm, tile.w, tile.h, StreamKind::Correction);
-    for (size_t c = 0; c < 3; ++c) {
-      for (size_t y = 0; y < ah; ++y) {
-        for (size_t x = 0; x < aw; ++x) {
-          correction.channel[c].Row(y)[x] = low.channel[c].Row(y)[x] - reference.channel[c].Row(y)[x];
-        }
-      }
-    }
-    const auto lp = EncodeStream(memory, correction, StreamKind::Correction, tile.id);
-    const auto known = PrepareKnown(memory, tile, transformed, low);
-    const auto detail = EncodeKnown(memory, known, tile.id, true);
-    const auto record = Record(tile, true, Hash(AsView(rgb)), Hash(AsView(anchor)),
-                               PrefixHash(known, false), PrefixHash(known, true), lp, detail);
-    DecodeInfo decoded;
-    Need(DecodeTile(AsView(record), AsView(anchor), tile.id, tile.w, tile.h, &decoded) == rgb,
-         "immediate direct091 reconstruction");
-    Need(lp.coefficient_sha == decoded.low.coefficient_sha && detail.coefficient_sha == decoded.detail.coefficient_sha,
-         "direct091 reconstructed coefficients differ");
-    WriteNew(output / Name("conditional/", tile.id), AsView(record));
-    correction_bytes += lp.bytes.size();
-    detail_bytes += detail.bytes.size();
-    record_bytes += record.size();
+    const auto parent_rgb = ReadFile(spool / tile.anchor_name, kTile * kTile * 3 / 4);
+    const auto record = EncodeParentConditionedTile(tile, rgb, parent_rgb);
+    WriteNew(output / Name("conditional/", tile.id), AsView(record.bytes));
+    correction_bytes += record.correction_bytes;
+    detail_bytes += record.detail_bytes;
+    record_bytes += record.bytes.size();
   }
   std::cout << "{\"ok\":true,\"groups\":" << tiles.size() << ",\"correction_bytes\":" << correction_bytes
             << ",\"detail_bytes\":" << detail_bytes << ",\"record_bytes\":" << record_bytes << "}\n";
 }
 
-void Encode(const fs::path& spool,const fs::path& output) {
+void EncodeTilesWithStoredCorrection(const fs::path& spool,const fs::path& output) {
   Need(fs::is_directory(spool) && !fs::is_symlink(spool),"invalid spool");
   Need(!fs::exists(output) && fs::is_directory(output.parent_path()),"fresh091 output required");
   const auto tiles=ReadIndex(spool); Need(fs::create_directory(output),"output create");
@@ -744,18 +766,18 @@ void Encode(const fs::path& spool,const fs::path& output) {
     auto rgb=ReadFile(spool/t.rgb_name,kTile*kTile*3),anchor=ReadFile(spool/t.anchor_name,kTile*kTile*3/4);
     Need(rgb.size()==size_t(t.w)*t.h*3 && anchor.size()==size_t((t.w+1)/2)*((t.h+1)/2)*3,"spool byte dimensions");
     const auto raw_sha=Hash(AsView(rgb)),anchor_sha=Hash(AsView(anchor));
-    auto old=ReadFile(spool/t.old_name,2*kMaxStreamBytes+196); auto lp=OldCorrection(AsView(old),t,raw_sha,anchor_sha);
-    DecodedInfo old_info; auto low=RestoreLow(memory,{AsView(lp.bytes),lp.bits,lp.sha},AsView(anchor),t.id,t.w,t.h,&old_info);
+    auto old=ReadFile(spool/t.old_name,2*kMaxStreamBytes+196); auto lp=ReadStored089Correction(AsView(old),t,raw_sha,anchor_sha);
+    DecodedInfo old_info; auto low=RestoreLowpassCoefficients(memory,{AsView(lp.bytes),lp.bits,lp.sha},AsView(anchor),t.id,t.w,t.h,&old_info);
     lp.coefficient_sha=old_info.coefficient_sha;
     auto transformed=ToColor(&memory.mm,AsView(rgb),t.w,t.h); Check(jxl::FwdSqueeze(transformed,Squeezes(),nullptr),"091 forward");
     Need(CoefficientHash(SelectChannels(transformed,{0,1,2}))==CoefficientHash(low),"old correction does not reconstruct current LL");
-    auto known=PrepareKnown(memory,t,transformed,low);
-    const auto pv=PrefixHash(known,false),ph=PrefixHash(known,true),hf_sha=DetailHash(known);
-    const Stream arms[2]={EncodeKnown(memory,known,t.id,false),EncodeKnown(memory,known,t.id,true)};
+    auto known=PrepareDetailChannels(memory,t,transformed,low);
+    const auto pv=ReferenceChannelHash(known,false),ph=ReferenceChannelHash(known,true),hf_sha=DetailHash(known);
+    const Stream arms[2]={EncodeDetailStream(memory,known,t.id,false),EncodeDetailStream(memory,known,t.id,true)};
     Bytes records[2]; DecodeInfo decoded[2]; std::string paths[2];
     for(size_t mode=0;mode<2;++mode) {
-      records[mode]=Record(t,mode!=0,raw_sha,anchor_sha,pv,ph,lp,arms[mode]);
-      Need(DecodeTile(AsView(records[mode]),AsView(anchor),t.id,t.w,t.h,&decoded[mode])==rgb,"immediate091 reconstruction");
+      records[mode]=SerializeTileRecord(t,mode!=0,raw_sha,anchor_sha,pv,ph,lp,arms[mode]);
+      Need(DecodeTileRecord(AsView(records[mode]),AsView(anchor),t.id,t.w,t.h,&decoded[mode])==rgb,"immediate091 reconstruction");
       paths[mode]=Name(mode?"conditional/":"control/",t.id); WriteNew(output/paths[mode],AsView(records[mode]));
       totals[mode]+=records[mode].size(); hf_totals[mode]+=arms[mode].bytes.size();
     }
@@ -789,7 +811,7 @@ extern "C" ST_NATIVE_EXPORT int st091_decode(const uint8_t* tile,size_t size,con
     uint32_t gid,uint32_t w,uint32_t h,uint8_t* out,size_t out_size,char* error,size_t error_size) {
   return Api(error,error_size,[&] {
     Need(tile && out,"null091 buffer"); Dimensions(w,h); Need(out_size==size_t(w)*h*3,"output size");
-    DecodeInfo info; auto rgb=DecodeTile({tile,size},{anchor,anchor_size},gid,w,h,&info); std::memcpy(out,rgb.data(),rgb.size());
+    DecodeInfo info; auto rgb=DecodeTileRecord({tile,size},{anchor,anchor_size},gid,w,h,&info); std::memcpy(out,rgb.data(),rgb.size());
   });
 }
 int main(int argc,char** argv) {
@@ -797,12 +819,12 @@ int main(int argc,char** argv) {
     stportable::UnsetEnv("ST074_S"); stportable::UnsetEnv("ST074_T");
     if(argc==2 && std::string(argv[1])=="tree_selfcheck") { TreeSelfcheck(); return 0; }
     if(argc==2 && std::string(argv[1])=="context_selfcheck") { ContextSelfcheck(); return 0; }
-    if(argc==4 && std::string(argv[1])=="encode") { Encode(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
-    if(argc==4 && std::string(argv[1])=="encode_direct") { EncodeDirect(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
+    if(argc==4 && std::string(argv[1])=="encode") { EncodeTilesWithStoredCorrection(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
+    if(argc==4 && std::string(argv[1])=="encode_direct") { EncodeTilesFromRgb(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
     if(argc==5 && std::string(argv[1])=="decode") {
-      auto blob=ReadFile(fs::u8path(argv[2]),kMaxRecordBytes); Cursor cursor{AsView(blob)}; auto h=ReadHeader(&cursor);
+      auto blob=ReadFile(fs::u8path(argv[2]),kMaxRecordBytes); Cursor cursor{AsView(blob)}; auto h=ReadTileRecordHeader(&cursor);
       auto anchor=ReadFile(fs::u8path(argv[3]),kTile*kTile*3/4); DecodeInfo info;
-      auto rgb=DecodeTile(AsView(blob),AsView(anchor),h.gid,h.w,h.h,&info); WriteNew(fs::u8path(argv[4]),AsView(rgb));
+      auto rgb=DecodeTileRecord(AsView(blob),AsView(anchor),h.gid,h.w,h.h,&info); WriteNew(fs::u8path(argv[4]),AsView(rgb));
       std::cout<<"{\"decoded_tiles\":1,\"rgb_bytes\":"<<rgb.size()<<"}\n"; return 0;
     }
     throw std::runtime_error("usage: encode spool newout | encode_direct spool newout | decode record anchor newrgb | tree_selfcheck | context_selfcheck");

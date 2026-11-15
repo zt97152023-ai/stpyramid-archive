@@ -1,4 +1,4 @@
-"""Seven fixed HF/L1 profiles over the previous whole-slide champion.
+"""Read and write tile records for the native-pyramid archive format.
 
 091 at native L1 uses level-local IDs, not colliding global L0 identities.
 Only the two candidate axes change; all native L>=2 are independent JXL9.
@@ -104,7 +104,7 @@ def choose(current, candidates):
     return winner
 
 
-def _record_array(catalog, direct, retained, *, fixed_l1=False):
+def _validate_tile_records(catalog, direct, retained, *, fixed_l1=False):
     levels = catalog['levels']; geometry(levels)
     descs = list(base._descriptors(levels))
     arrays = (retained,) if direct is None else (retained, direct)
@@ -130,6 +130,38 @@ def _record_array(catalog, direct, retained, *, fixed_l1=False):
     return descs
 
 
+def _select_l1_record(desc, levels, raw_sha256, current, direct, native_dir, anchored_dir, conditional):
+    record_id = local_id(levels, desc)
+    filename = f'{record_id:06d}.bin'
+    anchored_blob = old._read_bounded(_plain(anchored_dir/'anchored'/filename), old.MAX_PAYLOAD)
+    anchored_view = validate_blob(ANCHORED089, anchored_blob, levels, desc)
+    family = 'conditional' if conditional else 'control'
+    route = CONDITIONAL091 if conditional else CONTROL091
+    detail_blob = old._read_bounded(_plain(native_dir/family/filename), cond.MAX_PAYLOAD)
+    detail_view = validate_blob(route, detail_blob, levels, desc)
+    if (detail_view['raw_sha256'] != raw_sha256
+            or detail_view['raw_sha256'] != anchored_view['raw_sha256']
+            or detail_view['anchor_sha256'] != anchored_view['anchor_sha256']
+            or detail_view['low']['frame'] != anchored_blob[-48-anchored_view['low']['bytes']:]):
+        raise ValueError('L1 source/parent/correction reuse differs')
+    return choose(current, [direct, (ANCHORED089, anchored_blob), (route, detail_blob)]), route
+
+
+def _write_parent_index(path, levels, descriptors, routes):
+    with path.open('xb') as index:
+        index.write(HEADER.pack(AMAGIC, 256, len(descriptors)))
+        for desc in descriptors:
+            parent_id = anchor_layout(levels, desc)[0] if routes[desc[0]] != JXL else NO_ANCHOR
+            index.write(AENTRY.pack(parent_id))
+
+
+def write_tile_archive(catalog, census, records, target, runtime_pins, *, direct_only):
+    """Assemble final tile records without performing candidate selection."""
+    profile = 'direct' if direct_only else 'l1_conditional'
+    return write_package(catalog, census, records if direct_only else None, records,
+                         None, None, None, target, profile, runtime_pins)
+
+
 def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
                   oldL1native, target, profile, runtime_pins):
     """Fresh complete package; oldL1native is the P native root (anchored/...).
@@ -139,24 +171,25 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
     With no direct candidates, retained or l1_conditional may supply final records.
     The existing l1_conditional reader gets the final L1 route from the index.
     """
-    high, low = axes(profile)
-    fixed_l1 = direct is None and profile == 'l1_conditional'
-    if direct is None and profile != 'retained' and not fixed_l1:
+    select_hf, l1_candidate_mode = axes(profile)
+    use_supplied_l1_records = direct is None and profile == 'l1_conditional'
+    if direct is None and profile != 'retained' and not use_supplied_l1_records:
         raise ValueError('This profile requires direct candidates')
-    if fixed_l1 and any(value is not None for value in (hf_records, l1_native_dir, oldL1native)):
+    if use_supplied_l1_records and any(value is not None for value in (hf_records, l1_native_dir, oldL1native)):
         raise ValueError('Fixed L1 packaging takes only final selected records')
-    levels = catalog['levels']; descs = _record_array(catalog, direct, retained, fixed_l1=fixed_l1)
+    levels = catalog['levels']
+    descs = _validate_tile_records(catalog, direct, retained, fixed_l1=use_supplied_l1_records)
     n0, n01 = starts(levels)[1:3]
     if set(runtime_pins) != {'089', '091', 'hf'} or any(not isinstance(v, dict) or not v for v in runtime_pins.values()):
         raise ValueError('Three runtime pin maps required')
-    if high and (not isinstance(hf_records, dict) or any(type(k) is not int for k in hf_records) or set(hf_records) != set(range(n0))):
+    if select_hf and (not isinstance(hf_records, dict) or any(type(k) is not int for k in hf_records) or set(hf_records) != set(range(n0))):
         raise ValueError('Complete global L0 HF candidate map required')
     census = _plain(census, directory=True)
     metadata = _plain(census/'source.json'); expected = catalog['files']['source.json']
     if metadata.stat().st_size != expected['bytes'] or metadata.stat().st_size > scan.MAX_SOURCE_METADATA_BYTES or sha256(metadata) != expected['sha256']:
         raise ValueError('Frozen source metadata changed')
     inputs = [census]
-    if low is not None and not fixed_l1:
+    if l1_candidate_mode is not None and not use_supplied_l1_records:
         l1_native_dir, oldL1native = _plain(l1_native_dir, directory=True), _plain(oldL1native, directory=True)
         inputs.extend((l1_native_dir, oldL1native))
     target = _plain(target)
@@ -168,9 +201,9 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
         with (target/'images.bank').open('xb') as bank, (target/'images.index').open('xb') as index:
             index.write(HEADER.pack(MAGIC, 256, len(descs)))
             for desc in descs:
-                gid, level, x, y, w, h = desc
+                gid, level = desc[:2]
                 selected = direct[gid] if profile == 'direct' else retained[gid]
-                if level == 0 and high:
+                if level == 0 and select_hf:
                     candidate = hf_records[gid]
                     if not isinstance(candidate, (tuple, list)) or len(candidate) != 2 or candidate[0] != HF:
                         raise ValueError('HF map requires route6 complete records')
@@ -179,31 +212,21 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
                         raise ValueError('HF candidate source binding')
                     selected = choose(selected, [candidate])
                     if selected[0] == HF: selected_hf.append(gid)
-                if level == 1 and low is not None and not fixed_l1:
-                    rid = local_id(levels, desc)
-                    oldblob = old._read_bounded(_plain(oldL1native/'anchored'/f'{rid:06d}.bin'), old.MAX_PAYLOAD)
-                    oldview = validate_blob(ANCHORED089, oldblob, levels, desc)
-                    family = 'conditional' if low else 'control'
-                    route = CONDITIONAL091 if low else CONTROL091
-                    blob = old._read_bounded(_plain(l1_native_dir/family/f'{rid:06d}.bin'), cond.MAX_PAYLOAD)
-                    view = validate_blob(route, blob, levels, desc)
-                    if (view['raw_sha256'] != catalog['tiles'][gid]['native_sha256']
-                            or view['raw_sha256'] != oldview['raw_sha256']
-                            or view['anchor_sha256'] != oldview['anchor_sha256']
-                            or view['low']['frame'] != oldblob[-48-oldview['low']['bytes']:]):
-                        raise ValueError('L1 source/parent/correction reuse differs')
-                    selected = choose(selected, [direct[gid], (ANCHORED089, oldblob), (route, blob)])
-                    if selected[0] == route: selected_l1.append(gid)
+                if level == 1 and l1_candidate_mode is not None and not use_supplied_l1_records:
+                    selected, candidate_route = _select_l1_record(
+                        desc, levels, catalog['tiles'][gid]['native_sha256'], selected, direct[gid],
+                        l1_native_dir, oldL1native, l1_candidate_mode
+                    )
+                    if selected[0] == candidate_route:
+                        selected_l1.append(gid)
                 route, blob = selected
-                if fixed_l1 and level == 1 and route == CONDITIONAL091:
+                if use_supplied_l1_records and level == 1 and route == CONDITIONAL091:
                     selected_l1.append(gid)
                 validate_blob(route, blob, levels, desc)
                 routes.append(route)
-                index.write(ENTRY.pack(bank.tell(), len(blob), route, zlib.crc32(blob))); bank.write(blob)
-        with (target/'anchors.index').open('xb') as handle:
-            handle.write(HEADER.pack(AMAGIC, 256, n01))
-            for desc in descs[:n01]:
-                handle.write(AENTRY.pack(anchor_layout(levels, desc)[0] if routes[desc[0]] != JXL else NO_ANCHOR))
+                index.write(ENTRY.pack(bank.tell(), len(blob), route, zlib.crc32(blob)))
+                bank.write(blob)
+        _write_parent_index(target/'anchors.index', levels, descs[:n01], routes)
         shutil.copyfile(metadata, target/'source.json')
         if sha256(target/'source.json') != expected['sha256']: raise ValueError('Copied metadata changed')
         counts = {str(route): routes.count(route) for route in (JXL, ANCHORED089, CONTROL091, CONDITIONAL091, HF)}
@@ -211,7 +234,7 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
                     'image': {'path': 'images.bank', 'index': 'images.index', 'anchor_index': 'anchors.index',
                               'source_metadata': 'source.json', 'levels': copy.deepcopy(levels)},
                     'retained_routes': [
-                        JXL if fixed_l1 and desc[1] == 1 and record[0] == CONDITIONAL091 else record[0]
+                        JXL if use_supplied_l1_records and desc[1] == 1 and record[0] == CONDITIONAL091 else record[0]
                         for desc, record in zip(descs, retained)
                     ], 'routes': counts,
                     'files': {name: {'bytes': (target/name).stat().st_size, 'sha256': sha256(target/name)} for name in sorted(MEMBERS)},
@@ -294,7 +317,13 @@ class Reader(prior.Reader):
     def _setup(self):
         if self._closed: raise ValueError('Closed HF/L1 reader')
         if self._entries is not None: return
-        n, targets = len(self._descriptors), self._level_start[2]
+        entries = self._read_tile_index()
+        self._validate_parent_index(entries)
+        self._entries = entries
+        self._bank = MeteredFile(_plain(self.root/'images.bank'))
+
+    def _read_tile_index(self):
+        n = len(self._descriptors)
         data = self._member('images.index', HEADER.size+n*ENTRY.size)
         if len(data) != HEADER.size+n*ENTRY.size or HEADER.unpack_from(data) != (MAGIC, 256, n): raise ValueError('Image index header/coverage')
         self.index_read_bytes += len(data)
@@ -306,6 +335,10 @@ class Reader(prior.Reader):
                     or data[HEADER.size+gid*ENTRY.size+13:HEADER.size+gid*ENTRY.size+16] != b'\0'*3): raise ValueError('Route/span/reserved field')
             end += length; counts[str(route)] += 1
         if end != self.manifest['files']['images.bank']['bytes'] or counts != self.manifest.get('routes'): raise ValueError('Bank coverage/route counts')
+        return entries
+
+    def _validate_parent_index(self, entries):
+        targets = self._level_start[2]
         anchors = self._member('anchors.index', HEADER.size+targets*AENTRY.size)
         if len(anchors) != HEADER.size+targets*AENTRY.size or HEADER.unpack_from(anchors) != (AMAGIC, 256, targets): raise ValueError('Anchor index header/coverage')
         self.anchor_index_read_bytes += len(anchors)
@@ -315,7 +348,55 @@ class Reader(prior.Reader):
             expected = anchor_layout(self.manifest['image']['levels'], desc)[0] if entries[gid][2] != JXL else NO_ANCHOR
             if aid != expected: raise ValueError('Anchor identity')
             if aid != NO_ANCHOR and (self._descriptors[aid][1] != level+1 or (level == 1 and entries[aid][2] != JXL)): raise ValueError('Reference DAG')
-        self._entries = entries; self._bank = MeteredFile(_plain(self.root/'images.bank'))
+
+    def _read_tile_record(self, gid):
+        offset, length, route, crc = self._entries[gid]
+        self._bank.seek(offset)
+        blob = self._bank.read(length)
+        if len(blob) != length or zlib.crc32(blob) != crc:
+            raise ValueError('Tile integrity')
+        return route, blob
+
+    def _get_native_decoder(self, route):
+        pins = self.manifest['build']['native_runtimes']
+        if route == ANCHORED089:
+            if self._native089 is None:
+                started = time.perf_counter()
+                self._native089 = old.NativeRuntime(self._runtime089, pins['089'])
+                self.runtime_load_seconds += time.perf_counter() - started
+            self.native089_tiles_decoded += 1
+            return self._native089
+        if route in (CONTROL091, CONDITIONAL091):
+            if self._native091 is None:
+                started = time.perf_counter()
+                self._native091 = cond.NativeRuntime(self._runtime091, pins['091'])
+                self.runtime_load_seconds += time.perf_counter() - started
+            self.native091_tiles_decoded += 1
+            return self._native091
+        if self._native_hf is None:
+            started = time.perf_counter()
+            self._native_hf = _hf().NativeRuntime(self._runtime_hf, pins['hf'])
+            self.runtime_load_seconds += time.perf_counter() - started
+        self.native_hf_tiles_decoded += 1
+        return self._native_hf
+
+    def _decode_referenced_tile(self, route, blob, desc, cache, cache_state, depth, scan_cache):
+        levels = self.manifest['image']['levels']
+        validate_blob(route, blob, levels, desc)
+        parent_id, ys, xs = anchor_layout(levels, desc)
+        self.anchor_requests += 1
+        self.anchor_cache_hits += ((cache is not None and parent_id in cache)
+                                   or (scan_cache is not None and parent_id in scan_cache.tiles))
+        parent = self._tile(parent_id, cache, cache_state, depth+1, scan_cache=scan_cache)
+        anchor = np.ascontiguousarray(parent[ys[:, None], xs[None, :]])
+        decoder = self._get_native_decoder(route)
+        record_id = local_id(levels, desc)
+        w, h = desc[4:]
+        started = time.perf_counter()
+        pixels = decoder.decode(blob, w, h, record_id, anchor)
+        self.native_decode_seconds += time.perf_counter() - started
+        self.native_tiles_decoded += 1
+        return pixels
 
     def _tile(self, gid, cache=None, cache_state=None, depth=0, *, scan_cache=None):
         import imagecodecs
@@ -329,38 +410,17 @@ class Reader(prior.Reader):
             if pixels is not None:
                 self.cache_hits += 1
                 return pixels
-        offset, length, route, crc = self._entries[gid]
-        self._bank.seek(offset); blob = self._bank.read(length)
-        if len(blob) != length or zlib.crc32(blob) != crc: raise ValueError('Tile integrity')
-        desc = self._descriptors[gid]; w, h = desc[4:]
+        route, blob = self._read_tile_record(gid)
+        desc = self._descriptors[gid]
+        w, h = desc[4:]
         if depth:
-            self.reference_tiles_decoded += 1; self.reference_pixels += w*h; self.reference_bank_bytes += length
+            self.reference_tiles_decoded += 1
+            self.reference_pixels += w*h
+            self.reference_bank_bytes += len(blob)
         if route == JXL:
             pixels = imagecodecs.jpegxl_decode(blob, numthreads=1, out=np.empty((h, w, 3), np.uint8)); self.jxl_tiles_decoded += 1
         else:
-            validate_blob(route, blob, self.manifest['image']['levels'], desc)
-            aid, ys, xs = anchor_layout(self.manifest['image']['levels'], desc)
-            self.anchor_requests += 1
-            self.anchor_cache_hits += ((cache is not None and aid in cache)
-                                       or (scan_cache is not None and aid in scan_cache.tiles))
-            parent = self._tile(aid, cache, cache_state, depth+1, scan_cache=scan_cache)
-            anchor = np.ascontiguousarray(parent[ys[:, None], xs[None, :]])
-            pins = self.manifest['build']['native_runtimes']
-            if route == ANCHORED089:
-                if self._native089 is None:
-                    then = time.perf_counter(); self._native089 = old.NativeRuntime(self._runtime089, pins['089']); self.runtime_load_seconds += time.perf_counter()-then
-                native = self._native089; self.native089_tiles_decoded += 1
-            elif route in (CONTROL091, CONDITIONAL091):
-                if self._native091 is None:
-                    then = time.perf_counter(); self._native091 = cond.NativeRuntime(self._runtime091, pins['091']); self.runtime_load_seconds += time.perf_counter()-then
-                native = self._native091; self.native091_tiles_decoded += 1
-            else:
-                if self._native_hf is None:
-                    then = time.perf_counter(); self._native_hf = _hf().NativeRuntime(self._runtime_hf, pins['hf']); self.runtime_load_seconds += time.perf_counter()-then
-                native = self._native_hf; self.native_hf_tiles_decoded += 1
-            rid = local_id(self.manifest['image']['levels'], desc)
-            then = time.perf_counter(); pixels = native.decode(blob, w, h, rid, anchor)
-            self.native_decode_seconds += time.perf_counter()-then; self.native_tiles_decoded += 1
+            pixels = self._decode_referenced_tile(route, blob, desc, cache, cache_state, depth, scan_cache)
         if pixels.shape != (h, w, 3) or pixels.dtype != np.uint8: raise ValueError('Decoded native shape/type')
         self.decoded_pixels += w*h
         if cache_state is not None:

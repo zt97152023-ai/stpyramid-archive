@@ -99,10 +99,8 @@ def encode_native_pyramid(source, package, work, method="fused_l0_l1", on_stage=
         census, catalog, conditional_record_paths
     ))
     is_direct = method == "direct9"
-    # The existing container uses this profile for fixed records with L1 parent links.
-    profile = "direct" if is_direct else "l1_conditional"
-    timed("assemble_image_package", lambda: archive.write_package(
-        catalog, census, records if is_direct else None, records, None, None, None, package, profile, pins
+    timed("assemble_image_package", lambda: archive.write_tile_archive(
+        catalog, census, records, package, pins, direct_only=is_direct
     ))
     result = {
         "method": method, "threads": 1,

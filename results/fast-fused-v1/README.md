@@ -21,9 +21,11 @@ python -B build_full.py restore .\runs\slide_image .\runs\restored
 
 ## 代码入口
 
-- [pyramid_image_archive.py](../../pyramid_image_archive.py) 管理扫描、图块选路、记录收集和组包。`build_full.py` 提供原有命令入口。
-- [native_tile_encoder.py](../../native_tile_encoder.py) 生成目标与父层参考的原生输入，并启动 C++ 编码器。归档收集条件记录时，使用实际送入编码器的图块 ID。
-- [encode_image.py](../../encode_image.py) 用于早期 L0 单层实验。十张整片的口径由 [cohort.py](../../cohort.py) 定义，核验和读回计时由该脚本调用归档读取器完成。
+- **选路与准备输入。** `build_full.py` 将编码交给 `encode_native_pyramid`。它按原生层扫描 TIFF，给 L0 和 L1 的非纯色图块分配条件编码，其余图块采用直接 JPEG XL e9。`write_tile_inputs` 写出目标 RGB、从原生父层抽取的参考 RGB 及图块局部编号。[pyramid_image_archive.py](../../pyramid_image_archive.py) · [native_tile_encoder.py](../../native_tile_encoder.py)
+- **生成条件记录。** C++ 命令 `encode_direct` 进入 `EncodeTilesFromRgb`，后者逐块调用 `EncodeParentConditionedTile`。目标块经可逆颜色变换和 Squeeze 得到低频与细节。`ComputeLowpassCorrection` 计算目标低频系数与变换后父层参考之间的差。`EncodeDetailStream` 利用重建时可得到的低频上下文编码细节。`SerializeTileRecord` 封装两段载荷和校验信息，编码器随即试解并校验 RGB。旧命令 `encode` 进入 `EncodeTilesWithStoredCorrection`，从 089 记录读取已编码的低频校正，继续生成旧实验所需的 control 和 conditional 记录。[slide_jxl091.cc](../../native/091/slide_jxl091.cc)
+- **组包。** `write_tile_archive` 接收快速版已定路线的记录。旧候选搜索继续通过 `write_package` 按完整记录字节数选路。组包器依图块顺序拼接 `images.bank`，在 `images.index` 写入偏移、长度、路线和 CRC，在 `anchors.index` 写入父块编号，并保存 `source.json` 与 `manifest.json`。清单中的 `build.wrapper_sha256` 记录实际组包源码的 SHA-256。[joint_next.py](../../codec/joint_next.py)
+- **索引、读取和恢复。** Reader 先检查图块跨度、路线与父层依赖。`_read_tile_record` 按索引读取码流并检查 CRC。`_decode_referenced_tile` 递归取得所需父块，再调用归档绑定的原生库。091 的 `DecodeTileRecord` 加回低频校正，按依赖顺序恢复细节，经逆 Squeeze 和逆颜色变换还原 RGB，并校验像素哈希。`roi` 只读取相交图块和所需父块，`restore` 按原生层逐条带写出 TIFF。[joint_next.py](../../codec/joint_next.py) · [slide_jxl091.cc](../../native/091/slide_jxl091.cc)
+- **旧入口与样本口径。** `encode_image.py` 保留早期 L0 单层实验入口。十张整片的样本与计时口径由 `cohort.py` 定义。[encode_image.py](../../encode_image.py) · [cohort.py](../../cohort.py)
 
 ## 从源码构建
 
@@ -34,7 +36,9 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_M
 cmake --build build --parallel 2 --target slide_jxl091
 ```
 
-生成文件为 `build/bin/slide_jxl091.exe`。如需替换本地测试用编码器，复制到 `bin/slide_jxl091.exe`。已有归档读取时使用它们绑定的运行时。独立源码重建通过了 [L0、L1 条件记录的字节一致性检查](native_clean_build.json)。本版本的命令行与运行时验证在 Windows 上完成。
+生成文件为 `build/bin/slide_jxl091.exe`。快速版调用 `bin/slide_jxl091.exe` 编码。读取时使用 `runtime-windows-source/` 中与归档清单匹配的运行时。随附的 [L0、L1 条件记录字节一致性检查](native_clean_build.json) 记录了 v1 封存时的独立源码重建。命令行与运行时验证在 Windows 上完成。
+
+本次重构沿用混合组织、全纯色和奇数边缘三份 TIFF。快速融合与直接 JPEG XL e9 各产生三份归档，四个数据成员均逐字节匹配重构前的输出，清单只更新组包源码哈希，归档总字节数一致。新旧入口交叉读取时，各原生层的像素哈希一致。重编的 C++ 解码命令和 DLL 分别还原了其中 18 条旧条件记录。此回归覆盖三份测试 TIFF，十张整片结果对应下方封存版本的实验记录。
 
 ## 十张整片验证
 
