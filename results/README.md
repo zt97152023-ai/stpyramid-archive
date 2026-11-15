@@ -2,6 +2,8 @@
 
 The machine-readable ledger separates historical archive measurements, mechanism controls and the release smoke test. The code release did not regenerate the seven-slide benchmark.
 
+The [integrated refactor parity report](integrated-refactor-20261116/README.md) records exact archive-member comparisons, cross-version reads and Count and image restoration checks.
+
 ## Image package
 
 - NCBI466, six native levels and 1,365 tiles. Same-container direct JXL e9 used 30,305,985 B and the final conditional pyramid used 27,147,235 B, a 10.42% reduction.
