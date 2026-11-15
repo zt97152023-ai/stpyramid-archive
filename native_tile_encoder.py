@@ -17,6 +17,7 @@ RUNTIME = ROOT / "runtime-windows-source"
 RUNTIMES = tuple(RUNTIME / name for name in ("089", "091", "hf"))
 sys.path.insert(0, str(ROOT / "codec"))
 import joint_next as archive
+from st262_controls import native_command
 from stbaseline import slide_redundancy as base, slide_redundancy_scan as scan
 
 
@@ -61,8 +62,9 @@ def _child_cpu_seconds(process):
 
 
 def run_native_encoder(exe, mode, spool, output, timeout=240):
+    command, directory = native_command(exe, mode, spool, output)
     with output.with_suffix(".log").open("xb") as log:
-        with subprocess.Popen([str(exe), mode, str(spool), str(output)], stdout=log, stderr=subprocess.STDOUT,
+        with subprocess.Popen(command, cwd=directory, stdout=log, stderr=subprocess.STDOUT,
                               creationflags=subprocess.CREATE_NO_WINDOW) as process:
             try:
                 status = process.wait(timeout=timeout)

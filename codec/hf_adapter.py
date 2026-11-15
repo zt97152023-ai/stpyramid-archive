@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import time
 import zlib
-from st262_controls import assigned_cpu, remaining_seconds
+from st262_controls import assigned_cpu, native_command, remaining_seconds
 import numpy as np
 
 from stbaseline import slide_redundancy as base
@@ -120,9 +120,11 @@ def native_encode(runtime, number, spool, target):
     for name in THREAD_VARS:
         env[name] = '1'
     stdout, stderr = target.parent / (target.name + '.stdout.txt'), target.parent / (target.name + '.stderr.txt')
+    executable = runtime / ('slide_hf1.exe' if number == 'hf1' else 'slide_jxl089.exe')
+    command, directory = native_command(executable, 'encode', spool, target)
     started = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
-        result = subprocess.run([str(runtime / ('slide_hf1.exe' if number == 'hf1' else 'slide_jxl089.exe')), 'encode', str(spool), str(target)],
+        result = subprocess.run(command, cwd=directory,
                                 stdout=out, stderr=err, env=env, timeout=remaining_seconds(),
                                 creationflags=subprocess.CREATE_NO_WINDOW)
     if result.returncode:

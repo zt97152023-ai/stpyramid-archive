@@ -63,7 +63,8 @@ def write_count_component(counts, metadata, catalog, source_identities, output):
     })
 
 
-def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, cpu=None, timeout=14400):
+def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, cpu=None, timeout=14400,
+                   on_stage=None):
     """Build both modalities, verify the integrated package, and publish the verified directory."""
     _configure_worker(cpu, timeout)
     import container_compare as archive
@@ -95,11 +96,16 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
 
     def timed(name, operation):
         remaining_seconds()
+        if on_stage is not None:
+            on_stage({"begin": name})
         started = time.perf_counter()
         try:
             return operation()
         finally:
-            events.append({"name": name, "seconds": time.perf_counter() - started})
+            elapsed = time.perf_counter() - started
+            events.append({"name": name, "seconds": elapsed})
+            if on_stage is not None:
+                on_stage({"end": name, "seconds": elapsed})
 
     try:
         identities = {key: {"bytes": path.stat().st_size, "sha256": sha256(path)}

@@ -12,7 +12,7 @@ from pathlib import Path
 import subprocess
 import time
 import zlib
-from st262_controls import assigned_cpu, remaining_seconds
+from st262_controls import assigned_cpu, native_command, remaining_seconds
 
 from stbaseline import slide_redundancy as base
 from stbaseline import slide_redundancy_scan as scan
@@ -66,9 +66,10 @@ def native_encode(runtime, number, spool, target):
     for name in THREAD_VARS:
         env[name] = '1'
     stdout, stderr = target.parent / (target.name + '.stdout.txt'), target.parent / (target.name + '.stderr.txt')
+    command, directory = native_command(runtime / f'slide_jxl{number}.exe', 'encode', spool, target)
     started = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
-        result = subprocess.run([str(runtime / ('slide_jxl' + number + '.exe')), 'encode', str(spool), str(target)],
+        result = subprocess.run(command, cwd=directory,
                                 stdout=out, stderr=err, env=env, timeout=remaining_seconds(),
                                 creationflags=subprocess.CREATE_NO_WINDOW)
     if result.returncode:

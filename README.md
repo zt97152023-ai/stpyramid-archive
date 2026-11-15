@@ -22,6 +22,8 @@ Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its s
 
 ## Windows quick start
 
+The [desktop app](desktop/使用说明.txt) runs the integrated Count and image workflow or the fast image-only workflow from a queue. Use `python desktop_app.py` from a qualified Windows environment, or build the portable app with `python desktop/build_portable.py --output runs/STPyramid-Desktop --zip` after installing the pinned dependencies and Count sources. Open `STPyramid.exe` from the extracted directory.
+
 Use 64-bit CPython 3.12. The local Windows delivery includes `runtime-windows`. For a source checkout, stage runtime binaries from a local CMake/Ninja build as shown below.
 
 ```powershell

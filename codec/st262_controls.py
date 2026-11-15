@@ -26,6 +26,17 @@ def remaining_seconds():
     return remaining
 
 
+def native_command(executable, mode, spool, output):
+    if str(spool).isascii() and str(output).isascii():
+        return [str(executable), mode, str(spool), str(output)], None
+    # Frozen executables read narrow argv. CreateProcessW supplies the working
+    # directory, while the private spool and output use relative ASCII names.
+    working_directory = Path(output).absolute().parent
+    spool_arg = os.path.relpath(spool, working_directory)
+    output_arg = os.path.join(os.curdir, Path(output).name)
+    return [str(Path(executable).absolute()), mode, spool_arg, output_arg], working_directory
+
+
 def plain_directory(value):
     path = Path(value).absolute()
     for item in (path, *path.parents):
