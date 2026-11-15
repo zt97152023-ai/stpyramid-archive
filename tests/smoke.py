@@ -96,6 +96,25 @@ def run(runtime, output):
     np.testing.assert_array_equal(np.load(output / "image.npy"), levels[0][2:19, 1:14])
     with np.load(output / "count.npz", allow_pickle=False) as result:
         np.testing.assert_array_equal(result["counts"], counts[:1, [0, 3]])
+    from container_compare import IntegratedArchive
+    from joint_next import Reader
+
+    # The upper X edge excludes the spot at x=15. L1 must cover the L0 box,
+    # including the final partial pixel in X and Y.
+    bbox = [0, 2, 15, 51]
+    with IntegratedArchive(package) as reader:
+        result = reader.region(bbox, level=1, genes=[3, 1, 2], modalities=("counts",))
+        np.testing.assert_array_equal(result["counts"], counts[:1, [3, 1, 2]])
+        np.testing.assert_array_equal(result["spot_ids"], ["spot-1"])
+        np.testing.assert_array_equal(result["gene_positions"], [3, 1, 2])
+        np.testing.assert_array_equal(result["level0_xy"], [[1.25, 3]])
+        assert reader.metrics()["image"] is None
+    runtimes = tuple(runtime / name for name in ("089", "091", "hf"))
+    with IntegratedArchive(package, image_factory=lambda path: Reader(path, *runtimes)) as reader:
+        result = reader.region(bbox, level=1, genes=[3, 1, 2])
+        np.testing.assert_array_equal(result["image_bbox"], [0, 1, 8, 26])
+        np.testing.assert_array_equal(result["image"], middle[1:26, :8])
+        np.testing.assert_array_equal(result["counts"], counts[:1, [3, 1, 2]])
     corrupted = output / "corrupted"
     shutil.copytree(package, corrupted)
     with (corrupted / "image" / "images.bank").open("r+b") as handle:
@@ -106,7 +125,7 @@ def run(runtime, output):
     assert rejected.returncode != 0 and "mismatch" in rejected.stderr.lower(), rejected.stderr
     print(json.dumps({"status": "PASS", "levels": len(levels), "count_shape": list(counts.shape), "image_routes": routes,
                       "verified": ["full_rgb", "tiff_tags", "typed_h5ad", "metadata", "image_roi",
-                                   "count_subset", "091_and_hf_native_decode", "altered_member_rejected"]}))
+                                   "count_subset", "aligned_region", "091_and_hf_native_decode", "altered_member_rejected"]}))
 
 
 if __name__ == "__main__":

@@ -105,64 +105,51 @@ def _shape(shape):
         raise ValueError("Count shape exceeds qualified bound")
 
 
-def pack_integrated(count_source, image_source, output, *, count_kind,
-                    science_override=None, expression_override=None):
-    """Create a fresh package by verified copies; never encode Count or image.
-
-    Overrides are caller-prepared, fixed-policy HDF5 files. The expression
-    override must match the source semantic digest. The science override must
-    contain an empty X template; full semantics are checked after restoration.
-    """
-    if count_kind not in COUNT_KINDS:
-        raise ValueError("Unknown Count component")
-    cr, ir = _plain(count_source), _plain(image_source)
-    if not cr.is_dir() or not ir.is_dir() or any((cr / n).exists() for n in ("INCOMPLETE", "failure.json")):
-        raise ValueError("Complete component directories required")
-    cm, im = _json(cr / "manifest.json"), _json(ir / "manifest.json")
-    _shape(cm["expression"]["shape"])
+def _validate_component_binding(count_manifest, image_manifest, image_root):
+    _shape(count_manifest["expression"]["shape"])
     for key in ("h5ad", "wsi"):
-        _identity(cm["sources"][key])
-    if (not qualified_image(im.get("format"), im.get("profile"))
-            or im.get("image_only") is not True):
+        _identity(count_manifest["sources"][key])
+    if (not qualified_image(image_manifest.get("format"), image_manifest.get("profile"))
+            or image_manifest.get("image_only") is not True):
         raise ValueError("Unsupported qualified image package")
-    if set(im["files"]) | {"manifest.json"} != IMAGE_FILES:
+    if set(image_manifest["files"]) | {"manifest.json"} != IMAGE_FILES:
         raise ValueError("Unexpected image component members")
-    if {p.name for p in ir.iterdir()} != IMAGE_FILES:
+    if {p.name for p in image_root.iterdir()} != IMAGE_FILES:
         raise ValueError("Unexpected physical image members")
-    for name, desc in im["files"].items():
-        _checked(ir / _name(name), desc)
-    sm = _json(ir / "source.json")
-    source_sha = cm["sources"]["wsi"]["sha256"]
+    for name, desc in image_manifest["files"].items():
+        _checked(image_root / _name(name), desc)
+    image_source = _json(image_root / "source.json")
+    source_sha = count_manifest["sources"]["wsi"]["sha256"]
     if (not isinstance(source_sha, str) or HEX.fullmatch(source_sha) is None
-            or sm.get("whole_file_sha256") != source_sha
-            or sm.get("identity", {}).get("whole_file_sha256") != source_sha):
+            or image_source.get("whole_file_sha256") != source_sha
+            or image_source.get("identity", {}).get("whole_file_sha256") != source_sha):
         raise ValueError("Count and image source identities differ")
-    old_levels, levels = cm["image"]["levels"], im["image"]["levels"]
-    if len(old_levels) != len(levels) or any(
+    count_levels, image_levels = count_manifest["image"]["levels"], image_manifest["image"]["levels"]
+    if len(count_levels) != len(image_levels) or any(
             any(a.get(k) != b.get(k) for k in ("level", "shape", "dtype", "pixel_sha256"))
-            for a, b in zip(old_levels, levels)):
+            for a, b in zip(count_levels, image_levels)):
         raise ValueError("Count and image native geometry/identity differ")
-    inputs = [cr, ir]
-    overrides = [p for p in (science_override, expression_override) if p is not None]
-    inputs.extend(_plain(p) for p in overrides)
-    out = _fresh(output, *inputs)
+    return source_sha, image_levels
+
+
+def _select_count_members(root, manifest, count_kind, science_override, expression_override):
     selected = {}
     if count_kind == "hdf5_gzip9":
         if science_override is not None:
             # The full H5AD already contains metadata; never copy it twice.
             _plain(science_override)
         source = _plain(expression_override) if expression_override else _checked(
-            cr / cm["expression"]["path"], cm["files"][cm["expression"]["path"]])
-        if h5_digest(source) != cm["expression"]["semantic_sha256"]:
+            root / manifest["expression"]["path"], manifest["files"][manifest["expression"]["path"]])
+        if h5_digest(source) != manifest["expression"]["semantic_sha256"]:
             raise ValueError("HDF5 override changed scientific semantics")
         with h5py.File(source, "r") as handle:
-            count_schema(handle, cm["mapping"]["spatial_key"])
+            count_schema(handle, manifest["mapping"]["spatial_key"])
         selected["expression.h5ad"] = source
         expression_path = "expression.h5ad"
     else:
-        if cm.get("method") != count_kind:
+        if manifest.get("method") != count_kind:
             raise ValueError("Count source method differs")
-        science = _plain(science_override) if science_override else _checked(cr / "science.h5", cm["files"]["science.h5"])
+        science = _plain(science_override) if science_override else _checked(root / "science.h5", manifest["files"]["science.h5"])
         with h5py.File(science, "r") as handle:
             x = handle["X"]
             if isinstance(x, h5py.Dataset):
@@ -174,12 +161,12 @@ def pack_integrated(count_source, image_source, output, *, count_kind,
         selected["science.h5"] = science
         expression_path = "science.h5"
         names = ({"counts.bank", "counts.index.json"} if count_kind == "Shared_local" else
-                 {n for n in cm["files"] if n.startswith("counts.bp/")})
+                 {n for n in manifest["files"] if n.startswith("counts.bp/")})
         if not names:
             raise ValueError("Missing Count payload")
         for name in names:
-            selected[_name(name)] = _checked(cr / name, cm["files"][name])
-    attachments = cm.get("attachments", [])
+            selected[_name(name)] = _checked(root / name, manifest["files"][name])
+    attachments = manifest.get("attachments", [])
     if (not isinstance(attachments, list) or len(set(attachments)) != len(attachments)
             or any(_name(n) != Path(n).name or n in selected or n in IMAGE_FILES
                    or n in {"INCOMPLETE", "failure.json", "native_levels.tif", "expression.h5ad", "source_metadata.json", "package_manifest.json"}
@@ -188,35 +175,59 @@ def pack_integrated(count_source, image_source, output, *, count_kind,
     if MAP_NAME in attachments:
         raise ValueError("Position map must be generated from the scientific axis")
     for name in attachments:
-        selected[name] = _checked(cr / name, cm["files"][name])
-    out.mkdir(parents=True)
-    (out / "INCOMPLETE").write_text("Integrated package assembly\n", encoding="utf8")
+        selected[name] = _checked(root / name, manifest["files"][name])
+    return selected, expression_path, attachments
+
+
+def pack_integrated(count_source, image_source, output, *, count_kind,
+                    science_override=None, expression_override=None):
+    """Create a fresh package by verified copies; never encode Count or image.
+
+    Overrides are caller-prepared, fixed-policy HDF5 files. The expression
+    override must match the source semantic digest. The science override must
+    contain an empty X template; full semantics are checked after restoration.
+    """
+    if count_kind not in COUNT_KINDS:
+        raise ValueError("Unknown Count component")
+    count_root, image_root = _plain(count_source), _plain(image_source)
+    if not count_root.is_dir() or not image_root.is_dir() or any((count_root / n).exists() for n in ("INCOMPLETE", "failure.json")):
+        raise ValueError("Complete component directories required")
+    count_manifest, image_manifest = _json(count_root / "manifest.json"), _json(image_root / "manifest.json")
+    source_sha256, levels = _validate_component_binding(count_manifest, image_manifest, image_root)
+    inputs = [count_root, image_root]
+    overrides = [p for p in (science_override, expression_override) if p is not None]
+    inputs.extend(_plain(p) for p in overrides)
+    target = _fresh(output, *inputs)
+    count_members, expression_path, attachments = _select_count_members(
+        count_root, count_manifest, count_kind, science_override, expression_override)
+    target.mkdir(parents=True)
+    (target / "INCOMPLETE").write_text("Integrated package assembly\n", encoding="utf8")
     try:
-        for name, source in sorted(selected.items()):
-            _copy(source, out / "count" / name)
+        for name, source in sorted(count_members.items()):
+            _copy(source, target / "count" / name)
         for name in sorted(IMAGE_FILES):
-            _copy(ir / name, out / "image" / name)
-        with h5py.File(out / "count" / expression_path, "r") as scientific:
-            write_map(out / "count" / MAP_NAME, text_ids(scientific["var"]))
+            _copy(image_root / name, target / "image" / name)
+        with h5py.File(target / "count" / expression_path, "r") as scientific:
+            write_map(target / "count" / MAP_NAME, text_ids(scientific["var"]))
         attachments = list(attachments) + [MAP_NAME]
-        expression = copy.deepcopy(cm["expression"])
+        expression = copy.deepcopy(count_manifest["expression"])
         expression["path"] = expression_path
         manifest = {"format": FORMAT, "count": {"kind": count_kind, "expression": expression,
-                    "attachments": list(attachments)}, "mapping": copy.deepcopy(cm["mapping"]),
-                    "sources": copy.deepcopy(cm["sources"]),
-                    "image": {"format": im["format"], "profile": im["profile"],
-                              "levels": copy.deepcopy(levels), "source_sha256": source_sha},
-                    "files": {p.relative_to(out).as_posix(): {"bytes": p.stat().st_size, "sha256": sha256(p)}
-                              for p in sorted(out.rglob("*")) if p.is_file() and p.name != "INCOMPLETE"},
+                    "attachments": list(attachments)}, "mapping": copy.deepcopy(count_manifest["mapping"]),
+                    "sources": copy.deepcopy(count_manifest["sources"]),
+                    "image": {"format": image_manifest["format"], "profile": image_manifest["profile"],
+                              "levels": copy.deepcopy(levels), "source_sha256": source_sha256},
+                    "files": {p.relative_to(target).as_posix(): {"bytes": p.stat().st_size, "sha256": sha256(p)}
+                              for p in sorted(target.rglob("*")) if p.is_file() and p.name != "INCOMPLETE"},
                     "build": {"operation": "verified-component-copy-and-fixed-HDF5-layout",
-                              "count_source_manifest_sha256": sha256(cr / "manifest.json"),
-                              "image_source_manifest_sha256": sha256(ir / "manifest.json")}}
-        write_json(out / "manifest.json", manifest)
-        (out / "INCOMPLETE").unlink()
-        with IntegratedArchive(out) as reader:
+                              "count_source_manifest_sha256": sha256(count_root / "manifest.json"),
+                              "image_source_manifest_sha256": sha256(image_root / "manifest.json")}}
+        write_json(target / "manifest.json", manifest)
+        (target / "INCOMPLETE").unlink()
+        with IntegratedArchive(target) as reader:
             return reader.ledger()
     except BaseException as exc:
-        write_json(out / "failure.json", {"type": type(exc).__name__, "error": str(exc)})
+        write_json(target / "failure.json", {"type": type(exc).__name__, "error": str(exc)})
         raise
 
 
@@ -363,51 +374,58 @@ class IntegratedArchive:
                 raise ValueError("Count index disagrees with container")
         return self._store
 
+    def _bpcells_worker(self):
+        if self._bp is None:
+            from stbaseline.comparison import BPWorker
+            import os
+            for name in self.manifest["files"]:
+                if name.startswith("count/counts.bp/"):
+                    self._verify_member(name)
+            rscript = self.rscript or os.environ.get("STBASELINE_RSCRIPT", "Rscript")
+            library = self.r_library or os.environ.get("STBASELINE_R_LIBRARY", "")
+            if "count/bp_layout.json" in self.manifest["files"]:
+                from count_compare import OrderedBPWorker
+                self._verify_member("count/bp_layout.json")
+                if "count/bp_permutation.u16" in self.manifest["files"]:
+                    self._verify_member("count/bp_permutation.u16")
+                self._bp = OrderedBPWorker(self.root / "count", rscript, library,
+                    expected_shape=self.manifest["count"]["expression"]["shape"])
+            else:
+                self._bp = BPWorker(self.root / "count" / "counts.bp", rscript, library)
+        return self._bp
+
+    def _read_hdf5_counts(self, rows, genes, output):
+        x = self._science_open()["X"]
+        inverse = {int(g): i for i, g in enumerate(genes)}
+        for target, row in enumerate(rows):
+            if isinstance(x, h5py.Dataset):
+                output[target] = x[int(row), :][genes].astype(np.uint64)
+            else:
+                lo, hi = map(int, x["indptr"][int(row):int(row) + 2])
+                for g, value in zip(x["indices"][lo:hi], x["data"][lo:hi]):
+                    if int(g) in inverse:
+                        output[target, inverse[int(g)]] = int(value)
+
     def counts(self, rows=None, genes=None, *, max_cells=MAX_CELLS):
         if type(max_cells) is not int or max_cells < 1:
             raise ValueError("Positive integer query bound required")
         md = self.metadata()
-        ri, gi = Archive._select(rows, md["spot_ids"]), Archive._select(genes, md["gene_ids"])
-        if len(ri) * len(gi) > max_cells:
+        row_positions = Archive._select(rows, md["spot_ids"])
+        gene_positions = Archive._select(genes, md["gene_ids"])
+        if len(row_positions) * len(gene_positions) > max_cells:
             raise ValueError("Query too large; use row batches")
-        values = np.zeros((len(ri), len(gi)), np.uint64)
-        if len(ri) and len(gi):
+        values = np.zeros((len(row_positions), len(gene_positions)), np.uint64)
+        if len(row_positions) and len(gene_positions):
             if self.kind == "Shared_local":
-                values = self._count_store().read(ri, gi)
+                values = self._count_store().read(row_positions, gene_positions)
             elif self.kind == "BPCells":
-                if self._bp is None:
-                    from stbaseline.comparison import BPWorker
-                    import os
-                    for name in self.manifest["files"]:
-                        if name.startswith("count/counts.bp/"):
-                            self._verify_member(name)
-                    rscript = self.rscript or os.environ.get("STBASELINE_RSCRIPT", "Rscript")
-                    library = self.r_library or os.environ.get("STBASELINE_R_LIBRARY", "")
-                    if "count/bp_layout.json" in self.manifest["files"]:
-                        from count_compare import OrderedBPWorker
-                        self._verify_member("count/bp_layout.json")
-                        if "count/bp_permutation.u16" in self.manifest["files"]:
-                            self._verify_member("count/bp_permutation.u16")
-                        self._bp = OrderedBPWorker(self.root / "count", rscript, library,
-                            expected_shape=self.manifest["count"]["expression"]["shape"])
-                    else:
-                        self._bp = BPWorker(self.root / "count" / "counts.bp", rscript, library)
-                values = self._bp.read(ri, gi, all_genes=genes is None)
+                values = self._bpcells_worker().read(row_positions, gene_positions, all_genes=genes is None)
             else:
-                x = self._science_open()["X"]
-                inverse = {int(g): i for i, g in enumerate(gi)}
-                for target, row in enumerate(ri):
-                    if isinstance(x, h5py.Dataset):
-                        values[target] = x[int(row), :][gi].astype(np.uint64)
-                    else:
-                        lo, hi = map(int, x["indptr"][int(row):int(row) + 2])
-                        for g, value in zip(x["indices"][lo:hi], x["data"][lo:hi]):
-                            if int(g) in inverse:
-                                values[target, inverse[int(g)]] = int(value)
-        return {"counts": values, "spot_ids": np.asarray([md["spot_ids"][i] for i in ri], dtype=str),
-                "gene_ids": np.asarray([md["gene_ids"][i] for i in gi], dtype=str),
-                "gene_positions": gi.copy(),
-                "coordinates": md["coordinates"][ri], "level0_xy": md["level0_xy"][ri]}
+                self._read_hdf5_counts(row_positions, gene_positions, values)
+        return {"counts": values, "spot_ids": np.asarray([md["spot_ids"][i] for i in row_positions], dtype=str),
+                "gene_ids": np.asarray([md["gene_ids"][i] for i in gene_positions], dtype=str),
+                "gene_positions": gene_positions.copy(),
+                "coordinates": md["coordinates"][row_positions], "level0_xy": md["level0_xy"][row_positions]}
 
     def _image_reader(self):
         if self._closed:
@@ -439,10 +457,8 @@ class IntegratedArchive:
     def source_metadata(self):
         return self._image_reader().source_metadata()
 
-    def region(self, bbox, *, level=0, genes=None, modalities=("counts", "image")):
-        if (not isinstance(modalities, (list, tuple)) or not modalities
-                or len(set(modalities)) != len(modalities) or any(v not in ("counts", "image") for v in modalities)):
-            raise ValueError("Select counts and/or image")
+    def _region_boxes(self, bbox, level):
+        """Map half-open level-0 bounds to covering pixels of the native level."""
         levels = self.manifest["image"]["levels"]
         if type(level) is not int or not 0 <= level < len(levels):
             raise ValueError("Invalid native level")
@@ -454,6 +470,13 @@ class IntegratedArchive:
             raise ValueError("Region outside source level0")
         h, w, _ = levels[level]["shape"]
         box = [x0*w//w0, y0*h//h0, (x1*w+w0-1)//w0, (y1*h+h0-1)//h0]
+        return (x0, y0, x1, y1), box
+
+    def region(self, bbox, *, level=0, genes=None, modalities=("counts", "image")):
+        if (not isinstance(modalities, (list, tuple)) or not modalities
+                or len(set(modalities)) != len(modalities) or any(v not in ("counts", "image") for v in modalities)):
+            raise ValueError("Select counts and/or image")
+        (x0, y0, x1, y1), box = self._region_boxes(bbox, level)
         result = {"level0_bbox": np.asarray(bbox), "image_bbox": np.asarray(box), "level": np.asarray(level)}
         if "counts" in modalities:
             xy = self.metadata()["level0_xy"]
@@ -462,6 +485,24 @@ class IntegratedArchive:
         if "image" in modalities:
             result["image"] = self.image(level, box)
         return result
+
+    @staticmethod
+    def _write_count_matrix(source, target, matrix):
+        """Reinsert Count values using the source skeleton's X layout and attributes."""
+        _copy(source, target)
+        with h5py.File(source, "r") as original, h5py.File(target, "r+") as restored:
+            old = original["X"]
+            if isinstance(old, h5py.Dataset):
+                del restored["X"]
+                x = restored.create_dataset("X", shape=matrix.shape, dtype=old.dtype, compression="gzip", compression_opts=4)
+                _copy_attributes(old, x)
+                for start in range(0, matrix.shape[0], 32):
+                    x[start:start+32] = matrix[start:start+32].toarray().astype(old.dtype)
+            else:
+                for key, values in (("data", matrix.data), ("indices", matrix.indices), ("indptr", matrix.indptr)):
+                    del restored["X"][key]
+                    node = restored["X"].create_dataset(key, data=values.astype(old[key].dtype), compression="gzip", compression_opts=4)
+                    _copy_attributes(old[key], node)
 
     def restore_expression(self, target):
         self.metadata()  # Validate the paid original-position binding on full restore too.
@@ -479,20 +520,7 @@ class IntegratedArchive:
                 n = self.manifest["count"]["expression"]["shape"][0]
                 matrix = vstack([csr_matrix(self.counts(range(s, min(s+32, n)))["counts"])
                                  for s in range(0, n, 32)], format="csr")
-            _copy(source, target)
-            with h5py.File(source, "r") as original, h5py.File(target, "r+") as restored:
-                old = original["X"]
-                if isinstance(old, h5py.Dataset):
-                    del restored["X"]
-                    x = restored.create_dataset("X", shape=matrix.shape, dtype=old.dtype, compression="gzip", compression_opts=4)
-                    _copy_attributes(old, x)
-                    for start in range(0, matrix.shape[0], 32):
-                        x[start:start+32] = matrix[start:start+32].toarray().astype(old.dtype)
-                else:
-                    for key, values in (("data", matrix.data), ("indices", matrix.indices), ("indptr", matrix.indptr)):
-                        del restored["X"][key]
-                        node = restored["X"].create_dataset(key, data=values.astype(old[key].dtype), compression="gzip", compression_opts=4)
-                        _copy_attributes(old[key], node)
+            self._write_count_matrix(source, target, matrix)
         if h5_digest(target) != self.manifest["count"]["expression"]["semantic_sha256"]:
             raise ValueError("Scientific H5AD restoration mismatch")
         return str(target)

@@ -43,6 +43,13 @@ python stpyramid.py counts runs/archive --rows 0 --genes 0 1 --output runs/count
 
 Use fresh outputs. Encoding keeps a sibling `archive.work` directory with intermediate streams and a verification receipt. Only the final archive directory enters the data-package ledger. The backend runs on one Windows logical CPU at low priority. The timeout is checked between stages and bounds native encoder subprocesses. This CLI does not provide the historical batch queue's OS process-tree memory supervisor.
 
+## Integrated code path
+
+1. `stpyramid.py` handles the CLI. `encode_archive` validates the inputs and runtimes, scans the stored image levels, stages each component and publishes the directory once both modalities pass verification. [CLI](stpyramid.py) · [Integrated encoder](codec/integrated_encode.py)
+2. `write_count_component` stores the typed H5AD structure and spatial axes in `science.h5`. `write_count_store` groups spots in 1024-pixel cells in L0 coordinates, stores one sample-wide Shared_local model, and writes the graph, support and integer values for each block. The index maps blocks to their original spot rows and bank offsets. [Count component](codec/integrated_encode.py) · [Count bank](codec/stbaseline/shared_backend.py)
+3. `encode_images` produces direct JPEG XL records and the 089, 091 and HF candidates. It prepares native parent references for L0 and L1, retains the smallest eligible records in the prescribed order, and writes both the direct baseline and the selected HF + L1 image component. [Image candidate generation](codec/archive_image_encode.py) · [Image archive](codec/joint_next.py)
+4. `pack_integrated` checks the component source and level identities, copies the verified members and binds them in one manifest. `IntegratedArchive.region` selects spots in a half-open L0 box and maps the box to covering pixels at the requested image level. Full restore writes the native TIFF levels and reinserts the decoded Count values into the original H5AD structure. [Integrated container and reader](codec/container_compare.py)
+
 ## Build the native Windows runtime
 
 With Visual Studio 2022 C++ tools, CMake and Ninja installed, run the following in an x64 Developer PowerShell. A clean Windows source build and the resulting end-to-end smoke passed with this toolchain. Use the resulting runtime for both encoding and verification. Existing archives bind their native runtime hashes and may require the matching historical binaries.
