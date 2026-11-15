@@ -19,6 +19,12 @@ python -B build_full.py restore .\runs\slide_image .\runs\restored
 
 编码输出目录、工作目录和恢复目录使用新路径。ROI 坐标是所选原生层中的左闭右开像素边界。恢复文件为 `native_levels.tif`、`source.json` 和归档清单。无损范围为各层 RGB、原生几何及源图像元数据。归档计量单位为 `slide_image` 下所有文件的物理字节。
 
+## 代码入口
+
+- [pyramid_image_archive.py](../../pyramid_image_archive.py) 管理扫描、图块选路、记录收集和组包。`build_full.py` 提供原有命令入口。
+- [native_tile_encoder.py](../../native_tile_encoder.py) 生成目标与父层参考的原生输入，并启动 C++ 编码器。归档收集条件记录时，使用实际送入编码器的图块 ID。
+- [encode_image.py](../../encode_image.py) 用于早期 L0 单层实验。十张整片的口径由 [cohort.py](../../cohort.py) 定义，核验和读回计时由该脚本调用归档读取器完成。
+
 ## 从源码构建
 
 在 Visual Studio 2022 x64 Developer PowerShell 中，用仓库里的固定依赖构建原生编码器。

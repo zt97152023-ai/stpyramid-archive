@@ -8,9 +8,11 @@ from statistics import median
 import subprocess
 import sys
 import time
+import psutil
 
 from benchmark_read import level_bytes, measure_rois
-from build_full import ROOT, RUNTIMES, archive, build, digest, file_info, psutil
+from native_tile_encoder import ROOT, RUNTIMES, archive
+from pyramid_image_archive import archive_members, encode_native_pyramid, file_sha256
 
 RUN = ROOT / "cohort_run"
 ARMS = ("direct9", "fused_l0_l1")
@@ -34,12 +36,17 @@ def write_json(path, obj):
 
 
 def code_pins():
-    files = [ROOT / name for name in ("build_full.py", "build_native.py", "encode_image.py", "cohort.py",
-                                     "benchmark_read.py", "select_cohort.py", "COHORT.json")]
+    files = [ROOT / name for name in ("build_full.py", "encode_image.py", "cohort.py",
+                                     "benchmark_read.py", "select_cohort.py", "COHORT.json",
+                                     "pyramid_image_archive.py", "native_tile_encoder.py")]
+    # The local delivery can also include a workstation-specific build helper.
+    local_build_helper = ROOT / "build_native.py"
+    if local_build_helper.is_file():
+        files.append(local_build_helper)
     for name in ("codec", "native", "bin", "runtime-windows-source", "historical-runtime"):
         files.extend(p for p in (ROOT / name).rglob("*")
                      if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".obj")
-    return {path.relative_to(ROOT).as_posix(): digest(path) for path in sorted(files)}
+    return {path.relative_to(ROOT).as_posix(): file_sha256(path) for path in sorted(files)}
 
 
 def measure_read(package, expected, runtimes):
@@ -112,7 +119,7 @@ def run_locked_case(index, cpu, expected, out):
     process.cpu_affinity([cpu])
     process.nice(psutil.IDLE_PRIORITY_CLASS)
     source = Path(expected["source"])
-    if digest(source) != expected["source_sha256"]:
+    if file_sha256(source) != expected["source_sha256"]:
         raise ValueError("Source TIFF digest differs from frozen cohort")
 
     def log(record):
@@ -126,12 +133,12 @@ def run_locked_case(index, cpu, expected, out):
         receipt = out / f"{arm}.encode.json"
         if receipt.is_file():
             row = read_json(receipt)
-            if row["cpu"] != cpu or file_info(Path(row["package"])) != row["files"]:
+            if row["cpu"] != cpu or archive_members(Path(row["package"])) != row["files"]:
                 raise ValueError("Resumed archive differs from the existing paired measurement")
         else:
             arm_dir = attempt / arm
             arm_dir.mkdir()
-            row = build(source, arm_dir / "image", arm_dir / "work", arm, log)
+            row = encode_native_pyramid(source, arm_dir / "image", arm_dir / "work", arm, log)
             row["cpu"] = cpu
             if row["native_level_sha256"] != expected["native_rgb_sha256"]:
                 raise ValueError("Fresh encoder did not consume the frozen RGB levels")
@@ -139,11 +146,11 @@ def run_locked_case(index, cpu, expected, out):
         records[arm] = row
 
     original = Path(expected["historical_hf_l1"])
-    old_files = file_info(original)
+    old_files = archive_members(original)
     records["original"] = {"method": "original", "package": str(original), "files": old_files,
                            "bytes": sum(info["bytes"] for info in old_files.values()),
                            "encode_seconds": None, "scope": "Historical archive, fresh read only"}
-    historical_direct = file_info(Path(expected["historical_direct"]))
+    historical_direct = archive_members(Path(expected["historical_direct"]))
     e9_files = records["direct9"]["files"]
     direct_parity = {member: e9_files[member] == historical_direct[member] for member in historical_direct}
 
@@ -220,7 +227,7 @@ def run():
         for index in lane:
             assigned = SECOND_WAVE_CORES.get(cohort["samples"][index]["sample"], cpu)
             lanes.setdefault(assigned, []).append(index)
-    plan = {"cohort_sha256": digest(ROOT / "COHORT.json"), "code_sha256": code_pins(),
+    plan = {"cohort_sha256": file_sha256(ROOT / "COHORT.json"), "code_sha256": code_pins(),
             "jpegxl_version": imagecodecs.jpegxl_version(), "imagecodecs": imagecodecs.__version__,
             "core_assignment": {str(cpu): lane for cpu, lane in lanes.items()}}
     plan_path = RUN / "PLAN.json"

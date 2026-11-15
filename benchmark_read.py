@@ -3,7 +3,7 @@ import hashlib
 from statistics import median
 import time
 
-from build_full import RUNTIMES, archive, base
+from native_tile_encoder import RUNTIMES, archive, base
 
 
 def roi_boxes(info):

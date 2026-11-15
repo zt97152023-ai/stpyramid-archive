@@ -1,86 +1,26 @@
-"""Build and verify a native RGB pyramid with optional exact constant tile routing."""
+"""Experimental L0-only comparisons used before the L0/L1 archive entry point."""
 import argparse
-import ctypes
-from ctypes import wintypes
 from functools import lru_cache
 import json
 import os
 from pathlib import Path
 import shutil
-import subprocess
-import sys
 import time
-
-for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ[name] = "1"
-os.environ.pop("ST074_S", None)
-os.environ.pop("ST074_T", None)
 
 import psutil
 
-ROOT = Path(__file__).resolve().parent
-RELEASE = ROOT.parent / "STPyramid_Release_20261111"
-RUNTIME = ROOT / "runtime-windows-source"
-RUNTIMES = tuple(RUNTIME / name for name in ("089", "091", "hf"))
+from native_tile_encoder import ROOT, RUNTIMES, archive, base, run_native_encoder, scan, write_tile_inputs
+
 METHODS = ("direct9", "direct9cached", "old091", "fused091", "constant091")
 BENCH_CPU = int(os.environ.get("STPYRAMID_BENCH_CPU", "20"))
-sys.path.insert(0, str(ROOT / "codec"))
-import joint_next as archive
-from stbaseline import slide_redundancy as base, slide_redundancy_scan as scan
 
 
 def make_spool(census, catalog, spool, skip_constants=False, native_level=0):
-    spool.mkdir()
-    rows = []
-    start = archive.starts(catalog["levels"])[native_level]
-
-    @lru_cache(maxsize=32)
-    def read_parent(gid):
-        return scan.read_tile(census, gid, catalog=catalog)
-
-    for gid, level, x, y, width, height in base._descriptors(catalog["levels"]):
-        if level < native_level:
-            continue
-        if level > native_level:
-            break
-        if skip_constants and catalog["tiles"][gid]["constant_rgb"] is not None:
-            continue
-        desc = (gid, level, x, y, width, height)
-        rgb = scan.read_tile(census, gid, catalog=catalog)
-        reference, _ = archive.anchor_pixels(catalog["levels"], desc, read_parent)
-        local_gid = gid - start
-        rgb_name, reference_name = f"{local_gid:06d}.rgb", f"{local_gid:06d}.anchor"
-        (spool / rgb_name).write_bytes(rgb.tobytes())
-        (spool / reference_name).write_bytes(reference.tobytes())
-        rows.append("\t".join(map(str, (local_gid, 0, x, y, width, height, rgb_name, reference_name))))
-    (spool / "index.tsv").write_text("".join(row + "\n" for row in rows), encoding="ascii")
-    return rows
+    return list(write_tile_inputs(census, catalog, spool, native_level,
+                                  include_constant_tiles=not skip_constants).values())
 
 
-def child_cpu(process):
-    get_times = ctypes.WinDLL("kernel32", use_last_error=True).GetProcessTimes
-    get_times.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
-    get_times.restype = wintypes.BOOL
-    times = [wintypes.FILETIME() for _ in range(4)]
-    if not get_times(wintypes.HANDLE(int(process._handle)), *(ctypes.byref(value) for value in times)):
-        raise ctypes.WinError(ctypes.get_last_error())
-    return sum((value.dwHighDateTime << 32) | value.dwLowDateTime for value in times[2:]) / 10_000_000
-
-
-def run_native(exe, mode, spool, output, timeout=240):
-    with output.with_suffix(".log").open("xb") as log:
-        with subprocess.Popen([str(exe), mode, str(spool), str(output)], stdout=log, stderr=subprocess.STDOUT,
-                              creationflags=subprocess.CREATE_NO_WINDOW) as process:
-            try:
-                status = process.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
-                raise
-            cpu = child_cpu(process)
-    if status:
-        raise RuntimeError(output.with_suffix(".log").read_text(encoding="utf8", errors="replace"))
-    return cpu
+run_native = run_native_encoder
 
 
 def build(source, output, work, method):
