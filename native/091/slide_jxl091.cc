@@ -334,25 +334,30 @@ jxl::HistogramParams Params() {
   p.lz77_method = jxl::HistogramParams::LZ77Method::kOptimal;
   p.force_huffman = false; p.streaming_mode = false; return p;
 }
-jxl::ModularOptions Options(StreamKind kind) {
+jxl::ModularOptions Options(StreamKind kind, bool fast = false) {
   jxl::ModularOptions o; o.max_chan_size = kTile; o.group_dim = kTile;
   o.predictor = kind == StreamKind::Detail ? jxl::Predictor::Zero : jxl::Predictor::Best;
   o.max_properties = 0; o.nb_repeats = 0.5f; o.wp_mode = 0;
   o.splitting_heuristics_properties = {0, 15, 9, 10, 11, 12, 13};
-  o.histogram_params = Params(); return o;
+  o.histogram_params = Params();
+  if (fast) {
+    o.nb_repeats = 0.125f;
+    o.histogram_params.lz77_method = jxl::HistogramParams::LZ77Method::kLZ77;
+  }
+  return o;
 }
 struct Stream {
   Bytes bytes; uint64_t bits = 0; Digest sha{}, coefficient_sha{};
   size_t coefficients = 0; TreeBudget tree{}; size_t parent_nodes=0, parent_pairs=0, target_values=0;
 };
-Stream EncodeStream(Memory& memory, const jxl::Image& image, StreamKind kind, uint32_t gid) {
+Stream EncodeStream(Memory& memory, const jxl::Image& image, StreamKind kind, uint32_t gid, bool fast = false) {
   CheckShape(image, uint32_t(image.w), uint32_t(image.h), kind);
   Stream result; result.coefficients = CoefficientCount(image); result.coefficient_sha = CoefficientHash(image);
   if (result.coefficients == 0) {
     Need(kind == StreamKind::Detail && image.w == 1 && image.h == 1, "unexpected empty coefficient stream");
     result.sha = Hash(AsView(result.bytes)); return result;
   }
-  auto options = Options(kind);
+  auto options = Options(kind, fast);
   auto tree = Take(jxl::LearnTree(&image, &options, 0, 1), "learn stream MA tree");
   result.tree = BoundTree(&tree, gid);
   jxl::BitWriter writer(&memory.mm);
@@ -465,8 +470,8 @@ jxl::Image ReconstructHorizontalLowpass(const jxl::Image& low,const jxl::Image& 
   for(const auto& ch:image.channel) Need(ch.w==(image.w+1)/2 && ch.h==image.h && ch.hshift==1 && ch.vshift==0,"horizontal lowpass shape");
   return image;
 }
-jxl::ModularOptions KnownOptions() {
-  auto o=Options(StreamKind::Detail); o.max_properties=5;
+jxl::ModularOptions KnownOptions(bool fast = false) {
+  auto o=Options(StreamKind::Detail, fast); o.max_properties=5;
   for(uint32_t p=16;p<=35;++p) o.splitting_heuristics_properties.push_back(p);
   return o;
 }
@@ -488,10 +493,10 @@ std::pair<size_t,size_t> ParentSplits(const jxl::Tree& tree,const jxl::Image& im
   }
   return {nodes.size(),pairs};
 }
-Stream EncodeDetailStream(Memory& memory,const jxl::Image& image,uint32_t gid,bool enabled) {
+Stream EncodeDetailStream(Memory& memory,const jxl::Image& image,uint32_t gid,bool enabled,bool fast=false) {
   CheckKnown(image); Stream result; result.coefficients=TargetCount(image); result.coefficient_sha=DetailHash(image);
   if(!result.coefficients) { Need(image.w==1 && image.h==1,"empty known profile"); result.sha=Hash(AsView(result.bytes)); return result; }
-  auto options=KnownOptions(); const jxl::st091::KnownContext context{enabled,nullptr,nullptr,&result.target_values};
+  auto options=KnownOptions(fast); const jxl::st091::KnownContext context{enabled,nullptr,nullptr,&result.target_values};
   auto tree=Take(jxl::st091::KnownLearnTree(&image,&options,0,1,context,{}),"learn known HF tree");
   result.tree=BoundTree(&tree,gid); const auto parent=ParentSplits(tree,image);
   result.parent_nodes=enabled?parent.first:0; result.parent_pairs=enabled?parent.second:0;
@@ -710,30 +715,35 @@ struct EncodedTileRecord {
   size_t detail_bytes;
 };
 
+enum class TileEncodeMode { VerifyImmediately, VerifyArchive, FastVerifyArchive };
+
 EncodedTileRecord EncodeParentConditionedTile(const Tile& tile, const Bytes& rgb,
-                                              const Bytes& parent_rgb) {
+                                              const Bytes& parent_rgb, TileEncodeMode mode) {
   Memory memory;
   auto transformed = ToColor(&memory.mm, AsView(rgb), tile.w, tile.h);
   Check(jxl::FwdSqueeze(transformed, Squeezes(), nullptr), "direct091 forward");
   Need(transformed.channel.size() == 9 && transformed.transform.empty(), "direct091 Squeeze layout");
   const auto lowpass = SelectChannels(transformed, {0, 1, 2});
   const auto correction = ComputeLowpassCorrection(memory, tile, lowpass, AsView(parent_rgb));
-  const auto correction_stream = EncodeStream(memory, correction, StreamKind::Correction, tile.id);
+  const bool fast = mode == TileEncodeMode::FastVerifyArchive;
+  const auto correction_stream = EncodeStream(memory, correction, StreamKind::Correction, tile.id, fast);
   const auto detail_channels = PrepareDetailChannels(memory, tile, transformed, lowpass);
-  const auto detail_stream = EncodeDetailStream(memory, detail_channels, tile.id, true);
+  const auto detail_stream = EncodeDetailStream(memory, detail_channels, tile.id, true, fast);
   auto record = SerializeTileRecord(tile, true, Hash(AsView(rgb)), Hash(AsView(parent_rgb)),
                        ReferenceChannelHash(detail_channels, false), ReferenceChannelHash(detail_channels, true),
                        correction_stream, detail_stream);
-  DecodeInfo decoded;
-  Need(DecodeTileRecord(AsView(record), AsView(parent_rgb), tile.id, tile.w, tile.h, &decoded) == rgb,
-       "immediate direct091 reconstruction");
-  Need(correction_stream.coefficient_sha == decoded.low.coefficient_sha &&
-       detail_stream.coefficient_sha == decoded.detail.coefficient_sha,
-       "direct091 reconstructed coefficients differ");
+  if (mode == TileEncodeMode::VerifyImmediately) {
+    DecodeInfo decoded;
+    Need(DecodeTileRecord(AsView(record), AsView(parent_rgb), tile.id, tile.w, tile.h, &decoded) == rgb,
+         "immediate direct091 reconstruction");
+    Need(correction_stream.coefficient_sha == decoded.low.coefficient_sha &&
+         detail_stream.coefficient_sha == decoded.detail.coefficient_sha,
+         "direct091 reconstructed coefficients differ");
+  }
   return {std::move(record), correction_stream.bytes.size(), detail_stream.bytes.size()};
 }
 
-void EncodeTilesFromRgb(const fs::path& spool, const fs::path& output) {
+void EncodeTilesFromRgb(const fs::path& spool, const fs::path& output, TileEncodeMode mode) {
   Need(fs::is_directory(spool) && !fs::is_symlink(spool), "invalid spool");
   Need(!fs::exists(output) && fs::is_directory(output.parent_path()), "fresh091 output required");
   const auto tiles = ReadIndex(spool, false);
@@ -743,7 +753,7 @@ void EncodeTilesFromRgb(const fs::path& spool, const fs::path& output) {
   for (const auto& tile : tiles) {
     const auto rgb = ReadFile(spool / tile.rgb_name, kTile * kTile * 3);
     const auto parent_rgb = ReadFile(spool / tile.anchor_name, kTile * kTile * 3 / 4);
-    const auto record = EncodeParentConditionedTile(tile, rgb, parent_rgb);
+    const auto record = EncodeParentConditionedTile(tile, rgb, parent_rgb, mode);
     WriteNew(output / Name("conditional/", tile.id), AsView(record.bytes));
     correction_bytes += record.correction_bytes;
     detail_bytes += record.detail_bytes;
@@ -820,13 +830,15 @@ int main(int argc,char** argv) {
     if(argc==2 && std::string(argv[1])=="tree_selfcheck") { TreeSelfcheck(); return 0; }
     if(argc==2 && std::string(argv[1])=="context_selfcheck") { ContextSelfcheck(); return 0; }
     if(argc==4 && std::string(argv[1])=="encode") { EncodeTilesWithStoredCorrection(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
-    if(argc==4 && std::string(argv[1])=="encode_direct") { EncodeTilesFromRgb(fs::u8path(argv[2]),fs::u8path(argv[3])); return 0; }
+    if(argc==4 && std::string(argv[1])=="encode_direct") { EncodeTilesFromRgb(fs::u8path(argv[2]),fs::u8path(argv[3]), TileEncodeMode::VerifyImmediately); return 0; }
+    if(argc==4 && std::string(argv[1])=="encode_recursive") { EncodeTilesFromRgb(fs::u8path(argv[2]),fs::u8path(argv[3]), TileEncodeMode::VerifyArchive); return 0; }
+    if(argc==4 && std::string(argv[1])=="encode_recursive_fast") { EncodeTilesFromRgb(fs::u8path(argv[2]),fs::u8path(argv[3]), TileEncodeMode::FastVerifyArchive); return 0; }
     if(argc==5 && std::string(argv[1])=="decode") {
       auto blob=ReadFile(fs::u8path(argv[2]),kMaxRecordBytes); Cursor cursor{AsView(blob)}; auto h=ReadTileRecordHeader(&cursor);
       auto anchor=ReadFile(fs::u8path(argv[3]),kTile*kTile*3/4); DecodeInfo info;
       auto rgb=DecodeTileRecord(AsView(blob),AsView(anchor),h.gid,h.w,h.h,&info); WriteNew(fs::u8path(argv[4]),AsView(rgb));
       std::cout<<"{\"decoded_tiles\":1,\"rgb_bytes\":"<<rgb.size()<<"}\n"; return 0;
     }
-    throw std::runtime_error("usage: encode spool newout | encode_direct spool newout | decode record anchor newrgb | tree_selfcheck | context_selfcheck");
+    throw std::runtime_error("usage: encode spool newout | encode_direct spool newout | encode_recursive spool newout | encode_recursive_fast spool newout | decode record anchor newrgb | tree_selfcheck | context_selfcheck");
   } catch(const std::exception& e) { std::cerr<<"FAIL: "<<e.what()<<'\n'; return 1; }
 }

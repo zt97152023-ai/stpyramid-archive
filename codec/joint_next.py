@@ -270,14 +270,15 @@ class _ScanReferenceCache:
 
 
 class Reader(prior.Reader):
+    _depth_limit = 2
+
     def __init__(self, directory, r089=None, r091=None, rhf=None):
         self.root = _plain(directory, directory=True)
         if any((self.root/name).exists() for name in ('INCOMPLETE', 'failure.json')): raise ValueError('Incomplete HF/L1 package')
         blob = old._read_bounded(_plain(self.root/'manifest.json'), base.MAX_MANIFEST_BYTES)
         self.manifest_bytes = len(blob); self.manifest = m = json.loads(blob)
-        if m.get('format') != FORMAT or m.get('parameters') != FIXED or m.get('image_only') is not True: raise ValueError('Unsupported HF/L1 parameters')
-        self._high, self._low = axes(m.get('profile'))
-        geometry(m['image']['levels']); self._descriptors = list(base._descriptors(m['image']['levels']))
+        self._configure_layout(m)
+        self._descriptors = list(base._descriptors(m['image']['levels']))
         self._level_start = starts(m['image']['levels'])
         if set(m['files']) != MEMBERS or {p.name for p in self.root.iterdir()} != MEMBERS | {'manifest.json'}: raise ValueError('Unexpected members')
         if {k: m['image'].get(k) for k in ('path', 'index', 'anchor_index', 'source_metadata')} != dict(path='images.bank', index='images.index', anchor_index='anchors.index', source_metadata='source.json'): raise ValueError('Member paths')
@@ -287,11 +288,7 @@ class Reader(prior.Reader):
                     or path.stat().st_size != info['bytes'] or not isinstance(info.get('sha256'), str)
                     or base.HEX.fullmatch(info['sha256']) is None): raise ValueError('Member identity')
         if m['files']['source.json']['bytes'] > scan.MAX_SOURCE_METADATA_BYTES: raise ValueError('Metadata bound')
-        retained = m.get('retained_routes')
-        if not isinstance(retained, list) or len(retained) != len(self._descriptors): raise ValueError('Retained route coverage')
-        for route, desc in zip(retained, self._descriptors):
-            allowed = {JXL, ANCHORED089, CONDITIONAL091} if desc[1] == 0 else ({JXL, ANCHORED089} if desc[1] == 1 else {JXL})
-            if type(route) is not int or route not in allowed: raise ValueError('Retained route identity')
+        self._validate_retained_routes(m)
         pins = m.get('build', {}).get('native_runtimes')
         if not isinstance(pins, dict) or set(pins) != {'089', '091', 'hf'} or any(not isinstance(v, dict) or not v for v in pins.values()): raise ValueError('Runtime pins')
         self._entries = self._bank = self._source_metadata = None
@@ -306,6 +303,19 @@ class Reader(prior.Reader):
                      'max_observed_depth', 'scan_parent_cache_peak_bytes'):
             setattr(self, name, 0)
         self.runtime_load_seconds = self.native_decode_seconds = 0.
+
+    def _configure_layout(self, manifest):
+        if manifest.get('format') != FORMAT or manifest.get('parameters') != FIXED or manifest.get('image_only') is not True:
+            raise ValueError('Unsupported HF/L1 parameters')
+        self._high, self._low = axes(manifest.get('profile'))
+        geometry(manifest['image']['levels'])
+
+    def _validate_retained_routes(self, manifest):
+        retained = manifest.get('retained_routes')
+        if not isinstance(retained, list) or len(retained) != len(self._descriptors): raise ValueError('Retained route coverage')
+        for route, desc in zip(retained, self._descriptors):
+            allowed = {JXL, ANCHORED089, CONDITIONAL091} if desc[1] == 0 else ({JXL, ANCHORED089} if desc[1] == 1 else {JXL})
+            if type(route) is not int or route not in allowed: raise ValueError('Retained route identity')
 
     def _allowed(self, desc):
         gid, level = desc[:2]
@@ -381,16 +391,14 @@ class Reader(prior.Reader):
         return self._native_hf
 
     def _decode_referenced_tile(self, route, blob, desc, cache, cache_state, depth, scan_cache):
-        levels = self.manifest['image']['levels']
-        validate_blob(route, blob, levels, desc)
-        parent_id, ys, xs = anchor_layout(levels, desc)
+        parent_id, ys, xs = self._validated_parent(route, blob, desc)
         self.anchor_requests += 1
         self.anchor_cache_hits += ((cache is not None and parent_id in cache)
                                    or (scan_cache is not None and parent_id in scan_cache.tiles))
         parent = self._tile(parent_id, cache, cache_state, depth+1, scan_cache=scan_cache)
         anchor = np.ascontiguousarray(parent[ys[:, None], xs[None, :]])
         decoder = self._get_native_decoder(route)
-        record_id = local_id(levels, desc)
+        record_id = desc[0] - self._level_start[desc[1]]
         w, h = desc[4:]
         started = time.perf_counter()
         pixels = decoder.decode(blob, w, h, record_id, anchor)
@@ -398,10 +406,15 @@ class Reader(prior.Reader):
         self.native_tiles_decoded += 1
         return pixels
 
+    def _validated_parent(self, route, blob, desc):
+        levels = self.manifest['image']['levels']
+        validate_blob(route, blob, levels, desc)
+        return anchor_layout(levels, desc)
+
     def _tile(self, gid, cache=None, cache_state=None, depth=0, *, scan_cache=None):
         import imagecodecs
         self._setup()
-        if not base._integer(gid) or not 0 <= gid < len(self._entries) or type(depth) is not int or not 0 <= depth <= 2: raise ValueError('Tile/depth bound')
+        if not base._integer(gid) or not 0 <= gid < len(self._entries) or type(depth) is not int or not 0 <= depth <= self._depth_limit: raise ValueError('Tile/depth bound')
         self.max_observed_depth = max(self.max_observed_depth, depth); self.logical_tiles_read += 1
         if cache is not None and gid in cache:
             self.cache_hits += 1; return cache[gid]
@@ -437,7 +450,7 @@ class Reader(prior.Reader):
         level = info['level']
         tile_size = base.TILE
         columns = (width + tile_size - 1) // tile_size
-        scan_cache = _ScanReferenceCache() if level < 2 else None
+        scan_cache = _ScanReferenceCache() if self._has_reference_level(level) else None
         for ty, y in enumerate(range(0, height, tile_size)):
             stripe_height = min(tile_size, height - y)
             stripe = np.empty((stripe_height, width, 3), np.uint8)
@@ -447,6 +460,9 @@ class Reader(prior.Reader):
                 stripe[:, x:x + pixels.shape[1]] = pixels
                 self.requested_pixels += stripe_height * pixels.shape[1]
             yield stripe
+
+    def _has_reference_level(self, level):
+        return level < 2
 
     def metrics(self):
         result = super().metrics()

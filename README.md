@@ -66,6 +66,20 @@ python tests/smoke.py --runtime-dir runtime-windows --output runs/source-build-s
 
 The integrated CLI is currently scoped to Windows. The native source contains a macOS platform layer. The integrated Count+WSI workflow has not been qualified on macOS or Linux.
 
+## Experimental recursive TIFF encoder
+
+`recursive_image_archive.py` encodes eligible native levels against the next original TIFF level. Coarsest levels, scale transitions without exact floor-sized 2× geometry, and periodic checkpoints use independent lossless JPEG XL e9. The parent index resolves each conditional tile to one coarser tile. Every level and the source metadata are verified before the archive directory is published.
+
+After compiling the native `slide_jxl091` target from this branch, run the experiment with a fresh work directory and output path.
+
+```powershell
+python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder build/bin/slide_jxl091.exe --preset fast --max-depth 3
+python recursive_image_archive.py verify runs/recursive-image
+python recursive_image_archive.py restore runs/recursive-image runs/recursive-restored
+```
+
+`--max-depth 15` permits the full eligible chain for TIFFs with up to 16 levels. `--preset regular` retains the fused encoder search settings. `--preset fast` uses a lower MA-tree sample fraction and non-optimal LZ77 parsing. Both presets consolidate conditional-tile verification into the final recursive archive verification. This experiment uses its own image format identifier and CLI.
+
 ## Evidence and licensing
 
 - [Results and reproducibility notes](results/README.md)

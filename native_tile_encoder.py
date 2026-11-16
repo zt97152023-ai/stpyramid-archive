@@ -7,6 +7,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import numpy as np
+
 for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
     os.environ[name] = "1"
 os.environ.pop("ST074_S", None)
@@ -21,7 +23,7 @@ from st262_controls import native_command
 from stbaseline import slide_redundancy as base, slide_redundancy_scan as scan
 
 
-def write_tile_inputs(census, catalog, input_dir, native_level, *, include_constant_tiles):
+def write_tile_inputs(census, catalog, input_dir, native_level, *, include_constant_tiles, parent_geometry=None):
     """Write target and reference RGB, indexed by the encoder's level-local IDs."""
     input_dir.mkdir()
     index_rows = {}
@@ -40,7 +42,11 @@ def write_tile_inputs(census, catalog, input_dir, native_level, *, include_const
             continue
         desc = (gid, level, x, y, width, height)
         rgb = scan.read_tile(census, gid, catalog=catalog)
-        reference, _ = archive.anchor_pixels(catalog["levels"], desc, read_parent)
+        if parent_geometry is None:
+            reference, _ = archive.anchor_pixels(catalog["levels"], desc, read_parent)
+        else:
+            parent_id, rows, columns = parent_geometry(desc)
+            reference = np.ascontiguousarray(read_parent(parent_id)[rows[:, None], columns[None, :]])
         local_gid = gid - start
         rgb_name, reference_name = f"{local_gid:06d}.rgb", f"{local_gid:06d}.anchor"
         (input_dir / rgb_name).write_bytes(rgb.tobytes())
