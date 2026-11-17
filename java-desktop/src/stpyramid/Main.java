@@ -24,6 +24,13 @@ public final class Main {
     static void execute(String[] args, Consumer<String> log) throws Exception {
         switch (args[0]) {
             case "help", "--help" -> log.accept(help());
+            case "capabilities" -> {
+                length(args, 1, 1);
+                log.accept("OS: " + PlatformSupport.osName());
+                log.accept("Java: " + PlatformSupport.javaVersion());
+                log.accept("Native compression: " + PlatformSupport.nativeCompressionStatus(NativeEngine.installedRuntime()));
+                log.accept("Source archive: available on every supported Java desktop platform.");
+            }
             case "list-hest" -> {
                 length(args, 2, 2);
                 Sources.listHest(path(args[1])).forEach(log);
@@ -132,6 +139,7 @@ public final class Main {
         return """
             STPyramid Java Desktop
               [no arguments]                             Open desktop app
+              capabilities                              Show platform and codec support
               list-hest HEST_ROOT                        Discover complete HEST trios
               hest HEST_ROOT ID OUTPUT [PORTABLE_RUNTIME]  Count + native TIFF compression
               hest-batch HEST_ROOT OUTPUT_DIR PORTABLE_RUNTIME [ID ...]

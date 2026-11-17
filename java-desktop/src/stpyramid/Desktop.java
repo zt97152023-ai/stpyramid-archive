@@ -24,6 +24,9 @@ final class Desktop {
         header.setFont(header.getFont().deriveFont(Font.BOLD, 22));
         var form = new JPanel(new GridLayout(0, 1, 0, 8));
         form.add(header);
+        var capability = new JLabel(PlatformSupport.nativeCompressionStatus(NativeEngine.installedRuntime()));
+        capability.setForeground(new Color(90, 90, 90));
+        form.add(capability);
         var mode = new JComboBox<>(MODES);
         form.add(mode);
         var profile = new JComboBox<>(new String[]{"完整包 · 极致压缩", "完整包 · 快速融合"});

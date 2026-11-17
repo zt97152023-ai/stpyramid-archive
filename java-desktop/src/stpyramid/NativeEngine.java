@@ -24,6 +24,10 @@ final class NativeEngine {
 
     static void run(Path portable, Map<String, String> request, Consumer<String> log) throws IOException, InterruptedException {
         if (portable == null) throw new IOException("Provide PORTABLE_RUNTIME or install the packaged runtime next to the JAR");
+        if (!PlatformSupport.isWindows()) {
+            throw new IOException("Native Count＋TIFF compression is currently qualified for Windows only. "
+                + "Use hest-source or source for a byte-exact cross-platform archive.");
+        }
         Path python = portable.resolve("python/python.exe");
         Path script = portable.resolve("app/desktop_worker.py");
         if (!Files.isRegularFile(python) || !Files.isRegularFile(script)) {

@@ -2,6 +2,27 @@
 
 Java 17+ Swing desktop and CLI for importing, compressing, verifying and restoring spatial transcriptomics datasets.
 
+## Platform packages
+
+The Java application and the source-directory archive format run on Windows, Linux and macOS. Each platform package contains a private Java runtime under jre/, so the user does not need to install Java or configure JAVA_HOME. Launch the bundle with Launch-STPyramidJava.sh on Linux or macOS, Launch-STPyramidJava.command on macOS, and Launch-STPyramidJava.cmd on Windows.
+
+Build a Linux or macOS package on that operating system with a matching JDK. The JDK is used only while assembling the package. The resulting directory contains the runtime and does not require a Java installation on the target machine.
+
+```sh
+./java-desktop/package-linux.sh /path/to/jdk-17 /tmp/STPyramid-Linux-x64
+./java-desktop/package-macos.sh /path/to/jdk-17 /tmp/STPyramid-macOS-arm64
+```
+
+The macOS package also creates STPyramid.app. Open the app from Finder or run its Contents/MacOS/STPyramid launcher. The Linux package includes a desktop entry file.
+
+The cross-platform source commands are list-hest, hest-source, source, verify and restore for .stsource archives. The native Count＋TIFF codec is qualified in the supplied Windows runtime. Linux and macOS packages report that capability explicitly instead of attempting to load Windows binaries.
+
+Use capabilities to inspect the installed package.
+
+```sh
+./Launch-STPyramidJava.sh capabilities
+```
+
 ## Build on Windows
 
 Use PowerShell 7 and a JDK with javac.
@@ -20,7 +41,7 @@ Extract the Windows x64 ZIP and double-click `Launch-STPyramidJava.cmd`. Keep th
 To assemble a local offline distribution, use a Windows x64 JDK that includes the desktop modules and an installed qualified Windows runtime that has already prepared its pinned Count component.
 
 ```powershell
-./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/releases/STPyramid-Java-0.2.3-Windows-x64
+./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/releases/STPyramid-Java-0.2.4-Windows-x64
 ```
 
 The bundle contains third-party components. See `THIRD_PARTY.md` and the Java `legal/` directory. The packaged Count source has a pending original-code license upstream. The offline bundle is for local use until redistribution rights are established.
