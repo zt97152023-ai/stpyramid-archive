@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import sys
+from threading import Lock
 import time
 
 
@@ -34,7 +35,7 @@ def _configure_worker(cpu, seconds, workers=1):
     process.nice(psutil.IDLE_PRIORITY_CLASS)
     os.environ["ST262_CPU"] = str(selected[-1])
     os.environ["ST262_DEADLINE_EPOCH"] = str(time.time() + seconds)
-    return len(selected)
+    return selected
 
 
 def write_count_component(counts, metadata, catalog, source_identities, output):
@@ -64,13 +65,15 @@ def write_count_component(counts, metadata, catalog, source_identities, output):
 
 
 def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, cpu=None, timeout=14400,
-                   on_stage=None, image_mode="maximum", fused_workers=1):
+                   on_stage=None, image_mode="maximum", fused_workers=1, maximum_workers=1):
     """Build both modalities, verify the integrated package, and publish the verified directory."""
     if image_mode not in {"maximum", "fused"}:
         raise ValueError("Unknown integrated image mode")
-    if type(fused_workers) is not int or not 1 <= fused_workers <= 8:
+    requested = fused_workers if image_mode == "fused" else maximum_workers
+    if type(requested) is not int or not 1 <= requested <= 8:
         raise ValueError("Native worker count must be between 1 and 8")
-    workers = _configure_worker(cpu, timeout, fused_workers if image_mode == "fused" else 1)
+    cpus = _configure_worker(cpu, timeout, requested)
+    workers = len(cpus)
     import container_compare as archive
     import joint_next as j
     from archive_image_encode import encode_images
@@ -97,19 +100,22 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
     qualified_hf(runtimes[2], runtimes[0])
     work.mkdir(parents=True)
     events = []
+    stage_lock = Lock()
 
     def timed(name, operation):
         remaining_seconds()
         if on_stage is not None:
-            on_stage({"begin": name})
+            with stage_lock:
+                on_stage({"begin": name})
         started = time.perf_counter()
         try:
             return operation()
         finally:
             elapsed = time.perf_counter() - started
-            events.append({"name": name, "seconds": elapsed})
-            if on_stage is not None:
-                on_stage({"end": name, "seconds": elapsed})
+            with stage_lock:
+                events.append({"name": name, "seconds": elapsed})
+                if on_stage is not None:
+                    on_stage({"end": name, "seconds": elapsed})
 
     try:
         identities = {key: {"bytes": path.stat().st_size, "sha256": sha256(path)}
@@ -123,7 +129,9 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
         timed("shared_count_encode", lambda: write_count_component(
             counts, metadata, catalog, count_source_identities, count_component))
         if image_mode == "maximum":
-            image_packages = encode_images(census, catalog, work, work / "image_packages", runtimes, timed)
+            if on_stage is not None:
+                on_stage({"native_workers": workers})
+            image_packages = encode_images(census, catalog, work, work / "image_packages", runtimes, timed, cpus=cpus)
             image_component = image_packages / "hf_l1_conditional"
         else:
             from pyramid_image_archive import RUNTIMES, encode_native_pyramid

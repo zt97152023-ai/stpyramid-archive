@@ -20,7 +20,7 @@ Extract the Windows x64 ZIP and double-click `Launch-STPyramidJava.cmd`. Keep th
 To assemble a local offline distribution, use a Windows x64 JDK that includes the desktop modules and an installed qualified Windows runtime that has already prepared its pinned Count component.
 
 ```powershell
-./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/releases/STPyramid-Java-0.2.1-Windows-x64
+./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/releases/STPyramid-Java-0.2.2-Windows-x64
 ```
 
 The bundle contains third-party components. See `THIRD_PARTY.md` and the Java `legal/` directory. The packaged Count source has a pending original-code license upstream. The offline bundle is for local use until redistribution rights are established.
@@ -40,6 +40,8 @@ java -jar STPyramidJava.jar restore H:/archive/NCBI29.stpyramid H:/restored/NCBI
 The integrated HEST mode defaults to **Fast fusion**. Select **Maximum compression** when desired. The CLI commands `hest`, `hest-batch` and `paired` retain maximum compression. Their `-fused` counterparts use the fused native-pyramid codec and the same Shared_local Count component. The fused integrated encoder uses up to four native workers by default. Set `STPYRAMID_FUSED_WORKERS` to an integer from 1 to 8 to tune the resource allocation. Smaller CPU affinity sets reduce the effective worker count. Encoded records are written in the original order. Each native record and the published complete archive retain their lossless checks. Both modes verify restored scientific H5AD content and every native TIFF RGB level. They require supported H5AD Count data, pre-aligned L0 coordinates and supported native TIFF geometry and storage. See the repository README for precise limits. The separate image mode invokes the fast TIFF pipeline for image-only archives. The paired CLI command accepts explicitly selected TIFF, H5AD and JSON paths outside a HEST directory.
 
 Full native validation and restoration decode independent target tiles concurrently while keeping parent lookup, bank reads and stripe assembly ordered. `STPYRAMID_SCAN_WORKERS` controls full-scan workers in standalone verification and restoration. The default is 4 and supported values are 1 to 8. Faster scans do not change the archive format or the separate region-query reader.
+
+Maximum compression runs independent candidate families concurrently. Direct JPEG XL candidates for identical native RGB tiles share one encode and immediate decode check. Candidate selection uses the existing total bytes, route order, and tie-breaking rules. Set `STPYRAMID_MAXIMUM_WORKERS` to 1 through 8 to set the maximum per-job CPU allocation. The default is 8. A budget of 1 uses the serial path. Stage durations in parallel jobs can overlap. Use process wall time for end-to-end timing.
 
 ## Original source files
 

@@ -67,7 +67,9 @@ def encode_job(job, emit):
                                 work=scratch / "work", on_stage=emit,
                                 image_mode="fused" if mode == "integrated-fused" else "maximum",
                                 fused_workers=int(os.environ.get("STPYRAMID_FUSED_WORKERS", "4"))
-                                if mode == "integrated-fused" else 1)
+                                if mode == "integrated-fused" else 1,
+                                maximum_workers=int(os.environ.get("STPYRAMID_MAXIMUM_WORKERS", "8"))
+                                if mode == "integrated" else 1)
         verification = result["verification"]
         total_bytes = verification["ledger"]["total_package_bytes"]
         levels = verification["image"]["levels"]
