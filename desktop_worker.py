@@ -18,6 +18,8 @@ from fetch_count_runtime import count_source_ready, fetch_count_source
 def prepare_count_runtime(language, emit):
     if count_source_ready():
         return
+    if (ROOT.parent / "OFFLINE").is_file():
+        raise RuntimeError("The packaged Count runtime is missing or differs from its pinned source. Re-extract the application.")
     stage = "prepare_count_runtime"
     emit({"begin": stage})
     started = time.perf_counter()
@@ -39,7 +41,7 @@ def encode_job(job, emit):
         raise ValueError(translate(language, "Select a TIFF image file."))
     mode = job["mode"]
     sources = [image]
-    if mode == "integrated":
+    if mode in ("integrated", "integrated-fused"):
         counts = _plain(job["counts"])
         metadata = _plain(job["metadata"]) if job.get("metadata") else None
         if not counts.is_file() or (metadata is not None and not metadata.is_file()):
@@ -49,20 +51,23 @@ def encode_job(job, emit):
         raise ValueError(translate(language, "Unknown compression mode."))
 
     output = _fresh(job["output"], *sources)
-    if mode == "integrated":
+    if mode in ("integrated", "integrated-fused"):
         prepare_count_runtime(language, emit)
     output.parent.mkdir(parents=True, exist_ok=True)
     scratch = Path(tempfile.mkdtemp(prefix=".stpyramid-", dir=output.parent)).resolve()
     emit({"scratch": str(scratch)})
 
-    if mode == "integrated":
+    if mode in ("integrated", "integrated-fused"):
         from integrated_encode import encode_archive
 
         if metadata is None:
             metadata = scratch / "metadata.json"
             metadata.write_text("{}\n", encoding="utf-8")
         result = encode_archive(image, counts, metadata, RUNTIME, output,
-                                work=scratch / "work", on_stage=emit)
+                                work=scratch / "work", on_stage=emit,
+                                image_mode="fused" if mode == "integrated-fused" else "maximum",
+                                fused_workers=int(os.environ.get("STPYRAMID_FUSED_WORKERS", "4"))
+                                if mode == "integrated-fused" else 1)
         verification = result["verification"]
         total_bytes = verification["ledger"]["total_package_bytes"]
         levels = verification["image"]["levels"]

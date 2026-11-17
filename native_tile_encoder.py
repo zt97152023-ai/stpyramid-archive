@@ -23,10 +23,15 @@ from st262_controls import native_command
 from stbaseline import slide_redundancy as base, slide_redundancy_scan as scan
 
 
-def write_tile_inputs(census, catalog, input_dir, native_level, *, include_constant_tiles, parent_geometry=None):
+def write_tile_inputs(census, catalog, input_dir, native_level, *, include_constant_tiles, parent_geometry=None,
+                      partitions=1):
     """Write target and reference RGB, indexed by the encoder's level-local IDs."""
     input_dir.mkdir()
     index_rows = {}
+    directories = [input_dir] if partitions == 1 else [input_dir / f"part_{i}" for i in range(partitions)]
+    if partitions > 1:
+        for directory in directories:
+            directory.mkdir()
     start = archive.starts(catalog["levels"])[native_level]
 
     @lru_cache(maxsize=32)
@@ -49,11 +54,15 @@ def write_tile_inputs(census, catalog, input_dir, native_level, *, include_const
             reference = np.ascontiguousarray(read_parent(parent_id)[rows[:, None], columns[None, :]])
         local_gid = gid - start
         rgb_name, reference_name = f"{local_gid:06d}.rgb", f"{local_gid:06d}.anchor"
-        (input_dir / rgb_name).write_bytes(rgb.tobytes())
-        (input_dir / reference_name).write_bytes(reference.tobytes())
+        directory = directories[len(index_rows) % partitions]
+        (directory / rgb_name).write_bytes(rgb.tobytes())
+        (directory / reference_name).write_bytes(reference.tobytes())
         # The legacy native index uses level 0 within each independently encoded batch.
         index_rows[gid] = "\t".join(map(str, (local_gid, 0, x, y, width, height, rgb_name, reference_name)))
-    (input_dir / "index.tsv").write_text("".join(row + "\n" for row in index_rows.values()), encoding="ascii")
+    rows = list(index_rows.values())
+    for index, directory in enumerate(directories):
+        (directory / "index.tsv").write_text("".join(row + "\n" for row in rows[index::partitions]),
+                                             encoding="ascii")
     return index_rows
 
 

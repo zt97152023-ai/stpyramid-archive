@@ -18,7 +18,7 @@ def runtime_dirs(root):
     return tuple(root / key for key in ("089", "091", "hf"))
 
 
-def _configure_worker(cpu, seconds):
+def _configure_worker(cpu, seconds, workers=1):
     import psutil
 
     if sys.platform != "win32":
@@ -27,14 +27,14 @@ def _configure_worker(cpu, seconds):
         raise ValueError("The encoding timeout must be within 1–86400 seconds")
     process = psutil.Process()
     allowed = process.cpu_affinity()
-    if cpu is None:
-        cpu = allowed[-1]
-    if cpu not in allowed:
+    if cpu is not None and cpu not in allowed:
         raise ValueError("CPU is outside the available affinity set")
-    process.cpu_affinity([cpu])
+    selected = [cpu] if cpu is not None else allowed[-workers:]
+    process.cpu_affinity(selected)
     process.nice(psutil.IDLE_PRIORITY_CLASS)
-    os.environ["ST262_CPU"] = str(cpu)
+    os.environ["ST262_CPU"] = str(selected[-1])
     os.environ["ST262_DEADLINE_EPOCH"] = str(time.time() + seconds)
+    return len(selected)
 
 
 def write_count_component(counts, metadata, catalog, source_identities, output):
@@ -64,9 +64,13 @@ def write_count_component(counts, metadata, catalog, source_identities, output):
 
 
 def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, cpu=None, timeout=14400,
-                   on_stage=None):
+                   on_stage=None, image_mode="maximum", fused_workers=1):
     """Build both modalities, verify the integrated package, and publish the verified directory."""
-    _configure_worker(cpu, timeout)
+    if image_mode not in {"maximum", "fused"}:
+        raise ValueError("Unknown integrated image mode")
+    if type(fused_workers) is not int or not 1 <= fused_workers <= 8:
+        raise ValueError("Native worker count must be between 1 and 8")
+    workers = _configure_worker(cpu, timeout, fused_workers if image_mode == "fused" else 1)
     import container_compare as archive
     import joint_next as j
     from archive_image_encode import encode_images
@@ -118,12 +122,23 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
         count_source_identities = {key: identities[key] for key in ("wsi", "h5ad")}
         timed("shared_count_encode", lambda: write_count_component(
             counts, metadata, catalog, count_source_identities, count_component))
-        image_packages = encode_images(census, catalog, work, work / "image_packages", runtimes, timed)
+        if image_mode == "maximum":
+            image_packages = encode_images(census, catalog, work, work / "image_packages", runtimes, timed)
+            image_component = image_packages / "hf_l1_conditional"
+        else:
+            from pyramid_image_archive import RUNTIMES, encode_native_pyramid
+            if runtimes != tuple(path.resolve(strict=True) for path in RUNTIMES):
+                raise ValueError("Fused image encoding requires the staged desktop runtimes")
+            image_component = work / "fused_image"
+            if on_stage is not None:
+                on_stage({"native_workers": workers})
+            timed("fused_image_encode", lambda: encode_native_pyramid(
+                image, image_component, work / "fused_work", on_stage=on_stage,
+                prepared_census=(census, catalog), workers=workers))
         for key, path in sources.items():
             if path.stat().st_size != identities[key]["bytes"] or sha256(path) != identities[key]["sha256"]:
                 raise ValueError("Source input changed during encoding")
         candidate = work / "candidate"
-        image_component = image_packages / "hf_l1_conditional"
         timed("assemble_complete_archive", lambda: archive.pack_integrated(
             count_component, image_component, candidate, count_kind="Shared_local"))
         with archive.IntegratedArchive(candidate, image_factory=lambda p: j.Reader(p, *runtimes)) as reader:
