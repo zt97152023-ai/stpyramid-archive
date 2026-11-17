@@ -11,13 +11,23 @@ from uuid import uuid4
 
 import psutil
 
-from benchmark_hest import publish, read, replace, sha256
+from benchmark_hest import publish, read as read_json_file, replace, sha256
 
 
 ARMS = ("maximum_old", "maximum_v022", "fused_v021")
 TERMINAL = {"PASS", "FAILED", "EVIDENCE_ERROR"}
 VERIFIED = ("h5ad_exact", "h5ad_type_oracle_passed", "native_tiff_metadata_exact", "source_attachment_exact")
 MEASURES = ("archive_bytes", "encode_process_wall_seconds", "verify_wall_seconds", "restore_wall_seconds")
+
+
+def read(path):
+    for attempt in range(12):
+        try:
+            return read_json_file(path)
+        except PermissionError:
+            if attempt == 11:
+                raise
+            time.sleep(.25)
 
 
 def verified_archive(receipt, profile, original_bytes):
@@ -161,9 +171,10 @@ def supervise(arm, config, rows):
     marker = root / "comparison_retry.json"
     status_path = root / "STATUS.json"
     retry = read(marker) if marker.is_file() else {}
+    if any(controller_is_live(pid, root) for pid in (retry.get("pid"), config.get("initial_pid"))):
+        return "ACTIVE"
     status = read(status_path) if status_path.is_file() else {}
-    pids = (retry.get("pid"), status.get("controller_pid"), config.get("initial_pid"))
-    if any(controller_is_live(pid, root) for pid in set(pids)):
+    if controller_is_live(status.get("controller_pid"), root):
         return "ACTIVE"
     unfinished = any(row[f"{arm}_state"] not in TERMINAL for row in rows)
     retryable = any(row[f"{arm}_state"] == "FAILED"
@@ -209,8 +220,16 @@ def main():
             writer = csv.DictWriter(stream, fieldnames=fields)
             writer.writeheader()
             writer.writerows(paired)
-        replace(staged, args.plan.parent / "paired_results.csv")
-        publish(args.plan.parent / "SUMMARY.json", result)
+        try:
+            replace(staged, args.plan.parent / "paired_results.csv")
+            publish(args.plan.parent / "SUMMARY.json", result)
+        except PermissionError as error:
+            if not args.watch:
+                raise
+            staged.unlink(missing_ok=True)
+            print(f"Comparison report is open for editing and will be retried: {error}", flush=True)
+            time.sleep(30)
+            continue
         if not args.watch or result["state"] in {"PASS", "INCOMPLETE"}:
             return
         time.sleep(30)
