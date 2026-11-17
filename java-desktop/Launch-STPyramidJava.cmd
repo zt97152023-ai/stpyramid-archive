@@ -1,8 +1,8 @@
 @echo off
 setlocal
-set "APP_JAR=%~dp0STPyramidJava-0.2.2-windows.jar"
+set "APP_JAR=%~dp0STPyramidJava-0.2.3-windows.jar"
 if not exist "%APP_JAR%" (
-  echo Put this launcher next to STPyramidJava-0.2.2-windows.jar.
+  echo Put this launcher next to STPyramidJava-0.2.3-windows.jar.
   pause
   exit /b 1
 )

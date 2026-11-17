@@ -43,7 +43,7 @@ $app = "$target/runtime/app"
 if ($LASTEXITCODE -ne 0) { throw 'Install and verify the pinned Count component in the input runtime before packaging.' }
 Set-Content -LiteralPath "$target/runtime/OFFLINE" -Encoding ascii -Value 'Use the pinned runtime included in this package.'
 Copy-Item -LiteralPath "$PSScriptRoot/Launch-STPyramidJava.cmd", "$PSScriptRoot/README.md", "$source/THIRD_PARTY.md" -Destination $target
-$jar = "$target/STPyramidJava-0.2.2-windows.jar"
+$jar = "$target/STPyramidJava-0.2.3-windows.jar"
 & "$PSScriptRoot/build.ps1" -Jdk $jdkPath -Output $jar
 & "$target/jre/bin/java.exe" -jar $jar help
 if ($LASTEXITCODE -ne 0) { throw 'Bundled JAR launch failed.' }

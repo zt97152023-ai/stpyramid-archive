@@ -66,34 +66,33 @@ def _collect_tile_records(census, catalog, conditional_record_paths, workers):
 def _encode_parent_conditioned_tiles(census, catalog, work, timed, workers):
     starts = archive.starts(catalog["levels"])
     record_paths = {}
-    native_cpu = 0.0
-    for level in (0, 1):
-        input_dir = work / f"spool_L{level}"
-        inputs = timed(f"prepare_native_L{level}", lambda: write_tile_inputs(
-            census, catalog, input_dir, level, include_constant_tiles=False, partitions=workers
-        ))
-        if not inputs:
-            continue
-        output_dir = work / f"fused_L{level}"
-        if workers == 1:
-            shards = [(input_dir, output_dir)]
-        else:
-            output_dir.mkdir()
-            shards = [(input_dir / f"part_{i}", output_dir / f"part_{i}") for i in range(min(workers, len(inputs)))]
 
-        def encode_partition(paths):
-            return run_native_encoder(ROOT / "bin/slide_jxl091.exe", "encode_direct", *paths, timeout=7200)
+    def encode_partition(spool, output):
+        return run_native_encoder(ROOT / "bin/slide_jxl091.exe", "encode_direct", spool, output, timeout=7200)
 
-        def encode_all():
-            if len(shards) == 1:
-                return encode_partition(shards[0])
-            with ThreadPoolExecutor(max_workers=len(shards)) as pool:
-                return sum(pool.map(encode_partition, shards))
-
-        native_cpu += timed(f"encode_fused_L{level}", encode_all)
-        for index, gid in enumerate(inputs):
-            directory = shards[index % workers][1]
-            record_paths[gid] = directory / "conditional" / f"{gid - starts[level]:06d}.bin"
+    # Both levels read their original parent pixels from the frozen census.
+    # A single pool keeps the total number of native children within the CPU budget.
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        pending = []
+        for level in (0, 1):
+            input_dir = work / f"spool_L{level}"
+            inputs = timed(f"prepare_native_L{level}", lambda: write_tile_inputs(
+                census, catalog, input_dir, level, include_constant_tiles=False, partitions=workers
+            ))
+            if not inputs:
+                continue
+            output_dir = work / f"fused_L{level}"
+            if workers == 1:
+                shards = [(input_dir, output_dir)]
+            else:
+                output_dir.mkdir()
+                shards = [(input_dir / f"part_{i}", output_dir / f"part_{i}")
+                          for i in range(min(workers, len(inputs)))]
+            pending.extend(pool.submit(encode_partition, spool, output) for spool, output in shards)
+            for index, gid in enumerate(inputs):
+                directory = shards[index % workers][1]
+                record_paths[gid] = directory / "conditional" / f"{gid - starts[level]:06d}.bin"
+        native_cpu = timed("finish_parent_conditioned_batches", lambda: sum(job.result() for job in pending))
     return record_paths, native_cpu
 
 
@@ -133,8 +132,8 @@ def encode_native_pyramid(source, package, work, method="fused_l0_l1", on_stage=
         conditional_record_paths, native_cpu = {}, None
         record_stage = "encode_direct_tiles"
     else:
-        conditional_record_paths, native_cpu = _encode_parent_conditioned_tiles(
-            census, catalog, work, timed, workers)
+        conditional_record_paths, native_cpu = timed("parent_conditioned_batches",
+            lambda: _encode_parent_conditioned_tiles(census, catalog, work, timed, workers))
         record_stage = "collect_conditional_and_encode_direct_tiles"
     records, constant_cache = timed(record_stage, lambda: _collect_tile_records(
         census, catalog, conditional_record_paths, workers

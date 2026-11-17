@@ -19,20 +19,22 @@ def runtime_dirs(root):
     return tuple(root / key for key in ("089", "091", "hf"))
 
 
-def _configure_worker(cpu, seconds, workers=1, *, prefer_available_cores=False):
+def _configure_worker(cpu, seconds, workers=1):
     import psutil
 
     if sys.platform != "win32":
         raise RuntimeError("The integrated native runtime adapter requires Windows")
     if not 1 <= seconds <= 86400:
         raise ValueError("The encoding timeout must be within 1–86400 seconds")
+    if type(workers) is not int or not 1 <= workers <= 8:
+        raise ValueError("Native worker count must be between 1 and 8")
     process = psutil.Process()
     allowed = process.cpu_affinity()
     if cpu is not None and cpu not in allowed:
         raise ValueError("CPU is outside the available affinity set")
     if cpu is not None:
         selected = [cpu]
-    elif prefer_available_cores and workers > 1:
+    elif workers > 1:
         utilization = psutil.cpu_percent(interval=0.25, percpu=True)
         selected = sorted(allowed, key=lambda core: (utilization[core], core))[:workers]
     else:
@@ -76,9 +78,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
     if image_mode not in {"maximum", "fused"}:
         raise ValueError("Unknown integrated image mode")
     requested = fused_workers if image_mode == "fused" else maximum_workers
-    if type(requested) is not int or not 1 <= requested <= 8:
-        raise ValueError("Native worker count must be between 1 and 8")
-    cpus = _configure_worker(cpu, timeout, requested, prefer_available_cores=image_mode == "maximum")
+    cpus = _configure_worker(cpu, timeout, requested)
     workers = len(cpus)
     import container_compare as archive
     import joint_next as j
@@ -145,7 +145,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
                 raise ValueError("Fused image encoding requires the staged desktop runtimes")
             image_component = work / "fused_image"
             if on_stage is not None:
-                on_stage({"native_workers": workers})
+                on_stage({"native_workers": workers, "candidate_cpu_affinity": cpus})
             timed("fused_image_encode", lambda: encode_native_pyramid(
                 image, image_component, work / "fused_work", on_stage=on_stage,
                 prepared_census=(census, catalog), workers=workers))

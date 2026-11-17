@@ -66,7 +66,7 @@ def encode_job(job, emit):
         result = encode_archive(image, counts, metadata, RUNTIME, output,
                                 work=scratch / "work", on_stage=emit,
                                 image_mode="fused" if mode == "integrated-fused" else "maximum",
-                                fused_workers=int(os.environ.get("STPYRAMID_FUSED_WORKERS", "4"))
+                                fused_workers=int(os.environ.get("STPYRAMID_FUSED_WORKERS", "8"))
                                 if mode == "integrated-fused" else 1,
                                 maximum_workers=int(os.environ.get("STPYRAMID_MAXIMUM_WORKERS", "8"))
                                 if mode == "integrated" else 1)
@@ -74,13 +74,17 @@ def encode_job(job, emit):
         total_bytes = verification["ledger"]["total_package_bytes"]
         levels = verification["image"]["levels"]
     else:
+        from integrated_encode import _configure_worker
         from native_tile_encoder import RUNTIMES, archive
         from pyramid_image_archive import encode_native_pyramid
 
+        cpus = _configure_worker(None, 14400, int(os.environ.get("STPYRAMID_FUSED_WORKERS", "8")))
+        workers = len(cpus)
+        emit({"native_workers": workers, "candidate_cpu_affinity": cpus})
         candidate = scratch / "archive"
-        result = encode_native_pyramid(image, candidate, scratch / "work", on_stage=emit)
+        result = encode_native_pyramid(image, candidate, scratch / "work", on_stage=emit, workers=workers)
         emit({"begin": "verify_image_archive"})
-        with archive.Reader(candidate, *RUNTIMES) as reader:
+        with archive.Reader(candidate, *RUNTIMES, scan_workers=workers) as reader:
             verification = reader.verify()
         if not verification["ok"]:
             raise ValueError(translate(language, "Lossless image verification failed."))
@@ -108,7 +112,9 @@ def read_job(job, emit):
     root = container_compare._plain(job["archive"])
     manifest = container_compare._json(root / "manifest.json")
     runtime = runtime_dirs(Path(job.get("runtime") or RUNTIME))
-    requested = int(os.environ.get("STPYRAMID_SCAN_WORKERS", "4"))
+    image_info = manifest if manifest.get("format") == joint_next.FORMAT else manifest.get("image", {})
+    profile = image_info.get("profile")
+    requested = int(os.environ.get("STPYRAMID_SCAN_WORKERS", "8" if profile == "l1_conditional" else "4"))
     if not 1 <= requested <= 8:
         raise ValueError("Scan worker count must be between 1 and 8")
     workers = min(requested, len(psutil.Process().cpu_affinity()))
