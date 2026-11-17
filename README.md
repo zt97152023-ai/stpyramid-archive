@@ -8,6 +8,7 @@
 | Maximum compression | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF+L1 candidate search and Shared Count integration |
 | Fast fused v1 | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | One selected encoder per tile for the native RGB image pyramid |
 | Java Desktop v0.2.4 | [java-desktop-v0.2.4](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.4) | No-configuration Java desktop, Windows native backend, Linux/macOS source-archive packages |
+| Source-only v0.2.5 | [java-desktop-v0.2.5](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.5) | Clean open-source tree without native runtime binaries or study data |
 
 ## Open-source source release
 
