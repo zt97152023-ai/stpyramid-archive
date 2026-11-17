@@ -1,6 +1,8 @@
 """Encode, verify, read regions from, or restore a native image pyramid."""
 import argparse
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from functools import lru_cache
 import hashlib
 import json
@@ -27,20 +29,37 @@ def _decoder_runtime_pins():
             "hf": archive._hf()._runtime(RUNTIMES[2])[1]}
 
 
-def _collect_tile_records(census, catalog, conditional_record_paths):
+def _collect_tile_records(census, catalog, conditional_record_paths, workers):
+    def encode_jxl(gid):
+        return base._encode(scan.read_tile(census, gid, catalog=catalog))
+
     @lru_cache(maxsize=256)
     def encode_constant_jxl(canonical_gid):
-        return base._encode(scan.read_tile(census, canonical_gid, catalog=catalog))
+        return encode_jxl(canonical_gid)
 
     records = []
-    for tile in catalog["tiles"]:
-        gid = tile["gid"]
-        if gid in conditional_record_paths:
-            records.append((archive.CONDITIONAL091, conditional_record_paths[gid].read_bytes()))
-        elif tile["constant_rgb"] is not None:
-            records.append((archive.JXL, encode_constant_jxl(tile["canonical_gid"])))
-        else:
-            records.append((archive.JXL, base._encode(scan.read_tile(census, gid, catalog=catalog))))
+    pending = deque()
+
+    def collect_jxl():
+        index, result = pending.popleft()
+        records[index] = archive.JXL, result.result()
+
+    with (ThreadPoolExecutor(max_workers=workers) if workers > 1 else nullcontext()) as pool:
+        for tile in catalog["tiles"]:
+            gid = tile["gid"]
+            if gid in conditional_record_paths:
+                records.append((archive.CONDITIONAL091, conditional_record_paths[gid].read_bytes()))
+            elif tile["constant_rgb"] is not None:
+                records.append((archive.JXL, encode_constant_jxl(tile["canonical_gid"])))
+            elif pool is None:
+                records.append((archive.JXL, encode_jxl(gid)))
+            else:
+                pending.append((len(records), pool.submit(encode_jxl, gid)))
+                records.append(None)
+                if len(pending) == workers * 2:
+                    collect_jxl()
+        while pending:
+            collect_jxl()
     return records, encode_constant_jxl.cache_info()._asdict()
 
 
@@ -118,7 +137,7 @@ def encode_native_pyramid(source, package, work, method="fused_l0_l1", on_stage=
             census, catalog, work, timed, workers)
         record_stage = "collect_conditional_and_encode_direct_tiles"
     records, constant_cache = timed(record_stage, lambda: _collect_tile_records(
-        census, catalog, conditional_record_paths
+        census, catalog, conditional_record_paths, workers
     ))
     is_direct = method == "direct9"
     timed("assemble_image_package", lambda: archive.write_tile_archive(

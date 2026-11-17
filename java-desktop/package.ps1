@@ -34,7 +34,7 @@ function Copy-RuntimeTree($From, $To, [string[]] $Extra = @()) {
 New-Item -ItemType Directory -Path $target | Out-Null
 Copy-RuntimeTree $jdkPath "$target/jre"
 Copy-RuntimeTree $runtimePath "$target/runtime" @('/XD', '__pycache__', '/XF', 'STPyramid.exe', 'README-EN.txt', '使用说明.txt', '*.pyc')
-foreach ($path in @('codec/integrated_encode.py', 'native_tile_encoder.py', 'pyramid_image_archive.py', 'desktop_worker.py')) {
+foreach ($path in @('codec/integrated_encode.py', 'codec/joint_next.py', 'native_tile_encoder.py', 'pyramid_image_archive.py', 'desktop_worker.py')) {
     Copy-Item -LiteralPath (Join-Path $source $path) -Destination "$target/runtime/app/$path"
 }
 $python = "$target/runtime/python/python.exe"
@@ -43,7 +43,7 @@ $app = "$target/runtime/app"
 if ($LASTEXITCODE -ne 0) { throw 'Install and verify the pinned Count component in the input runtime before packaging.' }
 Set-Content -LiteralPath "$target/runtime/OFFLINE" -Encoding ascii -Value 'Use the pinned runtime included in this package.'
 Copy-Item -LiteralPath "$PSScriptRoot/Launch-STPyramidJava.cmd", "$PSScriptRoot/README.md", "$source/THIRD_PARTY.md" -Destination $target
-$jar = "$target/STPyramidJava-0.2.0-windows.jar"
+$jar = "$target/STPyramidJava-0.2.1-windows.jar"
 & "$PSScriptRoot/build.ps1" -Jdk $jdkPath -Output $jar
 & "$target/jre/bin/java.exe" -jar $jar help
 if ($LASTEXITCODE -ne 0) { throw 'Bundled JAR launch failed.' }

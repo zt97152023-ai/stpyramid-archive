@@ -4,7 +4,8 @@
 Only the two candidate axes change; all native L>=2 are independent JXL9.
 """
 import copy
-from collections import OrderedDict
+from collections import OrderedDict, deque
+from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 import json
 from pathlib import Path
@@ -272,7 +273,10 @@ class _ScanReferenceCache:
 class Reader(prior.Reader):
     _depth_limit = 2
 
-    def __init__(self, directory, r089=None, r091=None, rhf=None):
+    def __init__(self, directory, r089=None, r091=None, rhf=None, *, scan_workers=1):
+        if type(scan_workers) is not int or not 1 <= scan_workers <= 8:
+            raise ValueError('Scan worker count must be between 1 and 8')
+        self._scan_workers = scan_workers
         self.root = _plain(directory, directory=True)
         if any((self.root/name).exists() for name in ('INCOMPLETE', 'failure.json')): raise ValueError('Incomplete HF/L1 package')
         blob = old._read_bounded(_plain(self.root/'manifest.json'), base.MAX_MANIFEST_BYTES)
@@ -390,18 +394,20 @@ class Reader(prior.Reader):
         self.native_hf_tiles_decoded += 1
         return self._native_hf
 
-    def _decode_referenced_tile(self, route, blob, desc, cache, cache_state, depth, scan_cache):
+    def _prepare_reference(self, route, blob, desc, cache, cache_state, depth, scan_cache):
         parent_id, ys, xs = self._validated_parent(route, blob, desc)
         self.anchor_requests += 1
         self.anchor_cache_hits += ((cache is not None and parent_id in cache)
                                    or (scan_cache is not None and parent_id in scan_cache.tiles))
         parent = self._tile(parent_id, cache, cache_state, depth+1, scan_cache=scan_cache)
         anchor = np.ascontiguousarray(parent[ys[:, None], xs[None, :]])
-        decoder = self._get_native_decoder(route)
-        record_id = desc[0] - self._level_start[desc[1]]
+        return self._get_native_decoder(route), anchor
+
+    def _decode_referenced_tile(self, route, blob, desc, cache, cache_state, depth, scan_cache):
+        decoder, anchor = self._prepare_reference(route, blob, desc, cache, cache_state, depth, scan_cache)
         w, h = desc[4:]
         started = time.perf_counter()
-        pixels = decoder.decode(blob, w, h, record_id, anchor)
+        pixels = decoder.decode(blob, w, h, desc[0] - self._level_start[desc[1]], anchor)
         self.native_decode_seconds += time.perf_counter() - started
         self.native_tiles_decoded += 1
         return pixels
@@ -451,6 +457,9 @@ class Reader(prior.Reader):
         tile_size = base.TILE
         columns = (width + tile_size - 1) // tile_size
         scan_cache = _ScanReferenceCache() if self._has_reference_level(level) else None
+        if self._scan_workers > 1 and columns > 1:
+            yield from self._parallel_stripes(info, columns, scan_cache)
+            return
         for ty, y in enumerate(range(0, height, tile_size)):
             stripe_height = min(tile_size, height - y)
             stripe = np.empty((stripe_height, width, 3), np.uint8)
@@ -460,6 +469,60 @@ class Reader(prior.Reader):
                 stripe[:, x:x + pixels.shape[1]] = pixels
                 self.requested_pixels += stripe_height * pixels.shape[1]
             yield stripe
+
+    def _parallel_stripes(self, info, columns, scan_cache):
+        import imagecodecs
+
+        self._setup()
+        height, width, _ = info['shape']
+        level_start = self._level_start[info['level']]
+        tile_size = base.TILE
+
+        def decode(blob, w, h, decoder, record_id, anchor):
+            if decoder is None:
+                pixels = imagecodecs.jpegxl_decode(blob, numthreads=1, out=np.empty((h, w, 3), np.uint8))
+                elapsed = 0.
+            else:
+                started = time.perf_counter()
+                pixels = decoder.decode(blob, w, h, record_id, anchor)
+                elapsed = time.perf_counter() - started
+            if pixels.shape != (h, w, 3) or pixels.dtype != np.uint8:
+                raise ValueError('Decoded native shape/type')
+            return pixels, elapsed
+
+        with ThreadPoolExecutor(max_workers=min(columns, self._scan_workers)) as pool:
+            for ty, y in enumerate(range(0, height, tile_size)):
+                pending = deque()
+                stripe = np.empty((min(tile_size, height - y), width, 3), np.uint8)
+
+                def collect():
+                    x, route, result = pending.popleft()
+                    pixels, elapsed = result.result()
+                    stripe[:, x:x + pixels.shape[1]] = pixels
+                    n = pixels.shape[0] * pixels.shape[1]
+                    self.requested_pixels += n
+                    self.decoded_pixels += n
+                    self.native_decode_seconds += elapsed
+                    if route == JXL:
+                        self.jxl_tiles_decoded += 1
+                    else:
+                        self.native_tiles_decoded += 1
+
+                for tx in range(columns):
+                    gid = level_start + ty * columns + tx
+                    route, blob = self._read_tile_record(gid)
+                    desc = self._descriptors[gid]
+                    decoder, anchor = None, None
+                    if route != JXL:
+                        decoder, anchor = self._prepare_reference(route, blob, desc, None, None, 0, scan_cache)
+                    self.logical_tiles_read += 1
+                    result = pool.submit(decode, blob, desc[4], desc[5], decoder, gid - level_start, anchor)
+                    pending.append((tx * tile_size, route, result))
+                    if len(pending) == 2 * self._scan_workers:
+                        collect()
+                while pending:
+                    collect()
+                yield stripe
 
     def _has_reference_level(self, level):
         return level < 2

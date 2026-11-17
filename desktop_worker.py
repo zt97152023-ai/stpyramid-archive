@@ -99,17 +99,23 @@ def encode_job(job, emit):
 def read_job(job, emit):
     import container_compare
     import joint_next
+    import psutil
     from integrated_encode import runtime_dirs
 
     language = job.get("language", "en")
     root = container_compare._plain(job["archive"])
     manifest = container_compare._json(root / "manifest.json")
     runtime = runtime_dirs(Path(job.get("runtime") or RUNTIME))
+    requested = int(os.environ.get("STPYRAMID_SCAN_WORKERS", "4"))
+    if not 1 <= requested <= 8:
+        raise ValueError("Scan worker count must be between 1 and 8")
+    workers = min(requested, len(psutil.Process().cpu_affinity()))
+    emit({"native_scan_workers": workers})
     if manifest.get("format") == container_compare.FORMAT:
         reader = container_compare.IntegratedArchive(
-            root, image_factory=lambda path: joint_next.Reader(path, *runtime))
+            root, image_factory=lambda path: joint_next.Reader(path, *runtime, scan_workers=workers))
     elif manifest.get("format") == joint_next.FORMAT:
-        reader = joint_next.Reader(root, *runtime)
+        reader = joint_next.Reader(root, *runtime, scan_workers=workers)
     else:
         raise ValueError(translate(language, "Select an archive folder created by STPyramid."))
 

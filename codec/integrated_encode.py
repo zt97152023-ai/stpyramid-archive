@@ -141,7 +141,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
         candidate = work / "candidate"
         timed("assemble_complete_archive", lambda: archive.pack_integrated(
             count_component, image_component, candidate, count_kind="Shared_local"))
-        with archive.IntegratedArchive(candidate, image_factory=lambda p: j.Reader(p, *runtimes)) as reader:
+        with archive.IntegratedArchive(candidate, image_factory=lambda p: j.Reader(p, *runtimes, scan_workers=workers)) as reader:
             result = timed("verify_counts_pixels_and_files", reader.verify)
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists() or target.is_symlink():
