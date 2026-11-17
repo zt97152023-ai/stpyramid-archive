@@ -41,7 +41,7 @@ The integrated HEST mode defaults to **Fast fusion**. Select **Maximum compressi
 
 Full native validation and restoration decode independent target tiles concurrently while keeping parent lookup, bank reads and stripe assembly ordered. `STPYRAMID_SCAN_WORKERS` controls full-scan workers in standalone verification and restoration. The default is 4 and supported values are 1 to 8. Faster scans do not change the archive format or the separate region-query reader.
 
-Maximum compression runs independent candidate families concurrently. Direct JPEG XL candidates for identical native RGB tiles share one encode and immediate decode check. Candidate selection uses the existing total bytes, route order, and tie-breaking rules. Set `STPYRAMID_MAXIMUM_WORKERS` to 1 through 8 to set the maximum per-job CPU allocation. The default is 8. A budget of 1 uses the serial path. Stage durations in parallel jobs can overlap. Use process wall time for end-to-end timing.
+Maximum compression runs independent candidate families concurrently. Direct JPEG XL candidates for identical native RGB tiles share one encode and immediate decode check. Candidate selection uses the existing total bytes, route order, and tie-breaking rules. Set `STPYRAMID_MAXIMUM_WORKERS` to 1 through 8 to set the maximum per-job CPU allocation. The default is 8. The app prefers permitted logical CPUs with lower observed utilization at job start. A budget of 1 uses the serial path. Stage durations in parallel jobs can overlap. Use process wall time for end-to-end timing.
 
 ## Original source files
 

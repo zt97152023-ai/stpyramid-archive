@@ -19,7 +19,7 @@ def runtime_dirs(root):
     return tuple(root / key for key in ("089", "091", "hf"))
 
 
-def _configure_worker(cpu, seconds, workers=1):
+def _configure_worker(cpu, seconds, workers=1, *, prefer_available_cores=False):
     import psutil
 
     if sys.platform != "win32":
@@ -30,7 +30,13 @@ def _configure_worker(cpu, seconds, workers=1):
     allowed = process.cpu_affinity()
     if cpu is not None and cpu not in allowed:
         raise ValueError("CPU is outside the available affinity set")
-    selected = [cpu] if cpu is not None else allowed[-workers:]
+    if cpu is not None:
+        selected = [cpu]
+    elif prefer_available_cores and workers > 1:
+        utilization = psutil.cpu_percent(interval=0.25, percpu=True)
+        selected = sorted(allowed, key=lambda core: (utilization[core], core))[:workers]
+    else:
+        selected = allowed[-workers:]
     process.cpu_affinity(selected)
     process.nice(psutil.IDLE_PRIORITY_CLASS)
     os.environ["ST262_CPU"] = str(selected[-1])
@@ -72,7 +78,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
     requested = fused_workers if image_mode == "fused" else maximum_workers
     if type(requested) is not int or not 1 <= requested <= 8:
         raise ValueError("Native worker count must be between 1 and 8")
-    cpus = _configure_worker(cpu, timeout, requested)
+    cpus = _configure_worker(cpu, timeout, requested, prefer_available_cores=image_mode == "maximum")
     workers = len(cpus)
     import container_compare as archive
     import joint_next as j
@@ -130,7 +136,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
             counts, metadata, catalog, count_source_identities, count_component))
         if image_mode == "maximum":
             if on_stage is not None:
-                on_stage({"native_workers": workers})
+                on_stage({"native_workers": workers, "candidate_cpu_affinity": cpus})
             image_packages = encode_images(census, catalog, work, work / "image_packages", runtimes, timed, cpus=cpus)
             image_component = image_packages / "hf_l1_conditional"
         else:
