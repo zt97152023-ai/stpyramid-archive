@@ -7,6 +7,22 @@
 | Desktop v0.1.0 | [desktop-v0.1.0](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/desktop-v0.1.0) | Windows app with English and Chinese interfaces for compression, verification and restoration |
 | Maximum compression | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF+L1 candidate search and Shared Count integration |
 | Fast fused v1 | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | One selected encoder per tile for the native RGB image pyramid |
+| Java Desktop v0.2.4 | [java-desktop-v0.2.4](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.4) | No-configuration Java desktop, Windows native backend, Linux/macOS source-archive packages |
+
+## Open-source source release
+
+The current source branch is `product/java-spatial-archive`. It contains the
+Java desktop, the original codec source, cross-platform launchers and package
+builders. The repository intentionally excludes study data, native binaries
+and the external Count source whose upstream license is pending. See
+[OPEN_SOURCE_SCOPE.md](OPEN_SOURCE_SCOPE.md), [LICENSE](LICENSE) and
+[THIRD_PARTY.md](THIRD_PARTY.md).
+
+The Windows offline package is assembled outside the source repository. Linux
+and macOS users can build a no-configuration package on the matching operating
+system with `java-desktop/package-linux.sh` or
+`java-desktop/package-macos.sh`. The package includes a matching JRE, so the
+target computer does not need Java or JAVA_HOME.
 
 This branch adds the fused image encoder, using the original container and a compatible decoder. The [fast Windows quick start](results/fast-fused-v1/README.md) covers encoding, verification, ROI reads and TIFF restoration. [Methods](results/fast-fused-v1/METHODS.md) and [ten-slide results](results/fast-fused-v1/RESULTS.md) report the image component. The integrated commands below still use the maximum-compression image path and Shared Count.
 

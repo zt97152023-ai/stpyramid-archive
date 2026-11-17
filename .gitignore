@@ -1,5 +1,7 @@
 /codec/stbaseline/_shared_vendor/baseline/
 /runtime-windows/
+/runtime-windows-source/
+/bin/
 /build/
 /.venv/
 /runs/
@@ -14,3 +16,4 @@ __pycache__/
 *.exe
 *.obj
 *.pdb
+*.zip
