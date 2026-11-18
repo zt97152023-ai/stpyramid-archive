@@ -128,7 +128,7 @@ def read_job(job, emit):
         raise ValueError(translate(language, "Select an archive folder created by STPyramid."))
 
     with reader:
-        if manifest.get("count", {}).get("kind") == "Shared_local":
+        if manifest.get("count", {}).get("kind") in container_compare.SHARED_COUNT_KINDS:
             prepare_count_runtime(language, emit)
         if job["action"] == "restore":
             emit({"begin": "restore_archive"})

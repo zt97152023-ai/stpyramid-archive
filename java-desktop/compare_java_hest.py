@@ -11,6 +11,7 @@ import traceback
 import psutil
 
 from benchmark_hest import check_inputs, java_call, publish, read, sha256, stage_seconds, validate_recovery
+from container_compare import SHARED_COUNT_KINDS
 from joint_next import CONDITIONAL091
 
 
@@ -24,7 +25,7 @@ def compare_arm(args, files, profile):
     encode = java_call(args, root / "encode.log", command, files["image"], files["count"], files["metadata"], archive)
     requested = "hf_l1_conditional" if profile == "maximum" else "l1_conditional"
     manifest = read(archive / "manifest.json")
-    if manifest["image"]["profile"] != requested or manifest["count"]["kind"] != "Shared_local":
+    if manifest["image"]["profile"] != requested or manifest["count"]["kind"] not in SHARED_COUNT_KINDS:
         raise ValueError("Archive profile differs from requested configuration")
     if profile == "fused":
         routes = read(archive / "image/manifest.json")["routes"]
@@ -35,7 +36,8 @@ def compare_arm(args, files, profile):
     verify = java_call(args, root / "verify.log", "verify", archive)
     restore = java_call(args, root / "restore.log", "restore", archive, restored)
     result = validate_recovery(files, archive, restored, root)
-    result.update(state="PASS", sample="NCBI29", profile=profile, encode_process_wall_seconds=encode,
+    result.update(state="PASS", sample="NCBI29", profile=profile, count_kind=manifest["count"]["kind"],
+                  encode_process_wall_seconds=encode,
                   verify_wall_seconds=verify, restore_wall_seconds=restore,
                   native_stages_seconds=stage_seconds(root / "encode.log"),
                   original_bytes=sum(p.stat().st_size for p in files.values()), cpu=args.cpu)

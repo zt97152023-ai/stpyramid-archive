@@ -34,7 +34,19 @@ function Copy-RuntimeTree($From, $To, [string[]] $Extra = @()) {
 New-Item -ItemType Directory -Path $target | Out-Null
 Copy-RuntimeTree $jdkPath "$target/jre"
 Copy-RuntimeTree $runtimePath "$target/runtime" @('/XD', '__pycache__', '/XF', 'STPyramid.exe', 'README-EN.txt', '使用说明.txt', '*.pyc')
-foreach ($path in @('codec/archive_image_encode.py', 'codec/integrated_encode.py', 'codec/joint_next.py', 'native_tile_encoder.py', 'pyramid_image_archive.py', 'desktop_worker.py')) {
+$archiveSources = @(
+    'codec/archive_image_encode.py',
+    'codec/container_compare.py',
+    'codec/integrated_encode.py',
+    'codec/joint_next.py',
+    'codec/stbaseline/count_support_sets.py',
+    'codec/stbaseline/grouped_count.py',
+    'codec/stbaseline/grouped_count_encode.py',
+    'native_tile_encoder.py',
+    'pyramid_image_archive.py',
+    'desktop_worker.py'
+)
+foreach ($path in $archiveSources) {
     Copy-Item -LiteralPath (Join-Path $source $path) -Destination "$target/runtime/app/$path"
 }
 $python = "$target/runtime/python/python.exe"

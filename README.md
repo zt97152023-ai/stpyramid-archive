@@ -29,7 +29,7 @@ This branch adds the fused image encoder, using the original container and a com
 
 ## Maximum-compression integrated workflow
 
-Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its spatial-transcriptomics H5AD in one lossless directory package. The image encoder selects complete records from direct JPEG XL e9 and the 089/091/HF1 native-pyramid paths. The Count encoder uses the pinned Shared_local backend. This release wrapper was qualified on Windows with a synthetic end-to-end test and a read-only replay of the historical NCBI218 integrated archive.
+Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its spatial-transcriptomics H5AD in one lossless directory package. The image encoder selects complete records from direct JPEG XL e9 and the 089/091/HF1 native-pyramid paths. New integrated archives use Shared 2.0 for Count. This checkout reads both Shared 2.0 and historical Shared_local archives. Use the current checkout to read archives that declare `Shared_2`.
 
 ## Inputs and recovery scope
 
@@ -40,7 +40,7 @@ Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its s
 
 ## Windows quick start
 
-The [desktop app](desktop/README.md) runs the integrated Count and image workflow or the fast image-only workflow from a queue. Use `python desktop_app.py` from a qualified Windows environment, or build the portable app with `python desktop/build_portable.py --output runs/STPyramid-Desktop --zip` after installing the pinned Python dependencies. Open `STPyramid.exe` from the extracted directory. The app downloads and checks the pinned Shared_local source on the first Count job.
+The [desktop app](desktop/README.md) runs the integrated Count and image workflow or the fast image-only workflow from a queue. Use `python desktop_app.py` from a qualified Windows environment, or build the portable app with `python desktop/build_portable.py --output runs/STPyramid-Desktop --zip` after installing the pinned Python dependencies. Open `STPyramid.exe` from the extracted directory. The app downloads and checks the pinned entropy-coding dependency on the first Count job.
 
 Use 64-bit CPython 3.12. The local Windows delivery includes `runtime-windows`. For a source checkout, stage runtime binaries from a local CMake/Ninja build as shown below.
 
@@ -66,7 +66,7 @@ Use fresh outputs. Encoding keeps a sibling `archive.work` directory with interm
 ## Integrated code path
 
 1. `stpyramid.py` handles the CLI. `encode_archive` validates the inputs and runtimes, scans the stored image levels, stages each component and publishes the directory once both modalities pass verification. [CLI](stpyramid.py) · [Integrated encoder](codec/integrated_encode.py)
-2. `write_count_component` stores the typed H5AD structure and spatial axes in `science.h5`. `write_count_store` groups spots in 1024-pixel cells in L0 coordinates, stores one sample-wide Shared_local model, and writes the graph, support and integer values for each block. The index maps blocks to their original spot rows and bank offsets. [Count component](codec/integrated_encode.py) · [Count bank](codec/stbaseline/shared_backend.py)
+2. Shared 2.0 stores the typed H5AD structure in `science.h5` and indexes independent Count frames by 1024-pixel L0 spatial block and gene group. Panels with at most 1,024 genes use groups of 64 and cluster same-group frames within runs of 32 blocks. Larger panels use groups of 256 in spatial block order. For blocks with at most 12 spots, the encoder compares the original position stream against the nonzero cardinality and subset rank stream. It keeps the occupancy model only when it lowers the complete Count component size, including the model, index and manifest. [Count component](codec/integrated_encode.py) · [Writer](codec/stbaseline/grouped_count_encode.py) · [Reader](codec/stbaseline/grouped_count.py)
 3. `encode_images` produces direct JPEG XL records and the 089, 091 and HF candidates. It prepares native parent references for L0 and L1, retains the smallest eligible records in the prescribed order, and writes both the direct baseline and the selected HF + L1 image component. [Image candidate generation](codec/archive_image_encode.py) · [Image archive](codec/joint_next.py)
 4. `pack_integrated` checks the component source and level identities, copies the verified members and binds them in one manifest. `IntegratedArchive.region` selects spots in a half-open L0 box and maps the box to covering pixels at the requested image level. Full restore writes the native TIFF levels and reinserts the decoded Count values into the original H5AD structure. [Integrated container and reader](codec/container_compare.py)
 
@@ -103,4 +103,4 @@ python recursive_image_archive.py restore runs/recursive-image runs/recursive-re
 - [Numeric evidence ledger](results/evidence.json)
 - [Third-party notices and scope](THIRD_PARTY.md)
 
-The source release contains no study images, Count matrices, H5AD files or historical data archives. The included smoke test generates all its inputs. The published Count dependency is installed from its fixed commit and validated against 19 SHA-256 pins. Original project code has no new project-wide license grant in this release candidate.
+The source release contains no study images, Count matrices, H5AD files or historical data archives. The included smoke test generates all its inputs. The published Count dependency is installed from its fixed commit and validated against 19 SHA-256 pins. The license for original STPyramid source is recorded in [LICENSE](LICENSE).

@@ -79,6 +79,7 @@ def run(runtime, output):
     np.testing.assert_array_equal(hf_adapter.NativeRuntime(runtime / "hf").decode(recordhf, width, height, 0, middle), fine)
     routes = json.loads((package / "image/manifest.json").read_bytes())["routes"]
     assert sum(value for route, value in routes.items() if route != "1") > 0, routes
+    assert json.loads((package / "manifest.json").read_bytes())["count"]["kind"] == "Shared_2"
     command("inspect", package)
     assert command("verify", package, "--runtime-dir", runtime)["ok"]
     command("restore", package, "--runtime-dir", runtime, "--output", restored)

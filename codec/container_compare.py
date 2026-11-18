@@ -24,7 +24,10 @@ from stbaseline.compat_axes import MAP_NAME, write_map, validate_map
 
 FORMAT = "st-comparison-compat-20261102-v1"
 IMAGE_FORMAT = "wsi-hf-l1-compat-20261102-v1"
-COUNT_KINDS = ("hdf5_gzip9", "BPCells", "Shared_local")
+SHARED_COUNT_KINDS = ("Shared_local", "Shared_2")
+COUNT_KINDS = ("hdf5_gzip9", "BPCells", *SHARED_COUNT_KINDS)
+GROUPED_COUNT_MEMBERS = frozenset({"counts.bank", "counts.index.zst", "counts.model"})
+OCCUPANCY_MEMBER = "counts.occupancy.zst"
 IMAGE_PROFILES = ("direct", "hf_l1_conditional", "l1_conditional")
 
 def qualified_image(format_name, profile):
@@ -132,6 +135,10 @@ def _validate_component_binding(count_manifest, image_manifest, image_root):
     return source_sha, image_levels
 
 
+def _grouped_members(files):
+    return GROUPED_COUNT_MEMBERS | ({OCCUPANCY_MEMBER} & files.keys())
+
+
 def _select_count_members(root, manifest, count_kind, science_override, expression_override):
     selected = {}
     if count_kind == "hdf5_gzip9":
@@ -160,8 +167,12 @@ def _select_count_members(root, manifest, count_kind, science_override, expressi
                 raise ValueError("Science skeleton must contain no X values")
         selected["science.h5"] = science
         expression_path = "science.h5"
-        names = ({"counts.bank", "counts.index.json"} if count_kind == "Shared_local" else
-                 {n for n in manifest["files"] if n.startswith("counts.bp/")})
+        if count_kind == "Shared_2":
+            names = _grouped_members(manifest["files"])
+        elif count_kind == "Shared_local":
+            names = {"counts.bank", "counts.index.json"}
+        else:
+            names = {n for n in manifest["files"] if n.startswith("counts.bp/")}
         if not names:
             raise ValueError("Missing Count payload")
         for name in names:
@@ -169,6 +180,7 @@ def _select_count_members(root, manifest, count_kind, science_override, expressi
     attachments = manifest.get("attachments", [])
     if (not isinstance(attachments, list) or len(set(attachments)) != len(attachments)
             or any(_name(n) != Path(n).name or n in selected or n in IMAGE_FILES
+                   or (count_kind == "Shared_2" and n == OCCUPANCY_MEMBER)
                    or n in {"INCOMPLETE", "failure.json", "native_levels.tif", "expression.h5ad", "source_metadata.json", "package_manifest.json"}
                    for n in attachments)):
         raise ValueError("Unsafe attachment names")
@@ -256,12 +268,17 @@ class IntegratedArchive:
             raise ValueError("Missing original gene-position map")
         reserved = IMAGE_FILES | {"INCOMPLETE", "failure.json", "science.h5", "counts.bank", "counts.index.json",
                                   "expression.h5ad", "native_levels.tif", "source_metadata.json", "package_manifest.json"}
+        if self.kind == "Shared_2":
+            reserved |= GROUPED_COUNT_MEMBERS | {OCCUPANCY_MEMBER}
         for name in attachments:
             if _name(name) != Path(name).name or name in reserved:
                 raise ValueError("Unsafe attachment")
         files = m["files"]
         expected = {"image/" + n for n in IMAGE_FILES} | {"count/" + expression_path} | {"count/" + n for n in attachments}
-        if self.kind == "Shared_local":
+        if self.kind == "Shared_2":
+            expected |= {"count/" + n for n in GROUPED_COUNT_MEMBERS}
+            expected |= {"count/" + OCCUPANCY_MEMBER} & files.keys()
+        elif self.kind == "Shared_local":
             expected |= {"count/counts.bank", "count/counts.index.json"}
         elif self.kind == "BPCells":
             bp = {n for n in files if n.startswith("count/counts.bp/")}
@@ -365,13 +382,24 @@ class IntegratedArchive:
 
     def _count_store(self):
         if self._store is None:
-            from stbaseline.shared_streaming import BlockCountStore
-            self._verify_member("count/counts.index.json")
-            self._store = BlockCountStore(self.root / "count")
-            if (self._store.index["method"] != "Shared_local"
-                    or self._store.index["shape"] != self.manifest["count"]["expression"]["shape"]):
-                self._store.close(); self._store = None
-                raise ValueError("Count index disagrees with container")
+            shape = self.manifest["count"]["expression"]["shape"]
+            if self.kind == "Shared_2":
+                from stbaseline.grouped_count import GroupedCountStore
+
+                self._verify_member("count/counts.index.zst")
+                self._verify_member("count/counts.model")
+                if "count/" + OCCUPANCY_MEMBER in self.manifest["files"]:
+                    self._verify_member("count/" + OCCUPANCY_MEMBER)
+                self._store = GroupedCountStore(self.root / "count", expected_shape=shape)
+            else:
+                from stbaseline.shared_streaming import BlockCountStore
+
+                self._verify_member("count/counts.index.json")
+                store = BlockCountStore(self.root / "count")
+                if store.index["method"] != "Shared_local" or store.index["shape"] != shape:
+                    store.close()
+                    raise ValueError("Count index disagrees with container")
+                self._store = store
         return self._store
 
     def _bpcells_worker(self):
@@ -416,7 +444,7 @@ class IntegratedArchive:
             raise ValueError("Query too large; use row batches")
         values = np.zeros((len(row_positions), len(gene_positions)), np.uint64)
         if len(row_positions) and len(gene_positions):
-            if self.kind == "Shared_local":
+            if self.kind in SHARED_COUNT_KINDS:
                 values = self._count_store().read(row_positions, gene_positions)
             elif self.kind == "BPCells":
                 values = self._bpcells_worker().read(row_positions, gene_positions, all_genes=genes is None)
@@ -514,7 +542,7 @@ class IntegratedArchive:
             _copy(source, target)
         else:
             from scipy.sparse import csr_matrix, vstack
-            if self.kind == "Shared_local":
+            if self.kind in SHARED_COUNT_KINDS:
                 matrix = self._count_store().sparse_all(max_cells=MAX_CELLS)
             else:
                 n = self.manifest["count"]["expression"]["shape"][0]

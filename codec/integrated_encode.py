@@ -4,14 +4,18 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import tempfile
 from threading import Lock
 import time
 
 
+def _json_bytes(value):
+    return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n").encode("utf-8")
+
+
 def _write_json(path, value):
-    with path.open("x", encoding="utf-8") as handle:
-        json.dump(value, handle, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False)
-        handle.write("\n")
+    with path.open("xb") as handle:
+        handle.write(_json_bytes(value))
 
 
 def runtime_dirs(root):
@@ -47,29 +51,48 @@ def _configure_worker(cpu, seconds, workers=1):
 
 
 def write_count_component(counts, metadata, catalog, source_identities, output):
-    """Write Shared_local streams and keep the typed H5AD structure separately."""
+    """Choose a grouped Count variant by actual complete component bytes."""
     import numpy as np
     from stbaseline.comparison import csr_from_h5
     from stbaseline.integrity import h5_digest, sha256
     from stbaseline.native_wsi import _count_preflight, _exact_skeleton
-    from stbaseline.shared_backend import write_count_store
+    from stbaseline.grouped_count_encode import write_grouped_candidates
 
     schema, spot_ids, gene_ids, xy = _count_preflight(counts, "spatial")
     matrix = csr_from_h5(counts)
     output.mkdir()
     _exact_skeleton(counts, output / "science.h5")
     shutil.copyfile(metadata, output / "HEST_metadata.json")
-    write_count_store(matrix, {"spot_ids": spot_ids, "gene_ids": gene_ids, "coordinates": xy, "level0_xy": xy},
-                      xy, output, "Shared_local", 1024)
-    files = {p.relative_to(output).as_posix(): {"bytes": p.stat().st_size, "sha256": sha256(p)}
-             for p in sorted(output.rglob("*")) if p.is_file()}
-    _write_json(output / "manifest.json", {
-        "method": "Shared_local", "sources": source_identities,
+    binding = {
+        "method": "Shared_2", "sources": source_identities,
         "expression": dict(schema, path="science.h5", semantic_sha256=h5_digest(counts)),
         "image": {"levels": catalog["levels"]},
         "mapping": {"spatial_key": "spatial", "xy_to_level0": np.eye(3).tolist()},
-        "attachments": ["HEST_metadata.json"], "files": files,
-    })
+        "attachments": ["HEST_metadata.json"],
+    }
+
+    def identities(paths):
+        return {p.name: {"bytes": p.stat().st_size, "sha256": sha256(p)} for p in paths}
+
+    axis = {"spot_ids": spot_ids, "gene_ids": gene_ids, "coordinates": xy}
+    with tempfile.TemporaryDirectory(prefix="grouped_count_", dir=output.parent) as stage:
+        stage = Path(stage)
+        folders = write_grouped_candidates(matrix, axis, stage)
+        model = stage / "counts.model"
+        common = identities([*output.iterdir(), model])
+        variants = []
+        for folder in folders:
+            members = identities(folder.iterdir())
+            files = common | members
+            manifest = _json_bytes(dict(binding, files=files))
+            variants.append((len(manifest) + sum(f["bytes"] for f in files.values()),
+                             folder, members, manifest))
+        _, selected, members, manifest = min(variants, key=lambda variant: variant[0])
+        for name in members:
+            (selected / name).rename(output / name)
+        model.rename(output / model.name)
+        with (output / "manifest.json").open("xb") as handle:
+            handle.write(manifest)
 
 
 def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, cpu=None, timeout=14400,
@@ -154,7 +177,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
                 raise ValueError("Source input changed during encoding")
         candidate = work / "candidate"
         timed("assemble_complete_archive", lambda: archive.pack_integrated(
-            count_component, image_component, candidate, count_kind="Shared_local"))
+            count_component, image_component, candidate, count_kind="Shared_2"))
         with archive.IntegratedArchive(candidate, image_factory=lambda p: j.Reader(p, *runtimes, scan_workers=workers)) as reader:
             result = timed("verify_counts_pixels_and_files", reader.verify)
         target.parent.mkdir(parents=True, exist_ok=True)

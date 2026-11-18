@@ -9,6 +9,7 @@ import traceback
 import psutil
 
 from benchmark_hest import check_inputs, java_call, publish, read, sha256, stage_seconds, validate_recovery
+from container_compare import SHARED_COUNT_KINDS
 
 
 def logged_budget(path, field):
@@ -40,10 +41,11 @@ def run_case(args, files, workers):
         if logged_budget(directory / f"{action}.log", "native_scan_workers") != workers:
             raise ValueError(f"Did not obtain {workers} decoder workers for {action}")
     manifest = read(archive / "manifest.json")
-    if manifest["image"]["profile"] != "l1_conditional" or manifest["count"]["kind"] != "Shared_local":
+    if manifest["image"]["profile"] != "l1_conditional" or manifest["count"]["kind"] not in SHARED_COUNT_KINDS:
         raise ValueError("Wrong integrated compression profile")
     result = validate_recovery(files, archive, restored, directory)
     result.update(state="PASS", sample=args.sample, profile="fused", native_workers=workers,
+                  count_kind=manifest["count"]["kind"],
                   original_bytes=sum(path.stat().st_size for path in files.values()),
                   encode_process_wall_seconds=wall["encode"], verify_wall_seconds=wall["verify"],
                   restore_wall_seconds=wall["restore"], native_stages_seconds=stage_seconds(directory / "encode.log"),
