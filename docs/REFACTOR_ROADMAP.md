@@ -26,6 +26,7 @@ The current flat imports are deliberate in several places: the CLI and desktop w
 - [x] Add a clickable source code map.
 - [x] Classify root-level research and compatibility scripts.
 - [x] Document contributor and validation expectations.
+- [x] Add dependency-free CLI parser/import contract tests and a three-platform CI workflow.
 
 **Acceptance:** documentation links resolve; user paths and platform limitations match the published release and current source.
 
@@ -43,12 +44,13 @@ Before moving code:
 
 ### R2 — Add import and CLI contract tests
 
-- Test that importing the CLI has no encoding side effects.
-- Test each documented CLI subcommand's parser contract and exit behavior.
+- [x] Test that importing the CLI does not load scientific/native dependencies.
+- [x] Test each documented CLI subcommand's help/parser contract without a runtime.
+- [ ] Test desktop-worker request validation independently from GUI code.
+- [ ] Inventory every `sys.path` mutation and flat import before changing package boundaries.
 - Test desktop-worker request validation independently from GUI code.
-- Inventory every `sys.path` mutation and flat import before changing package boundaries.
 
-**Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior.
+**Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior. The initial CLI checks are wired to GitHub Actions on Windows, Linux and macOS; they remain pending until the workflow reports a successful run.
 
 ### R3 — Centralize runtime configuration
 
