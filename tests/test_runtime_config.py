@@ -1,6 +1,11 @@
 """Unit tests for bounded desktop worker configuration (standard library only)."""
 from unittest import TestCase, main
 from unittest.mock import patch
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from runtime_config import (
     bounded_int_env,
