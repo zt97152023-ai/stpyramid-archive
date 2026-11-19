@@ -30,5 +30,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run dependency-free CLI contract tests
-        run: python tests/test_cli_contract.py -v
+      - name: Run dependency-free CLI and runtime configuration tests
+        run: |
+          python tests/test_cli_contract.py -v
+          python tests/test_runtime_config.py -v
