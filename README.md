@@ -8,11 +8,14 @@
 
 | Goal | Start here |
 |---|---|
+| Get started in three minutes | [Quick start](docs/QUICKSTART.md) |
 | Use the desktop application | [Desktop guide](java-desktop/README.md) |
 | Run the Python integrated workflow | [CLI quick start](#python-cli) |
 | Understand the system design | [Architecture](docs/ARCHITECTURE.md) |
+| Find the exact implementation files | [Code map](docs/CODEMAP.md) |
 | Build from source | [Build instructions](#build-from-source) |
 | Explore advanced and experimental workflows | [Advanced workflows](docs/ADVANCED_WORKFLOWS.md) |
+| Contribute or modify the code | [Contributing guide](CONTRIBUTING.md) |
 | Check methods and evidence | [Results and reproducibility](results/README.md) |
 
 ## What is included
@@ -103,7 +106,7 @@ Input data
                                 Publish / Inspect / ROI read / Restore
 ```
 
-The Count and image codecs retain independent encoding and decoding boundaries. The unified container binds their sample identity, coordinate system and metadata; it does not merge their probability models. See [the architecture note](docs/ARCHITECTURE.md) for module responsibilities and data flow.
+New here? Start with the [three-minute quick start](docs/QUICKSTART.md). Developing the project? Open the [code map](docs/CODEMAP.md) to locate the exact Count, TIFF and archive implementation files.\n\nThe Count and image codecs retain independent encoding and decoding boundaries. The unified container binds their sample identity, coordinate system and metadata; it does not merge their probability models. See [the architecture note](docs/ARCHITECTURE.md) for module responsibilities and data flow.
 
 ## Supported scope and important limits
 
