@@ -122,6 +122,7 @@ For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE
 
 | Path | Responsibility |
 |---|---|
+| `runtime_config.py` | Validated desktop worker settings |
 | `stpyramid.py`, `codec/` | Python CLI and integrated archive/codec implementation |
 | `java-desktop/` | Java desktop application, launchers and package builders |
 | `desktop*.py`, `desktop/` | Python desktop client |
