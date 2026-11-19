@@ -4,7 +4,11 @@ This guide is for someone opening STPyramid for the first time. Choose the deskt
 
 ## Option A — use the desktop app
 
-1. Open the [GitHub Releases](https://github.com/zt97152023-ai/stpyramid-archive/releases) page and download the Java Desktop package for your operating system.
+1. Download the package for your operating system from the verified [STPyramid v0.2.5 release](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/v0.2.5):
+   - [Windows x64 ZIP](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.4-Windows-x64.zip)
+   - [Linux x64 TAR.GZ](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-Linux-x64.tar.gz)
+   - [macOS Apple silicon (arm64)](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-arm64.tar.gz)
+   - [macOS Intel (x64)](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-x64.tar.gz)
 2. Extract the complete package to a writable folder. Keep the launcher, JAR and bundled `jre/` directory together.
 3. Launch:
    - Windows: `Launch-STPyramidJava.cmd`
@@ -15,6 +19,8 @@ This guide is for someone opening STPyramid for the first time. Choose the deskt
    - **Count + TIFF archive**: use the integrated native workflow where the installed package reports that the required backend is available.
 5. Select the input and a new output location. Start the job and wait for its completion status.
 6. Run **Verify** on the resulting archive. Restore to a separate, empty output folder when you need the original data back.
+
+The release includes SHA-256 checksum files beside each package. Verify the download before launching. The Windows asset retains the `0.2.4` filename although it is distributed in release `v0.2.5`.
 
 Read the [Java desktop guide](../java-desktop/README.md) for supported modes, platform capability limits, HEST batch workflows and packaging instructions.
 
