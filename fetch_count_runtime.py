@@ -21,7 +21,7 @@ ORIGIN = "https://raw.githubusercontent.com/zt97152023-ai/shared-st-count-codec/
 COMMIT = "4cf99cc6842cf9e9b680c1270a7e3375b6b402e1"
 EXPECTED_FILES = 19
 MAX_SOURCE_FILE_BYTES = 16 * 1024 * 1024
-_SHA256 = re.compile(r"[0-9a-f]{64}\\Z")
+_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
 def _safe_target(row):
