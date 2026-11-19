@@ -58,9 +58,10 @@ Before moving code:
 - [x] Preserve the existing `STPYRAMID_FUSED_WORKERS`, `STPYRAMID_MAXIMUM_WORKERS` and `STPYRAMID_SCAN_WORKERS` names and defaults.
 - [x] Reject non-integer and out-of-range values with actionable errors.
 - [x] Add standard-library unit tests and include them in the three-platform CI workflow.
+- [x] Confirm CLI and runtime configuration tests pass on Windows, Linux and macOS with Python 3.12.
 - [ ] Extend the same configuration boundary to runtime directory discovery, timeout validation and platform capability reporting.
 
-**Acceptance:** the worker-count helper preserves prior defaults and overrides. The full CI matrix must pass before treating the change as validated; no codec, runtime selection or CPU affinity policy is changed.
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The three-platform CI matrix passed for commit `0deb472055b6f18643efddc58b85d181ee81f492`; no codec, runtime selection or CPU affinity policy is changed.
 
 ### R4 — Separate stable application code from research tooling
 
