@@ -12,6 +12,7 @@
 | Run the Python integrated workflow | [CLI quick start](#python-cli) |
 | Understand the system design | [Architecture](docs/ARCHITECTURE.md) |
 | Build from source | [Build instructions](#build-from-source) |
+| Explore advanced and experimental workflows | [Advanced workflows](docs/ADVANCED_WORKFLOWS.md) |
 | Check methods and evidence | [Results and reproducibility](results/README.md) |
 
 ## What is included
@@ -31,7 +32,7 @@ For the current Java desktop distribution, download the matching package from [R
 
 Keep the launcher, JAR and bundled `jre/` together. The package includes its Java runtime. See the [Java desktop guide](java-desktop/README.md) for platform capabilities, packaging and CLI commands.
 
-The older Python desktop client is documented separately in [desktop/README.md](desktop/README.md).
+The earlier Python desktop client is documented separately in [desktop/README.md](desktop/README.md).
 
 ## Python CLI
 
@@ -111,7 +112,7 @@ The Count and image codecs retain independent encoding and decoding boundaries. 
 - TIFF input must meet the documented tiled RGB8 pyramid geometry and compression constraints; H5AD Count values must be nonnegative integers with spatial coordinates in L0 pixel coordinates.
 - The source repository intentionally excludes study data and native runtime binaries. The Shared Count dependency is fetched at a pinned revision because its upstream original-code license remains pending.
 
-For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE.md](OPEN_SOURCE_SCOPE.md) and [THIRD_PARTY.md](THIRD_PARTY.md).
+For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE.md](OPEN_SOURCE_SCOPE.md), [THIRD_PARTY.md](THIRD_PARTY.md) and [advanced workflow notes](docs/ADVANCED_WORKFLOWS.md).
 
 ## Project structure
 
@@ -123,7 +124,7 @@ For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE
 | `native/`, `CMakeLists.txt` | Native image codec source and build |
 | `tests/` | Synthetic end-to-end smoke test |
 | `results/` | Aggregate results, evidence ledger and release reports |
-| `docs/` | System architecture and developer-facing documentation |
+| `docs/` | System architecture and advanced workflow documentation |
 | `upstream/` | Third-party source and its retained notices |
 
 ## License and citation
