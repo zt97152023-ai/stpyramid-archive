@@ -6,15 +6,15 @@ This is the shortest route from a user command to the implementation. Start here
 
 | Responsibility | Main implementation | What it owns |
 |---|---|---|
-| Count codec | `codec/integrated_encode.py`, `codec/stbaseline/grouped_count_encode.py`, `codec/stbaseline/grouped_count.py` | H5AD validation, grouped Count stream writing, frame indexing and Count decoding |
-| TIFF/image codec | `codec/archive_image_encode.py`, `codec/joint_next.py`, `codec/native_adapter.py`, `native/` | Native pyramid scanning, image candidate generation/selection, image records and native encode/decode |
-| Unified archive | `codec/integrated_encode.py`, `codec/container_compare.py` | Source identity, component assembly, manifest, verification, ROI/Count subset access and restoration |
+| Count codec | [ `codec/integrated_encode.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/integrated_encode.py), [ `codec/stbaseline/grouped_count_encode.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/stbaseline/grouped_count_encode.py), [ `codec/stbaseline/grouped_count.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/stbaseline/grouped_count.py) | H5AD validation, grouped Count stream writing, frame indexing and Count decoding |
+| TIFF/image codec | [ `codec/archive_image_encode.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/archive_image_encode.py), [ `codec/joint_next.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/joint_next.py), [ `codec/native_adapter.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/native_adapter.py), [ `native/` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/native/) | Native pyramid scanning, image candidate generation/selection, image records and native encode/decode |
+| Unified archive | [ `codec/integrated_encode.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/integrated_encode.py), [ `codec/container_compare.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/codec/container_compare.py) | Source identity, component assembly, manifest, verification, ROI/Count subset access and restoration |
 
 The Count and image codecs remain independent. The archive layer joins their verified components and coordinate metadata; it does not combine their probability models.
 
 ## Start from the command
 
-The Python CLI is `stpyramid.py`.
+The Python CLI is [ `stpyramid.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/stpyramid.py).
 
 | User command | Entry point | Implementation |
 |---|---|---|
@@ -49,7 +49,7 @@ Important implementation details:
 - `encode_archive` orchestrates the complete job and publishes only after verification.
 - `write_count_component` creates the typed H5AD skeleton, binds source identities and chooses a complete Count variant using total component bytes.
 - `write_grouped_candidates` writes the grouped Count candidates.
-- `encode_images` builds and selects image records; native implementations live under `native/`.
+- `encode_images` builds and selects image records; native implementations live under [ `native/` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/native/).
 - `pack_integrated` binds the independently encoded components into the archive.
 - `IntegratedArchive` owns archive inspection, verification, selective reads and restore.
 
@@ -76,7 +76,7 @@ There are two clients in this source tree. They are separate front ends and shou
 
 | Need | Start here |
 |---|---|
-| Synthetic end-to-end test | `tests/smoke.py` |
+| Synthetic end-to-end test | [ `tests/smoke.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/tests/smoke.py) |
 | Cohort selection and metadata | `cohort.py`, `select_cohort.py`, `COHORT.json` |
 | Java HEST benchmark | `java-desktop/benchmark_hest.py` |
 | Aggregate evidence ledger | `results/evidence.json` |
@@ -87,11 +87,11 @@ There are two clients in this source tree. They are separate front ends and shou
 
 | If you want to change… | First inspect… | Then validate… |
 |---|---|---|
-| CLI arguments or output format | `stpyramid.py` | CLI smoke test |
+| CLI arguments or output format | [ `stpyramid.py` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/stpyramid.py) | CLI smoke test |
 | Count stream layout | `grouped_count_encode.py`, `grouped_count.py` | Exact Count recovery and old archive reads |
 | TIFF candidate selection | `archive_image_encode.py`, `joint_next.py` | Native RGB equality, ROI reads and restore |
 | Archive members or manifest | `container_compare.py` | Full verification and historical archive compatibility |
-| Native codec | `native/`, `CMakeLists.txt` | Native build, codec tests and full archive smoke |
+| Native codec | [ `native/` ](https://github.com/zt97152023-ai/stpyramid-archive/blob/product/java-spatial-archive/native/), `CMakeLists.txt` | Native build, codec tests and full archive smoke |
 | Java interface or packaging | `java-desktop/src/`, `java-desktop/package*` | Package launch and capability checks |
 
 Do not change codec identifiers, manifest members, runtime pins or archive layout as a cleanup-only refactor. Treat each as a format/compatibility change and test representative historical archives with their declared runtime versions.
