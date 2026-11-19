@@ -54,15 +54,13 @@ Before moving code:
 
 ### R3 — Centralize runtime configuration
 
-Create one small configuration module for:
-- runtime directory discovery;
-- worker-count bounds and environment variable parsing;
-- timeout validation;
-- platform capability reporting.
+- [x] Add `runtime_config.py` for desktop worker-count environment parsing.
+- [x] Preserve the existing `STPYRAMID_FUSED_WORKERS`, `STPYRAMID_MAXIMUM_WORKERS` and `STPYRAMID_SCAN_WORKERS` names and defaults.
+- [x] Reject non-integer and out-of-range values with actionable errors.
+- [x] Add standard-library unit tests and include them in the three-platform CI workflow.
+- [ ] Extend the same configuration boundary to runtime directory discovery, timeout validation and platform capability reporting.
 
-Keep existing environment variable names and defaults during the first migration. The configuration layer must not silently select a different codec, runtime or CPU policy.
-
-**Acceptance:** old commands and environment settings produce the same selected runtime, worker count and timeout as before.
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The full CI matrix must pass before treating the change as validated; no codec, runtime selection or CPU affinity policy is changed.
 
 ### R4 — Separate stable application code from research tooling
 
