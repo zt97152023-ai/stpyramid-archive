@@ -25,10 +25,12 @@ _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
 def _safe_target(row):
-    relative = PurePosixPath(row["path"])
-    if (relative.is_absolute() or not relative.parts
-            or any(part in ("", ".", "..") for part in relative.parts)
-            or relative.parts[0] != "baseline"):
+    raw = row.get("path") if isinstance(row, dict) else None
+    if (not isinstance(raw, str) or not raw or "\\\\" in raw or ":" in raw
+            or raw.startswith("/") or any(part in ("", ".", "..") for part in raw.split("/"))):
+        raise ValueError("Unexpected Count source member")
+    relative = PurePosixPath(raw)
+    if relative.is_absolute() or not relative.parts or relative.parts[0] != "baseline":
         raise ValueError("Unexpected Count source member")
     root = VENDOR.resolve()
     path = root.joinpath(*relative.parts)
