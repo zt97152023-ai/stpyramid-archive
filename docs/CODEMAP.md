@@ -79,6 +79,7 @@ Not every root-level Python file is part of the normal integrated application. S
 
 | File | Classification | Purpose / caution |
 |---|---|---|
+| `runtime_config.py` | Shared runtime configuration | Validates desktop worker-count environment variables while preserving existing names and defaults |
 | `fetch_count_runtime.py` | Runtime preparation | Fetches the pinned external Count source and validates exact sizes and SHA-256 hashes |
 | `stage_runtime.py` | Build utility | Stages ABI-checked native Windows binaries from a local CMake build |
 | `desktop_app.py`, `desktop_worker.py`, `desktop_i18n.py` | Python desktop client | Earlier Windows queue-based GUI and worker process |
