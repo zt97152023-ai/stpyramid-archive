@@ -55,6 +55,19 @@ class PinnedRuntimeSecurityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected Count source member"):
             runtime.pinned_files()
 
+    def test_dot_segment_is_rejected(self):
+        self.rows[0]["path"] = "baseline/./outside.py"
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Unexpected Count source member"):
+            runtime.pinned_files()
+
+    def test_windows_separator_and_drive_syntax_are_rejected(self):
+        for unsafe in ("baseline\\\\..\\\\outside.py", "baseline/C:/outside.py"):
+            self.rows[0]["path"] = unsafe
+            self.write_manifest()
+            with self.assertRaisesRegex(ValueError, "Unexpected Count source member"):
+                runtime.pinned_files()
+
     def test_duplicate_pin_is_rejected(self):
         self.rows[1] = dict(self.rows[0])
         self.write_manifest()
