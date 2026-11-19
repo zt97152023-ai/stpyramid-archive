@@ -184,7 +184,7 @@ final class SourceArchive {
             String stem = part.split("\\.", 2)[0].toUpperCase(Locale.ROOT);
             if (part.isEmpty() || part.equals(".") || part.equals("..") ||
                 part.endsWith(".") || part.endsWith(" ") ||
-                part.chars().anyMatch(c -> c < 32 || "<>" + '"' + "|?*".indexOf(c) >= 0) ||
+                part.chars().anyMatch(c -> c < 32 || ("<>" + '"' + "|?*").indexOf(c) >= 0) ||
                 stem.matches("CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³]")) {
                 throw new IOException("Unsupported archive member name: " + path);
             }
