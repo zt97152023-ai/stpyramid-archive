@@ -72,6 +72,24 @@ There are two clients in this source tree. They are separate front ends and shou
 - `desktop_i18n.py` — interface text.
 - `desktop/` — portable packaging and user guides.
 
+
+## Other top-level scripts: what belongs where?
+
+Not every root-level Python file is part of the normal integrated application. Some are retained compatibility entry points or research/benchmark harnesses. Do not import them into the desktop application or treat them as supported end-user commands without checking their scope.
+
+| File | Classification | Purpose / caution |
+|---|---|---|
+| `fetch_count_runtime.py` | Runtime preparation | Fetches the pinned external Count source and validates exact sizes and SHA-256 hashes |
+| `stage_runtime.py` | Build utility | Stages ABI-checked native Windows binaries from a local CMake build |
+| `desktop_app.py`, `desktop_worker.py`, `desktop_i18n.py` | Python desktop client | Earlier Windows queue-based GUI and worker process |
+| `pyramid_image_archive.py` | Image workflow | Native image-pyramid archive entry point used by the fused image path |
+| `recursive_image_archive.py` | Experimental format | Separate recursive TIFF archive format and CLI; not the integrated Count + image format |
+| `native_tile_encoder.py` | Research/benchmark support | Shared low-level helpers for image-only research scripts |
+| `encode_image.py` | Historical experiment | L0-only candidate comparisons; not the primary integrated image encoder |
+| `benchmark_read.py` | Benchmark support | ROI timing and image byte accounting |
+| `cohort.py`, `select_cohort.py`, `COHORT.json` | Fixed-cohort research | Cohort selection and paired benchmark orchestration; not end-user workflow |
+| `build_full.py` | Compatibility wrapper | Retained alias into `pyramid_image_archive.py`; avoid adding new logic here |
+
 ## Tests and evidence
 
 | Need | Start here |
