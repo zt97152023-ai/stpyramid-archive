@@ -16,6 +16,7 @@
 | Build from source | [Build instructions](#build-from-source) |
 | Explore advanced and experimental workflows | [Advanced workflows](docs/ADVANCED_WORKFLOWS.md) |
 | Contribute or modify the code | [Contributing guide](CONTRIBUTING.md) |
+| Understand planned engineering improvements | [Refactor roadmap](docs/REFACTOR_ROADMAP.md) |
 | Check methods and evidence | [Results and reproducibility](results/README.md) |
 
 ## What is included
