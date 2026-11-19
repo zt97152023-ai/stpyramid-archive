@@ -5,17 +5,17 @@ This guide is for someone opening STPyramid for the first time. Choose the deskt
 ## Option A — use the desktop app
 
 1. Download the package for your operating system from the verified [STPyramid v0.2.5 release](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/v0.2.5):
-   - [Windows x64 ZIP](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.4-Windows-x64.zip)
-   - [Linux x64 TAR.GZ](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-Linux-x64.tar.gz)
-   - [macOS Apple silicon (arm64)](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-arm64.tar.gz)
-   - [macOS Intel (x64)](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-x64.tar.gz)
+   - [Windows x64 ZIP](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.4-Windows-x64.zip) · [SHA-256](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.4-Windows-x64.zip.sha256)
+   - [Linux x64 TAR.GZ](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-Linux-x64.tar.gz) · [SHA-256](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-Linux-x64.tar.gz.sha256)
+   - [macOS Apple silicon (arm64)](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-arm64.tar.gz) · [SHA-256](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-arm64.tar.gz.sha256)
+   - [macOS Intel (x64)](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-x64.tar.gz) · [SHA-256](https://github.com/zt97152023-ai/stpyramid-archive/releases/download/v0.2.5/STPyramid-Java-0.2.5-macOS-x64.tar.gz.sha256)
 2. Extract the complete package to a writable folder. Keep the launcher, JAR and bundled `jre/` directory together.
 3. Launch:
    - Windows: `Launch-STPyramidJava.cmd`
    - Linux: `Launch-STPyramidJava.sh`
    - macOS: `Launch-STPyramidJava.command`
 4. Choose the operation that matches your data:
-   - **Spatial archive**: package supported spatial-transcriptomics source files while preserving their original files and paths.
+   - **Source archive**: package supported spatial-transcriptomics source files while preserving their original files and paths.
    - **Count + TIFF archive**: use the integrated native workflow where the installed package reports that the required backend is available.
 5. Select the input and a new output location. Start the job and wait for its completion status.
 6. Run **Verify** on the resulting archive. Restore to a separate, empty output folder when you need the original data back.
