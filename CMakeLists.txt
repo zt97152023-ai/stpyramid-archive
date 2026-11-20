@@ -76,3 +76,14 @@ target_compile_definitions(jxl11_cli PRIVATE JXL_STATIC_DEFINE JXL_CMS_STATIC_DE
 if(WIN32)
   target_link_libraries(jxl11_cli PRIVATE bcrypt)
 endif()
+
+# Stable, descriptive build entry points. Historical target and ABI names remain
+# internal implementation details so existing runtime bundles stay readable.
+add_custom_target(stpyramid_anchor
+  DEPENDS slide_jxl089 slide_jxl089_shared)
+add_custom_target(stpyramid_context
+  DEPENDS slide_jxl091 slide_jxl091_shared)
+add_custom_target(stpyramid_hf_detail
+  DEPENDS slide_hf1 slide_hf1_shared)
+add_custom_target(stpyramid_native_codecs
+  DEPENDS stpyramid_anchor stpyramid_context stpyramid_hf_detail)
