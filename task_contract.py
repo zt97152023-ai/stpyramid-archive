@@ -38,7 +38,7 @@ def validate_task(request):
         if mode in ("integrated", "integrated-fused"):
             _required_text(request, "counts")
             metadata = request.get("metadata")
-            if metadata is not None and (not isinstance(metadata, str) or not metadata.strip()):
+            if metadata not in (None, "") and (not isinstance(metadata, str) or not metadata.strip()):
                 raise ValueError("Task field 'metadata' must be a non-empty string when supplied")
     else:
         _required_text(request, "archive")
@@ -46,7 +46,7 @@ def validate_task(request):
             _required_text(request, "output")
 
     runtime = request.get("runtime")
-    if runtime is not None and (not isinstance(runtime, str) or not runtime.strip()):
+    if runtime not in (None, "") and (not isinstance(runtime, str) or not runtime.strip()):
         raise ValueError("Task field 'runtime' must be a non-empty string when supplied")
 
     keep_work = request.get("keep_work", False)
