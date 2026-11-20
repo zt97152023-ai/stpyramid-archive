@@ -34,3 +34,4 @@ jobs:
         run: |
           python tests/test_cli_contract.py -v
           python tests/test_runtime_config.py -v
+          python tests/test_task_contract.py -v
