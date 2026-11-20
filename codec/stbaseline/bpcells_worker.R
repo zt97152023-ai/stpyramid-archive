@@ -7,9 +7,14 @@ if (args[1] == "encode") {
   BPCells::write_matrix_dir(x, args[3], compress=TRUE, overwrite=FALSE)
 } else if (args[1] == "serve") {
   x <- BPCells::open_matrix_dir(args[2])
+  # The one-time token is supplied over the parent's private stdin pipe, never argv.
+  token <- readLines(stdin(), n=1L, warn=FALSE)
+  if (length(token) != 1L || !grepl("^[0-9a-f]{64}$", token)) {
+    stop("Missing or malformed local IPC authentication token")
+  }
   channel <- socketConnection(host="127.0.0.1", port=as.integer(args[3]),
-                              server=FALSE, blocking=TRUE, open="r+b", timeout=120)
-  writeBin(charToRaw("BPC1"), channel)
+                              server=FALSE, blocking=TRUE, open="r+b", timeout=30)
+  writeBin(c(charToRaw("BPC1"), charToRaw(token)), channel)
   repeat {
     line <- readLines(channel, n=1, warn=FALSE)
     if (!length(line) || line == "QUIT") break
