@@ -35,11 +35,12 @@ MAX_COUNT_MODEL_MEMBER_BYTES = 16 * 1024 * 1024
 MAX_NATIVE_COUNT_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
 MAX_NATIVE_COUNT_MANIFEST_BYTES = 16 * 1024 * 1024
 MAX_MODEL_DECOMPRESSED_BYTES = 64 * 1024 * 1024
+MAX_GRAPH_DECOMPRESSED_BYTES = 512 * 1024 * 1024
 
 
-def _bz2_exact(blob, expected_bytes, label):
+def _bz2_exact(blob, expected_bytes, label, *, max_bytes=MAX_MODEL_DECOMPRESSED_BYTES):
     if (type(expected_bytes) is not int or expected_bytes < 0
-            or expected_bytes > MAX_MODEL_DECOMPRESSED_BYTES
+            or expected_bytes > max_bytes
             or not isinstance(blob, (bytes, bytearray, memoryview))):
         raise ValueError("Invalid bounded Count model member: " + label)
     decoder = bz2.BZ2Decompressor()
@@ -213,7 +214,7 @@ class CountStore:
         if model_id not in self.tables:
             self.tables[model_id] = model_tables({n: model_get(n) for n in MODEL_NAMES}, expected_genes=ng)
         sq, groups, binary, tail, cdf = self.tables[model_id]
-        graph = np.frombuffer(_bz2_exact(get("graph.bz2"), nr * 6 * 4, "graph"), "<i4").reshape(nr, 6).copy()
+        graph = np.frombuffer(_bz2_exact(get("graph.bz2"), nr * 6 * 4, "graph", max_bytes=MAX_GRAPH_DECOMPRESSED_BYTES), "<i4").reshape(nr, 6).copy()
         for i, row in enumerate(graph):
             k = min(i, 6)
             if np.any(row[:k] < 0) or np.any(row[:k] >= i) or len(set(row[:k])) != k or np.any(row[k:] != -1):
