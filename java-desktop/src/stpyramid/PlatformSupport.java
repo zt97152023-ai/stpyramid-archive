@@ -24,10 +24,6 @@ final class PlatformSupport {
         return System.getProperty("java.version", "unknown");
     }
 
-    /**
-     * Return an actionable problem if the portable Windows runtime is incomplete.
-     * ABI and SHA-256 receipt validation remains the native adapter's responsibility.
-     */
     static String nativeRuntimeProblem(Path runtime) {
         return nativeRuntimeProblem(runtime, isWindows());
     }
@@ -41,17 +37,27 @@ final class PlatformSupport {
         }
 
         Path root = runtime.toAbsolutePath().normalize();
-        List<String> required = requiredNativeRuntimeFiles();
-        for (String relative : required) {
+        for (String relative : requiredApplicationFiles()) {
             Path file = root.resolve(relative).normalize();
             if (!file.startsWith(root) || !Files.isRegularFile(file)) {
+                // The separately packaged Context executable has a legacy fallback.
+                if (relative.equals("app/bin/context_codec.exe")
+                        && Files.isRegularFile(root.resolve("app/bin/slide_jxl091.exe"))) continue;
                 return "Windows native runtime is incomplete: missing " + relative;
             }
+        }
+        if (!containsAll(root, canonicalCodecRuntimeFiles())
+                && !containsAll(root, legacyCodecRuntimeFiles())) {
+            return "Windows native runtime is incomplete: Anchor, Context and HF-Detail codec runtimes are required.";
         }
         return null;
     }
 
-    static List<String> requiredNativeRuntimeFiles() {
+    private static boolean containsAll(Path root, List<String> files) {
+        return files.stream().allMatch(relative -> Files.isRegularFile(root.resolve(relative).normalize()));
+    }
+
+    static List<String> requiredApplicationFiles() {
         return List.of(
             "python/python.exe",
             "app/desktop_worker.py",
@@ -66,7 +72,26 @@ final class PlatformSupport {
             "app/codec/stbaseline/grouped_count_encode.py",
             "app/codec/stbaseline/grouped_count.py",
             "app/codec/stbaseline/_shared_vendor/SOURCE.json",
-            "app/bin/slide_jxl091.exe",
+            "app/bin/context_codec.exe"
+        );
+    }
+
+    static List<String> canonicalCodecRuntimeFiles() {
+        return List.of(
+            "app/runtime-windows-source/anchor/anchor_codec.exe",
+            "app/runtime-windows-source/anchor/anchor_codec.dll",
+            "app/runtime-windows-source/anchor/build_receipt.json",
+            "app/runtime-windows-source/context/context_codec.exe",
+            "app/runtime-windows-source/context/context_codec.dll",
+            "app/runtime-windows-source/context/build_receipt.json",
+            "app/runtime-windows-source/hf-detail/hf_detail_codec.exe",
+            "app/runtime-windows-source/hf-detail/hf_detail_codec.dll",
+            "app/runtime-windows-source/hf-detail/build_receipt.json"
+        );
+    }
+
+    static List<String> legacyCodecRuntimeFiles() {
+        return List.of(
             "app/runtime-windows-source/089/slide_jxl089.exe",
             "app/runtime-windows-source/089/slide_jxl089.dll",
             "app/runtime-windows-source/089/build_receipt.json",
@@ -79,6 +104,12 @@ final class PlatformSupport {
         );
     }
 
+    static List<String> requiredNativeRuntimeFiles() {
+        return java.util.stream.Stream.concat(
+            requiredApplicationFiles().stream(), canonicalCodecRuntimeFiles().stream()
+        ).toList();
+    }
+
     static String nativeCompressionStatus(Path runtime) {
         if (!isWindows()) {
             return "Native Count＋TIFF compression is not bundled for " + osName()
@@ -86,7 +117,7 @@ final class PlatformSupport {
         }
         String problem = nativeRuntimeProblem(runtime);
         if (problem != null) return problem;
-        return "Windows native runtime files found. Codec ABI and file pins are checked before use; "
-            + "the pinned Count source is verified before each Count job.";
+        return "Windows native runtime files found. Anchor, Context and HF-Detail codec ABI and file pins "
+            + "are checked before use; the pinned Count source is verified before each Count job.";
     }
 }
