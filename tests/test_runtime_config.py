@@ -12,6 +12,7 @@ from runtime_config import (
     fused_worker_count,
     maximum_worker_count,
     scan_worker_count,
+    encoding_timeout_seconds,
 )
 
 
@@ -42,6 +43,18 @@ class RuntimeConfigTests(TestCase):
         with patch.dict("os.environ", {"WORKERS": "many"}, clear=True):
             with self.assertRaisesRegex(ValueError, "WORKERS must be an integer"):
                 bounded_int_env("WORKERS", 4)
+
+    def test_encoding_timeout_default_and_override(self):
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(encoding_timeout_seconds(), 14400)
+        with patch.dict("os.environ", {"STPYRAMID_TIMEOUT_SECONDS": "3600"}, clear=True):
+            self.assertEqual(encoding_timeout_seconds(), 3600)
+
+    def test_timeout_outside_supported_range_is_rejected(self):
+        for raw in ("0", "86401", "many"):
+            with self.subTest(raw=raw), patch.dict("os.environ", {"STPYRAMID_TIMEOUT_SECONDS": raw}, clear=True):
+                with self.assertRaisesRegex(ValueError, "STPYRAMID_TIMEOUT_SECONDS"):
+                    encoding_timeout_seconds()
 
     def test_values_outside_supported_range_are_rejected(self):
         for raw in ("0", "9", "-1"):
