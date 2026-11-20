@@ -16,7 +16,7 @@ from .integrity import count_schema, h5_digest, sha256, text_ids, write_json
 import re
 
 MAX_MANIFEST_BYTES = 16 * 1024 * 1024
-HEX_SHA256 = re.compile(r"[0-9a-f]{64}\\Z")
+HEX_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
 def _read_manifest(path):
