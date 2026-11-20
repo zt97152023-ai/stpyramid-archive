@@ -63,6 +63,13 @@ Important implementation details:
 - `task_contract.py` — validates incoming desktop requests before codec execution.
 - `runtime_config.py` — validates worker counts and encoding timeout.
 
+## Desktop packaging
+
+- `desktop/build_portable.py` — builds the Python desktop portable runtime.
+- `java-desktop/package.ps1` — overlays the worker and its root-level helper modules into the Java portable package.
+
+Both packaging paths must include every root-level module imported by `desktop_worker.py`.
+
 ## Desktop applications
 
 There are two clients in this source tree. They are separate front ends and should not be mistaken for two codec implementations.
