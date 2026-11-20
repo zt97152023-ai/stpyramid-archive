@@ -50,7 +50,7 @@ Before moving code:
 - [x] Test the request shapes currently emitted by the Python and Java desktop clients.
 - [x] Validate incoming worker requests before dispatching codec work.
 - [x] Exercise worker rejection of malformed requests and compile its source in the test suite.
-- [ ] Inventory every `sys.path` mutation and flat import before changing package boundaries.
+- [x] Inventory first-party `sys.path` mutations, dynamic loaders and major flat-import paths in [PYTHON_IMPORTS.md](PYTHON_IMPORTS.md).
 
 **Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior. CLI and task-contract checks are wired to GitHub Actions on Windows, Linux and macOS.
 
