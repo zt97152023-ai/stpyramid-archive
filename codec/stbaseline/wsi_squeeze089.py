@@ -1,4 +1,4 @@
-"""089 exact signed Squeeze with a paid one-hop native-L1 anchor.
+"""Anchor Codec: exact signed Squeeze with a paid one-hop native-L1 reference.
 
 The ordinary and anchored controls physically pay for the same detail stream.
 Only L0 changes; every lower level remains an independent direct JXL tile.
@@ -66,10 +66,10 @@ def _read_bounded(path, limit):
 
 def _anchor_geometry(levels):
     if len(levels) < 2:
-        raise ValueError('089 requires a nonempty floor-sized native L1')
+        raise ValueError('Anchor Codec requires a nonempty floor-sized native L1')
     h0, w0, _ = levels[0]['shape']; h1, w1, _ = levels[1]['shape']
     if min(h0, w0) < 2 or (h1, w1) != (h0//2, w0//2):
-        raise ValueError('089 requires a nonempty floor-sized native L1')
+        raise ValueError('Anchor Codec requires a nonempty floor-sized native L1')
 
 
 def _anchor_layout(levels, descriptor):
@@ -77,13 +77,13 @@ def _anchor_layout(levels, descriptor):
     _anchor_geometry(levels)
     _, level, x, y, w, h = descriptor
     if level != 0 or x % TILE or y % TILE or not (1 <= w <= TILE and 1 <= h <= TILE):
-        raise ValueError('089 anchors apply only to independent native L0 tiles')
+        raise ValueError('Anchor Codec anchors apply only to independent native L0 tiles')
     h0, w0, _ = levels[0]['shape']; h1, w1, _ = levels[1]['shape']
     xs = np.minimum(x//2 + np.arange((w+1)//2), w1-1)
     ys = np.minimum(y//2 + np.arange((h+1)//2), h1-1)
     tx, ty = int(xs[0]//TILE), int(ys[0]//TILE)
     if np.any(xs//TILE != tx) or np.any(ys//TILE != ty):
-        raise ValueError('089 anchor would need more than one L1 tile')
+        raise ValueError('Anchor Codec anchor would need more than one L1 tile')
     start = ((w0+TILE-1)//TILE)*((h0+TILE-1)//TILE)
     gid = start + ty*((w1+TILE-1)//TILE) + tx
     return gid, ys % TILE, xs % TILE
@@ -138,7 +138,7 @@ class NativeRuntime:
         anchor_pointer, anchor_size = None, 0
         if anchor is not None:
             if not isinstance(anchor, np.ndarray) or anchor.dtype != np.uint8 or anchor.shape != ((h+1)//2, (w+1)//2, 3):
-                raise ValueError('089 anchor array shape/type differs')
+                raise ValueError('Anchor Codec anchor array shape/type differs')
             anchor = np.ascontiguousarray(anchor)
             anchor_pointer, anchor_size = anchor.ctypes.data, anchor.nbytes
         payload = ctypes.create_string_buffer(blob)
@@ -168,9 +168,9 @@ def _native_encode(runtime, spool, target):
 def _record(blob, gid, w, h, mode):
     """Bounded outer parser; native additionally verifies coefficient/profile/RGB exactness."""
     if not 196 <= len(blob) <= MAX_PAYLOAD or blob[:8] != b'S089TIL1':
-        raise ValueError('089 record magic/length')
+        raise ValueError('Anchor Codec record magic/length')
     if struct.unpack_from('<7I', blob, 8) != (1, mode, gid, w, h, (w+1)//2, (h+1)//2):
-        raise ValueError('089 record mode/identity/geometry binding')
+        raise ValueError('Anchor Codec record mode/identity/geometry binding')
     if mode == 0 and blob[68:100] != b'\0'*32:
         raise ValueError('Ordinary089 record has external anchor binding')
     pos = 100; streams = []
@@ -182,10 +182,10 @@ def _record(blob, gid, w, h, mode):
         empty = i == 0 and w == h == 1
         if (size > MAX_STREAM_BYTES or pos+size > len(blob)
                 or not ((empty and size == bits == 0) or (size > 0 and (size-1)*8 < bits <= size*8))):
-            raise ValueError('089 stream bit/byte bounds')
+            raise ValueError('Anchor Codec stream bit/byte bounds')
         payload = blob[pos:pos+size]; pos += size
         if hashlib.sha256(payload).digest() != digest or (bits % 8 and payload[-1] >> (bits % 8)):
-            raise ValueError('089 stream SHA/padding mismatch')
+            raise ValueError('Anchor Codec stream SHA/padding mismatch')
         streams.append({'bytes': size, 'bits': bits, 'sha256': digest.hex(), 'payload': payload})
     if pos != len(blob):
         raise ValueError('Trailing089 record bytes')
@@ -198,9 +198,9 @@ def _validate_stream_receipt(record, stream, coefficients, predictor):
            {'bytes': stream['bytes'], 'bits': stream['bits'], 'consumed_bits': stream['bits'],
             'sha256': stream['sha256'], 'coefficients': coefficients, 'predictor': predictor,
             'empty': coefficients == 0}.items()):
-        raise ValueError('089 stream receipt differs from actual bytes/coefficients')
+        raise ValueError('Anchor Codec stream receipt differs from actual bytes/coefficients')
     if not isinstance(record.get('coefficient_sha256'), str) or base.HEX.fullmatch(record['coefficient_sha256']) is None:
-        raise ValueError('089 coefficient digest missing')
+        raise ValueError('Anchor Codec coefficient digest missing')
     if type(record.get('lz77_enabled')) is not bool:
         raise ValueError('089 LZ syntax flag must be boolean')
     learned, emitted = record.get('tree_learned_nodes'), record.get('tree_nodes')
@@ -208,7 +208,7 @@ def _validate_stream_receipt(record, stream, coefficients, predictor):
     if coefficients == 0:
         if (any(type(v) is not int or v != 0 for v in (learned, emitted, removed, collapsed))
                 or pruned is not False or record['lz77_enabled'] is not False):
-            raise ValueError('089 empty detail has model state')
+            raise ValueError('Anchor Codec empty detail has model state')
     elif (type(learned) is not int or learned < 1 or learned % 2 != 1
           or type(emitted) is not int or not 1 <= emitted <= 4095 or emitted % 2 != 1
           or emitted > learned or type(removed) is not int or removed != (learned-emitted)//2
@@ -216,7 +216,7 @@ def _validate_stream_receipt(record, stream, coefficients, predictor):
           or type(pruned) is not bool or pruned != (removed > 0)
           or (pruned and (learned <= 4095 or collapsed == 0))
           or (not pruned and (learned != emitted or collapsed != 0))):
-        raise ValueError('089 tree budget/pruning receipt inconsistent')
+        raise ValueError('Anchor Codec tree budget/pruning receipt inconsistent')
 
 
 def _validate_native(native, catalog, descriptors, anchors):
@@ -416,7 +416,7 @@ class Reader(base.Reader):
         if (m['files']['source.json']['bytes'] > scan.MAX_SOURCE_METADATA_BYTES
                 or m['files']['images.index']['bytes'] != HEADER.size+ENTRY.size*len(self._descriptors)
                 or ('anchors.index' in expected and m['files']['anchors.index']['bytes'] != HEADER.size+ANCHOR_ENTRY.size*self._l0_count)):
-            raise ValueError('089 metadata/index bound')
+            raise ValueError('Anchor Codec metadata/index bound')
         self._runtime_argument = runtime_dir; self._native = None; self._closed = False
         self._entries = None; self._bank = None; self._level_start = []; self._source_metadata = None
         self.index_read_bytes = self.anchor_index_read_bytes = 0
@@ -431,18 +431,18 @@ class Reader(base.Reader):
     def _member(self, name, limit):
         blob = _read_bounded(self.root/name, limit); info = self.manifest['files'][name]
         if len(blob) != info['bytes'] or _hash(blob) != info['sha256']:
-            raise ValueError('089 member integrity: ' + name)
+            raise ValueError('Anchor Codec member integrity: ' + name)
         return blob
 
     def _setup(self):
         if self._closed:
-            raise ValueError('089 Reader is closed')
+            raise ValueError('Anchor Codec reader is closed')
         if self._entries is not None:
             return
         data = self._member('images.index', HEADER.size+base.MAX_TILES*ENTRY.size)
         self.index_read_bytes += len(data)
         if HEADER.unpack_from(data) != (MAGIC, TILE, len(self._descriptors)):
-            raise ValueError('089 index header differs')
+            raise ValueError('Anchor Codec index header differs')
         entries = [ENTRY.unpack_from(data, HEADER.size+i*ENTRY.size) for i in range(len(self._descriptors))]
         end = 0; counts = dict.fromkeys(('jpegxl', 'squeeze', 'anchor'), 0)
         for gid, ((offset, length, route, _), desc) in enumerate(zip(entries, self._descriptors)):
@@ -452,21 +452,21 @@ class Reader(base.Reader):
             limit = base.MAX_PAYLOAD if route == JXL else MAX_PAYLOAD
             if (data[HEADER.size+gid*ENTRY.size+13:HEADER.size+gid*ENTRY.size+16] != b'\0'*3
                     or offset != end or not 0 < length <= limit or route not in allowed):
-                raise ValueError('089 invalid independent span/route or lower-level dependency chain')
+                raise ValueError('Anchor Codec invalid independent span/route or lower-level dependency chain')
             end += length; counts[{JXL: 'jpegxl', SQUEEZE: 'squeeze', ANCHORED: 'anchor'}[route]] += 1
         if end != self.manifest['files']['images.bank']['bytes'] or counts != self.manifest.get('routes'):
-            raise ValueError('089 trailing/missing bank or route count')
+            raise ValueError('Anchor Codec trailing/missing bank or route count')
         if self.family == 'anchor':
             data = self._member('anchors.index', HEADER.size+ANCHOR_ENTRY.size*self._l0_count)
             self.anchor_index_read_bytes += len(data)
             if HEADER.unpack_from(data) != (ANCHOR_MAGIC, TILE, self._l0_count):
-                raise ValueError('089 anchor directory header')
+                raise ValueError('Anchor Codec anchor directory header')
             for desc in self._descriptors[:self._l0_count]:
                 gid = desc[0]; expected = _anchor_layout(self.manifest['image']['levels'], desc)[0] if entries[gid][2] == ANCHORED else NO_ANCHOR
                 if ANCHOR_ENTRY.unpack_from(data, HEADER.size+gid*ANCHOR_ENTRY.size)[0] != expected:
-                    raise ValueError('089 anchor dependency mapping differs')
+                    raise ValueError('Anchor Codec anchor dependency mapping differs')
                 if expected != NO_ANCHOR and (self._descriptors[expected][1] != 1 or entries[expected][2] != JXL):
-                    raise ValueError('089 anchor must be independent L1 JXL, no chains')
+                    raise ValueError('Anchor Codec anchor must be independent L1 JXL, no chains')
         self._entries = entries
         self._level_start = [next(d[0] for d in self._descriptors if d[1] == info['level']) for info in self.manifest['image']['levels']]
         self._bank = MeteredFile(self.root/'images.bank')
@@ -475,7 +475,7 @@ class Reader(base.Reader):
         import imagecodecs
         self._setup()
         if not base._integer(gid) or not 0 <= gid < len(self._entries):
-            raise ValueError('089 tile outside archive')
+            raise ValueError('Anchor Codec tile outside archive')
         self.logical_tiles_read += 1
         if cache is not None and gid in cache:
             self.cache_hits += 1
@@ -483,7 +483,7 @@ class Reader(base.Reader):
         offset, length, route, crc = self._entries[gid]
         self._bank.seek(offset); blob = self._bank.read(length)
         if len(blob) != length or zlib.crc32(blob) != crc:
-            raise ValueError('089 tile payload integrity')
+            raise ValueError('Anchor Codec tile payload integrity')
         w, h = self._descriptors[gid][4:]
         if route == JXL:
             pixels = imagecodecs.jpegxl_decode(blob, numthreads=1, out=np.empty((h, w, 3), np.uint8))
@@ -511,7 +511,7 @@ class Reader(base.Reader):
             then = time.perf_counter(); pixels = self._native.decode(blob, w, h, gid, anchor)
             self.native_decode_seconds += time.perf_counter()-then; self.native_tiles_decoded += 1
         if pixels.dtype != np.uint8 or pixels.shape != (h, w, 3):
-            raise ValueError('089 decoded native shape/type')
+            raise ValueError('Anchor Codec decoded native shape/type')
         self.decoded_pixels += w*h
         if cache_state is not None:
             cache_state['decoded'].add(gid)
