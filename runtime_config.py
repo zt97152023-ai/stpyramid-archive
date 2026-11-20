@@ -32,3 +32,8 @@ def maximum_worker_count():
 def scan_worker_count(image_profile):
     default = 8 if image_profile == "l1_conditional" else 4
     return bounded_int_env("STPYRAMID_SCAN_WORKERS", default)
+
+
+def encoding_timeout_seconds():
+    """Maximum supervised encoding duration, in seconds (default: four hours)."""
+    return bounded_int_env("STPYRAMID_TIMEOUT_SECONDS", 14400, maximum=86400)
