@@ -34,7 +34,7 @@ class PinnedRuntimeSecurityTests(unittest.TestCase):
 
     def write_manifest(self):
         (self.vendor / "SOURCE.json").write_text(json.dumps({
-            "origin": runtime.ORIGIN.rstrip("/"),
+            "origin": "https://github.com/zt97152023-ai/shared-st-count-codec",
             "commit": runtime.COMMIT,
             "files": self.rows,
         }), encoding="utf-8")
@@ -62,7 +62,7 @@ class PinnedRuntimeSecurityTests(unittest.TestCase):
             runtime.pinned_files()
 
     def test_windows_separator_and_drive_syntax_are_rejected(self):
-        for unsafe in ("baseline\\\\..\\\\outside.py", "baseline/C:/outside.py"):
+        for unsafe in ("baseline\\..\\outside.py", "baseline/C:/outside.py"):
             self.rows[0]["path"] = unsafe
             self.write_manifest()
             with self.assertRaisesRegex(ValueError, "Unexpected Count source member"):
