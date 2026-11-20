@@ -57,10 +57,10 @@ def _hash(data):
 
 def _read_bounded(path, limit):
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= limit:
-        raise ValueError('Missing, unsafe or unbounded089 member: ' + path.name)
+        raise ValueError('Missing, unsafe or unboundedAnchor Codec member: ' + path.name)
     data = path.read_bytes()
     if not 0 < len(data) <= limit:
-        raise ValueError('Changed or unbounded089 member')
+        raise ValueError('Changed or unboundedAnchor Codec member')
     return data
 
 
@@ -98,14 +98,14 @@ def _anchor(levels, descriptor, fetch):
 def _runtime(runtime_dir=None):
     value = runtime_dir or os.environ.get('ST089_RUNTIME')
     if not value:
-        raise RuntimeError('ST089_RUNTIME or runtime_dir must name the qualified089 build')
+        raise RuntimeError('STAnchor Codec_RUNTIME or runtime_dir must name the qualifiedAnchor Codec build')
     arg = Path(value)
     if arg.is_symlink() or not arg.is_dir():
-        raise ValueError('Unsafe native089 runtime directory')
+        raise ValueError('Unsafe nativeAnchor Codec runtime directory')
     root = arg.resolve()
     receipt = json.loads(_read_bounded(root/'build_receipt.json', 4*1024*1024))
     if receipt.get('abi_version') != ABI_VERSION or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1'):
-        raise ValueError('Unqualified089 runtime receipt')
+        raise ValueError('UnqualifiedAnchor Codec runtime receipt')
     pins = {}
     for name in ('slide_jxl089.exe', 'slide_jxl089.dll'):
         path = root/name; info = receipt.get('outputs', {}).get(name, {})
@@ -121,11 +121,11 @@ class NativeRuntime:
     def __init__(self, runtime_dir=None, expected=None):
         self.root, self.pins = _runtime(runtime_dir)
         if expected is not None and expected != self.pins:
-            raise ValueError('Native089 runtime differs from archive pins')
+            raise ValueError('NativeAnchor Codec runtime differs from archive pins')
         self.library = lib = ctypes.CDLL(str(self.root/'slide_jxl089.dll'))
         lib.st089_abi_version.argtypes = []; lib.st089_abi_version.restype = ctypes.c_uint32
         if lib.st089_abi_version() != ABI_VERSION:
-            raise ValueError('Unsupported089 ABI')
+            raise ValueError('UnsupportedAnchor Codec ABI')
         ptr, size, u32 = ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32
         lib.st089_decode.argtypes = [ptr, size, ptr, size, u32, u32, u32, ptr, size, ptr, size]
         lib.st089_decode.restype = ctypes.c_int
@@ -134,7 +134,7 @@ class NativeRuntime:
         if (not base._integer(w) or not base._integer(h) or not 1 <= w <= TILE or not 1 <= h <= TILE
                 or not base._integer(gid) or not 0 <= gid < base.MAX_TILES
                 or not isinstance(blob, bytes) or not 196 <= len(blob) <= MAX_PAYLOAD):
-            raise ValueError('089 native decode arguments exceed bounds')
+            raise ValueError('Anchor Codec native decode arguments exceed bounds')
         anchor_pointer, anchor_size = None, 0
         if anchor is not None:
             if not isinstance(anchor, np.ndarray) or anchor.dtype != np.uint8 or anchor.shape != ((h+1)//2, (w+1)//2, 3):
@@ -145,7 +145,7 @@ class NativeRuntime:
         pixels = np.empty((h, w, 3), np.uint8); error = ctypes.create_string_buffer(2048)
         if self.library.st089_decode(payload, len(blob), anchor_pointer, anchor_size,
                                      gid, w, h, pixels.ctypes.data, pixels.nbytes, error, len(error)):
-            raise ValueError('st089_decode: ' + error.value.decode('utf8', 'replace'))
+            raise ValueError('stAnchor Codec_decode: ' + error.value.decode('utf8', 'replace'))
         return pixels
 
 
@@ -161,7 +161,7 @@ def _native_encode(runtime, spool, target):
                                 stdout=out, stderr=err, env=env, timeout=2400,
                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     if result.returncode:
-        raise RuntimeError('Native089 encoding failed: ' + stderr.read_text(encoding='utf8', errors='replace')[-3000:])
+        raise RuntimeError('NativeAnchor Codec encoding failed: ' + stderr.read_text(encoding='utf8', errors='replace')[-3000:])
     return time.perf_counter()-then
 
 
@@ -172,11 +172,11 @@ def _record(blob, gid, w, h, mode):
     if struct.unpack_from('<7I', blob, 8) != (1, mode, gid, w, h, (w+1)//2, (h+1)//2):
         raise ValueError('Anchor Codec record mode/identity/geometry binding')
     if mode == 0 and blob[68:100] != b'\0'*32:
-        raise ValueError('Ordinary089 record has external anchor binding')
+        raise ValueError('OrdinaryAnchor Codec record has external anchor binding')
     pos = 100; streams = []
     for i in range(2):
         if pos+48 > len(blob):
-            raise ValueError('Truncated089 stream header')
+            raise ValueError('TruncatedAnchor Codec stream header')
         bits, size = struct.unpack_from('<QQ', blob, pos); digest = blob[pos+16:pos+48]
         pos += 48
         empty = i == 0 and w == h == 1
@@ -188,7 +188,7 @@ def _record(blob, gid, w, h, mode):
             raise ValueError('Anchor Codec stream SHA/padding mismatch')
         streams.append({'bytes': size, 'bits': bits, 'sha256': digest.hex(), 'payload': payload})
     if pos != len(blob):
-        raise ValueError('Trailing089 record bytes')
+        raise ValueError('TrailingAnchor Codec record bytes')
     return {'raw_sha256': blob[36:68].hex(), 'anchor_sha256': blob[68:100].hex(),
             'detail': streams[0], 'low': streams[1]}
 
@@ -202,7 +202,7 @@ def _validate_stream_receipt(record, stream, coefficients, predictor):
     if not isinstance(record.get('coefficient_sha256'), str) or base.HEX.fullmatch(record['coefficient_sha256']) is None:
         raise ValueError('Anchor Codec coefficient digest missing')
     if type(record.get('lz77_enabled')) is not bool:
-        raise ValueError('089 LZ syntax flag must be boolean')
+        raise ValueError('Anchor Codec LZ syntax flag must be boolean')
     learned, emitted = record.get('tree_learned_nodes'), record.get('tree_nodes')
     removed, collapsed, pruned = (record.get(k) for k in ('tree_pruned_splits', 'tree_collapsed_subtrees', 'tree_was_pruned'))
     if coefficients == 0:
@@ -228,9 +228,9 @@ def _validate_native(native, catalog, descriptors, anchors):
              'lowpass_predictor': 'Best', 'color_transform': 'G,R-G,B-G',
              'squeeze': 'H_then_V_first3_append', 'uint_method': 'kBest', 'lz77_method': 'kOptimal_per_stream'}
     if any(type(receipt.get(k)) is not type(v) or receipt[k] != v for k, v in fixed.items()):
-        raise ValueError('Native089 receipt differs from fixed recipe')
+        raise ValueError('NativeAnchor Codec receipt differs from fixed recipe')
     if len(receipt.get('tiles', [])) != len(targets):
-        raise ValueError('Native089 receipt coverage')
+        raise ValueError('NativeAnchor Codec receipt coverage')
     costs = dict.fromkeys(('ordinary_bytes', 'anchored_bytes', 'detail_stream_bytes',
                           'lowpass_stream_bytes', 'correction_stream_bytes'), 0)
     for desc, record in zip(targets, receipt['tiles']):
@@ -239,21 +239,21 @@ def _validate_native(native, catalog, descriptors, anchors):
                     'anchor_w': aw, 'anchor_h': ah, 'raw_sha256': catalog['tiles'][gid]['native_sha256'],
                     'anchor_sha256': anchors[gid], 'detail_shared_exact': True}
         if any(type(record.get(k)) is not type(v) or record[k] != v for k, v in expected.items()):
-            raise ValueError('Native089 source/anchor identity receipt differs')
+            raise ValueError('NativeAnchor Codec source/anchor identity receipt differs')
         views = []
         for mode, family in enumerate(('ordinary', 'anchored')):
             path = f'{family}/{gid:06d}.bin'
             if record.get(f'{family}_path') != path:
-                raise ValueError('Native089 record route mismatch')
+                raise ValueError('NativeAnchor Codec record route mismatch')
             blob = _read_bounded(native/path, MAX_PAYLOAD)
             if len(blob) != record.get(f'{family}_bytes') or _hash(blob) != record.get(f'{family}_sha256'):
-                raise ValueError('Native089 record byte/SHA receipt differs')
+                raise ValueError('NativeAnchor Codec record byte/SHA receipt differs')
             view = _record(blob, gid, w, h, mode); views.append(view)
             if view['raw_sha256'] != expected['raw_sha256'] or view['anchor_sha256'] != (anchors[gid] if mode else '0'*64):
-                raise ValueError('Native089 serialized source/anchor binding differs')
+                raise ValueError('NativeAnchor Codec serialized source/anchor binding differs')
             costs[f'{family}_bytes'] += len(blob)
         if views[0]['detail'] != views[1]['detail']:
-            raise ValueError('Matched089 detail bytes differ')
+            raise ValueError('MatchedAnchor Codec detail bytes differ')
         low_count = 3*aw*ah
         _validate_stream_receipt(record['detail'], views[0]['detail'], 3*w*h-low_count, 'Zero')
         _validate_stream_receipt(record['lowpass'], views[0]['low'], low_count, 'Best')
@@ -263,7 +263,7 @@ def _validate_native(native, catalog, descriptors, anchors):
         costs['correction_stream_bytes'] += views[1]['low']['bytes']
     costs['record_header_bytes_per_tile'] = 196
     if receipt.get('costs') != costs:
-        raise ValueError('Native089 costs differ from actual paid records')
+        raise ValueError('NativeAnchor Codec costs differ from actual paid records')
     return receipt
 
 
@@ -277,7 +277,7 @@ def _assemble(catalog, census, direct, native, target, profile, runtime_pins, di
                 routes[gid] = SQUEEZE if family == 'squeeze' else ANCHORED
     shutil.copyfile(census/'source.json', target/'source.json')
     if sha256(target/'source.json') != catalog['files']['source.json']['sha256']:
-        raise ValueError('089 source metadata changed during assembly')
+        raise ValueError('Anchor Codec source metadata changed during assembly')
     with (target/'images.bank').open('xb') as bank, (target/'images.index').open('xb') as index:
         index.write(HEADER.pack(MAGIC, TILE, len(descriptors)))
         for gid, *_ in descriptors:
@@ -312,7 +312,7 @@ def build(censusdir, direct087dir, output, workspace, runtime_dir=None):
     out = _disjoint(output, census, direct_root)
     stage = _disjoint(out.with_name(out.name+'.partial'), census, direct_root)
     work = _disjoint(workspace, census, direct_root, out, stage)
-    stage.mkdir(parents=True); (stage/'INCOMPLETE').write_text('089 portfolio\n', encoding='utf8')
+    stage.mkdir(parents=True); (stage/'INCOMPLETE').write_text('Anchor Codec portfolio\n', encoding='utf8')
     try:
         runtime, runtime_pins = _runtime(runtime_dir); work.mkdir(parents=True)
         then = time.perf_counter(); catalog = base._catalog(census); _anchor_geometry(catalog['levels'])
@@ -320,17 +320,17 @@ def build(censusdir, direct087dir, output, workspace, runtime_dir=None):
         direct_pins = base._members(direct_root)
         with reference087.Reader(direct_root) as direct_reader:
             if direct_reader.manifest['profile'] != 'direct' or direct_reader.manifest['image']['levels'] != catalog['levels']:
-                raise ValueError('089 reused direct differs from native scope')
+                raise ValueError('Anchor Codec reused direct differs from native scope')
             if direct_reader.manifest['files']['source.json'] != catalog['files']['source.json']:
-                raise ValueError('089 reused direct differs from native provenance')
+                raise ValueError('Anchor Codec reused direct differs from native provenance')
             direct_reader._verify_files(); direct_reader._setup(); reused = work/'direct'; reused.mkdir()
             for gid, *_ in descriptors:
                 offset, length, route, crc = direct_reader._entries[gid]
                 if route != reference087.JXL:
-                    raise ValueError('089 reference must contain only direct JXL')
+                    raise ValueError('Anchor Codec reference must contain only direct JXL')
                 direct_reader._bank.seek(offset); data = direct_reader._bank.read(length)
                 if len(data) != length or zlib.crc32(data) != crc:
-                    raise ValueError('089 reused direct corrupt')
+                    raise ValueError('Anchor Codec reused direct corrupt')
                 (reused/f'{gid:06d}.bin').write_bytes(data)
         input_seconds = time.perf_counter()-then
         then = time.perf_counter(); spool = work/'spool'; spool.mkdir(); anchors = {}
@@ -364,10 +364,10 @@ def build(censusdir, direct087dir, output, workspace, runtime_dir=None):
         winner = min(PROFILES, key=lambda p: results[p]['ledger']['total_package_bytes'])
         shutil.copytree(stage/winner, stage/'best')
         if base._members(stage/'best') != results[winner]['members']:
-            raise ValueError('089 best copy differs')
+            raise ValueError('Anchor Codec best copy differs')
         if (base._members(direct_root) != direct_pins or sha256(census/'catalog.json') != catalog_pin
                 or _runtime(runtime)[1] != runtime_pins):
-            raise ValueError('089 frozen input/runtime changed during build')
+            raise ValueError('Anchor Codec frozen input/runtime changed during build')
         (stage/'INCOMPLETE').unlink(); stage.rename(out)
         return {'ok': True, 'profiles': results, 'best_profile': winner, 'winner': winner,
                 'winning_package_bytes': results[winner]['ledger']['total_package_bytes'],
@@ -389,13 +389,13 @@ class Reader(base.Reader):
     def __init__(self, directory, runtime_dir=None):
         arg = Path(directory); self.root = arg.resolve(); path = self.root/'manifest.json'
         if arg.is_symlink() or path.is_symlink() or (self.root/'INCOMPLETE').exists() or (self.root/'failure.json').exists():
-            raise ValueError('Unsafe or incomplete089 archive')
+            raise ValueError('Unsafe or incompleteAnchor Codec archive')
         blob = _read_bounded(path, base.MAX_MANIFEST_BYTES); self.manifest_bytes = len(blob)
         self.manifest = m = json.loads(blob)
         if m.get('format') != FORMAT or m.get('profile') not in PROFILES or m.get('image_only') is not True:
-            raise ValueError('Unsupported089 archive')
+            raise ValueError('UnsupportedAnchor Codec archive')
         if m.get('parameters') != FIXED or any(type(m['parameters'][k]) is not type(v) for k, v in FIXED.items()):
-            raise ValueError('Unsupported089 fixed parameters')
+            raise ValueError('UnsupportedAnchor Codec fixed parameters')
         self.family = m['profile'].split('_')[0]
         self._descriptors = list(base._descriptors(m['image']['levels']))
         _anchor_geometry(m['image']['levels'])
@@ -405,14 +405,14 @@ class Reader(base.Reader):
                 or m['image'].get('path') != 'images.bank' or m['image'].get('index') != 'images.index'
                 or m['image'].get('source_metadata') != 'source.json'
                 or m['image'].get('anchor_index') != ('anchors.index' if self.family == 'anchor' else None)):
-            raise ValueError('Unlisted/missing089 member or route')
+            raise ValueError('Unlisted/missingAnchor Codec member or route')
         for name, info in m['files'].items():
             member = self.root/name
             if (not _name(name) or member.is_symlink() or not member.is_file()
                     or type(info.get('bytes')) is not int or info['bytes'] < 0
                     or member.stat().st_size != info['bytes'] or not isinstance(info.get('sha256'), str)
                     or base.HEX.fullmatch(info['sha256']) is None):
-                raise ValueError('Unsafe089 member/size/hash')
+                raise ValueError('UnsafeAnchor Codec member/size/hash')
         if (m['files']['source.json']['bytes'] > scan.MAX_SOURCE_METADATA_BYTES
                 or m['files']['images.index']['bytes'] != HEADER.size+ENTRY.size*len(self._descriptors)
                 or ('anchors.index' in expected and m['files']['anchors.index']['bytes'] != HEADER.size+ANCHOR_ENTRY.size*self._l0_count)):
