@@ -70,6 +70,8 @@ Before moving code:
 - [x] Add `runtime_config.py` and `task_contract.py` to both Windows desktop package assembly paths.
 - [x] Add packaging contract tests to prevent worker imports from being omitted in future portable releases.
 - [x] Add Java-side preflight checks for the complete expected Windows native runtime file layout before advertising or launching native compression.
+- [x] Adopt Anchor, Context and HF-Detail as canonical codec names across user-facing docs, diagnostics, CMake build targets and newly staged runtime folders/binaries.
+- [x] Preserve old runtime folder/file layouts and historical manifest pin keys through compatibility fallbacks.
 - [x] Add Java 17 compilation and runtime-layout contract tests on Windows, Linux and macOS.
 - [ ] Add Python-side runtime directory discovery and a single structured capability report shared by CLI and desktop clients.
 
