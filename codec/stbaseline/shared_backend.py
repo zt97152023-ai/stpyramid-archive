@@ -101,7 +101,10 @@ class CountStore:
         self.decoded_rows = 0
         self.decoded_blocks = 0
         self._zip = None
-        self._native = self.index.get("method") == "Shared_whole"
+        method = self.index.get("method")
+        if method not in ("Shared_whole", "Shared_blocks", "Shared_local"):
+            raise ValueError("Unsupported Shared Count method")
+        self._native = method == "Shared_whole"
         shape = self.index.get("shape")
         if (not isinstance(shape, list) or len(shape) != 2
                 or any(type(v) is not int or v < 1 for v in shape)
@@ -120,6 +123,16 @@ class CountStore:
                     or manifest_info.compress_type != zipfile.ZIP_STORED):
                 raise ValueError("Invalid native Count manifest storage/bound")
             self.native_manifest = json.loads(self._zip.read("manifest.json"))
+            native_files = self.native_manifest.get("files")
+            names = self._zip.namelist()
+            if (self.native_manifest.get("schema") != "qpatch-count-v1"
+                    or self.native_manifest.get("method") != "Shared-only"
+                    or self.native_manifest.get("shape") != shape
+                    or not isinstance(native_files, dict)
+                    or set(native_files) != set(MODEL_NAMES) | {"metadata.bz2", "support.rans", "graph.bz2", "values.rans"}
+                    or len(names) != len(set(names))
+                    or set(names) != set(native_files) | {"manifest.json"}):
+                raise ValueError("Native Shared Count manifest/member mismatch")
         else:
             for bid, b in enumerate(self.index["blocks"]):
                 for local, row in enumerate(b["rows"]):
