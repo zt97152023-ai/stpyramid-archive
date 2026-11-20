@@ -12,7 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 DISTRIBUTIONS = ("numpy", "scipy", "h5py", "tifffile", "imagecodecs", "psutil", "numba", "llvmlite", "Pillow",
                  "zstandard")
-SCRIPTS = ("desktop_app.py", "desktop_i18n.py", "desktop_worker.py", "fetch_count_runtime.py",
+SCRIPTS = ("desktop_app.py", "desktop_i18n.py", "desktop_worker.py", "runtime_config.py", "task_contract.py", "fetch_count_runtime.py",
            "native_tile_encoder.py", "pyramid_image_archive.py", "THIRD_PARTY.md")
 CACHE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.nbc", "*.nbi")
 
