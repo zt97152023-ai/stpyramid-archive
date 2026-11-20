@@ -35,6 +35,7 @@ def _runtime(runtime_dir):
             or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1')):
         raise ValueError('HF-Detail runtime recipe differs from the fixed build')
     pins = {}
+    legacy_outputs = {}
     for public_name, legacy_name in (('hf_detail_codec.exe', 'slide_hf1.exe'),
                                      ('hf_detail_codec.dll', 'slide_hf1.dll')):
         name = public_name if (root / public_name).is_file() else legacy_name
@@ -42,8 +43,25 @@ def _runtime(runtime_dir):
         if (p.is_symlink() or not p.is_file() or p.stat().st_size != info.get('bytes')
                 or sha256(p) != info.get('sha256')):
             raise ValueError('HF-Detail runtime differs from build receipt: ' + name)
-        pins[legacy_name] = {'bytes': info['bytes'], 'sha256': info['sha256']}
-    pins['build_receipt.json'] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+        pin = {'bytes': info['bytes'], 'sha256': info['sha256']}
+        pins[legacy_name] = pin
+        legacy_outputs[legacy_name] = pin
+
+    # Normalize the new public receipt to the historical pin representation.
+    # This lets old manifests validate against a newly staged runtime while the
+    # actual receipt and binary files are still checked above.
+    compatibility_receipt = {
+        'abi_version': receipt['abi_version'],
+        'release_profile': receipt.get('release_profile'),
+        'outputs': legacy_outputs,
+        'schema': 'wsi-hf1-runtime-build-1',
+        'representation': 'dense_magnitude_sign_v1',
+    }
+    compatibility_bytes = (json.dumps(compatibility_receipt, indent=2, sort_keys=True) + '\n').encode('utf-8')
+    pins['build_receipt.json'] = {
+        'bytes': len(compatibility_bytes),
+        'sha256': hashlib.sha256(compatibility_bytes).hexdigest(),
+    }
     return root, pins
 
 
