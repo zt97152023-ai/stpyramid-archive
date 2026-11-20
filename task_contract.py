@@ -22,16 +22,16 @@ def validate_task(request):
         raise ValueError("Task request must be a JSON object")
 
     action = request.get("action")
-    if action not in ACTIONS:
+    if not isinstance(action, str) or action not in ACTIONS:
         raise ValueError("Task action must be one of: encode, verify, restore")
 
     language = request.get("language", "en")
-    if language not in ("en", "zh"):
+    if not isinstance(language, str) or language not in ("en", "zh"):
         raise ValueError("Task language must be 'en' or 'zh'")
 
     if action == "encode":
         mode = request.get("mode")
-        if mode not in ENCODE_MODES:
+        if not isinstance(mode, str) or mode not in ENCODE_MODES:
             raise ValueError("Encode mode must be one of: image, integrated, integrated-fused")
         _required_text(request, "image")
         _required_text(request, "output")
