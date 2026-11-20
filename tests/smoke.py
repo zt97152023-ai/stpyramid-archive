@@ -68,14 +68,14 @@ def run(runtime, output):
             "--metadata", source / "metadata.json", "--output", package, "--runtime-dir", runtime,
             "--timeout", 240)
     import hf_adapter
-    from stbaseline.wsi_conditioned091 import NativeRuntime as Runtime091
+    from stbaseline.wsi_conditioned091 import NativeRuntime as ContextRuntime
 
     work = package.with_name(package.name + ".work")
     fine, middle, _ = levels
     height, width, _ = fine.shape
     record091 = (work / "prior091/native/conditional/000000.bin").read_bytes()
     recordhf = (work / "hf/native/ms/000000.bin").read_bytes()
-    np.testing.assert_array_equal(Runtime091(runtime / "091").decode(record091, width, height, 0, middle), fine)
+    np.testing.assert_array_equal(ContextRuntime(runtime / "091").decode(record091, width, height, 0, middle), fine)
     np.testing.assert_array_equal(hf_adapter.NativeRuntime(runtime / "hf").decode(recordhf, width, height, 0, middle), fine)
     routes = json.loads((package / "image/manifest.json").read_bytes())["routes"]
     assert sum(value for route, value in routes.items() if route != "1") > 0, routes
@@ -139,7 +139,7 @@ def run(runtime, output):
     print(json.dumps({"status": "PASS", "levels": len(levels), "count_shape": list(counts.shape), "image_routes": routes,
                       "compatibility_verifier": compatibility_report,
                       "verified": ["full_rgb", "tiff_tags", "typed_h5ad", "metadata", "image_roi",
-                                   "count_subset", "aligned_region", "091_and_hf_native_decode", "altered_member_rejected",
+                                   "count_subset", "aligned_region", "context_and_hf_detail_native_decode", "altered_member_rejected",
                                    "compatibility_harness"]}))
 
 
