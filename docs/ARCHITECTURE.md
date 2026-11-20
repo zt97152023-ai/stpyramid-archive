@@ -28,6 +28,7 @@ The Count and image components are encoded independently. The archive layer bind
 | Container / region reader | `codec/container_compare.py` | Bind members, inspect archives and serve spatial reads |
 | Native codecs | `native/`, `CMakeLists.txt` | Native image encode/decode implementations |
 | Java client | `java-desktop/src/` | Desktop workflow, validation and archive operations |
+| Runtime capability check | `java-desktop/src/stpyramid/PlatformSupport.java` | Checks expected native bundle files before advertising or launching native compression |
 | Python desktop client | `desktop_app.py`, `desktop_worker.py` | Queue-based Python desktop workflow |
 
 ## 3. Integrated request flow
