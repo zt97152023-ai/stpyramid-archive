@@ -287,7 +287,7 @@ class GroupedCountStore:
             for name, length in zip(MODEL_NAMES, lengths):
                 parts[name] = raw[start:start + length]
                 start += length
-            self.model = model_tables(parts, support_builder="fused", value_builder="fused")
+            self.model = model_tables(parts, expected_genes=self.shape[1], support_builder="fused", value_builder="fused")
         return self.model
 
     def _support_set_tables(self):
