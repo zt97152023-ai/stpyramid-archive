@@ -40,3 +40,4 @@ jobs:
           python tests/test_task_contract.py -v
           python tests/test_packaging_contract.py -v
           python tests/test_readme_contract.py -v
+          python tests/test_codec_naming.py -v
