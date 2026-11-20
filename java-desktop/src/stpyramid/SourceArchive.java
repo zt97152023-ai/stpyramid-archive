@@ -114,7 +114,10 @@ final class SourceArchive {
             }
             try (var meta = new DataInputStream(new BufferedInputStream(zip.getInputStream(manifest)))) {
                 String format = meta.readUTF();
-                if (!MANIFEST.equals(format)) throw new IOException("Unsupported source archive format: " + format);
+                if (format.isBlank() || format.length() > 4096 ||
+                    format.chars().anyMatch(ch -> ch < 32 || ch == 127)) {
+                    throw new IOException("Invalid source archive descriptor");
+                }
                 log.accept("Verifying " + format);
                 int count = meta.readInt();
                 if (count < 0 || count > MAX_RECORDS || count != entries.size()) throw new IOException("Unexpected ZIP member count");
