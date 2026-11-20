@@ -53,6 +53,12 @@ Important implementation details:
 - `pack_integrated` binds the independently encoded components into the archive.
 - `IntegratedArchive` owns archive inspection, verification, selective reads and restore.
 
+## Desktop task interface
+
+- [Task protocol](TASK_PROTOCOL.md) — request fields, event stream and runtime settings.
+- `task_contract.py` — validates incoming desktop requests before codec execution.
+- `runtime_config.py` — validates worker counts and encoding timeout.
+
 ## Desktop applications
 
 There are two clients in this source tree. They are separate front ends and should not be mistaken for two codec implementations.
