@@ -27,6 +27,7 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 - Bound grouped Count compressed-index reads from the declared matrix shape, cap the shared model member at 16 MiB, and bound the occupancy-model read before decompression.
 - Make the Shared Count runtime loader call the same canonical pinned-source verification used by the dependency downloader, so direct codec imports cannot bypass the cache checks.
 - Authenticate the optional BPCells loopback worker with a one-time 256-bit token delivered over the child stdin pipe (not command-line arguments); reject unauthenticated peers and cap handshake attempts/time.
+- Preflight HDF5 object graphs before Count metadata access; reject soft/external links, hard-link aliases/cycles, virtual datasets, external raw storage and object-reference datasets rather than following paths outside the selected HDF5 file.
 
 ## Operational recommendations
 
