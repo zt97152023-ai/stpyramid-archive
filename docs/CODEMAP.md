@@ -53,6 +53,10 @@ Important implementation details:
 - `pack_integrated` binds the independently encoded components into the archive.
 - `IntegratedArchive` owns archive inspection, verification, selective reads and restore.
 
+## Python import architecture
+
+- [Python import inventory](PYTHON_IMPORTS.md) — current `sys.path` mutations, dynamic source loaders and dependency paths.
+
 ## Desktop task interface
 
 - [Task protocol](TASK_PROTOCOL.md) — request fields, event stream and runtime settings.
