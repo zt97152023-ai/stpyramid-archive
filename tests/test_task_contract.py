@@ -1,5 +1,10 @@
 """Unit tests for the desktop task request protocol (standard library only)."""
 from unittest import TestCase, main
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from task_contract import validate_task
 
