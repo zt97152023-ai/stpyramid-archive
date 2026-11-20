@@ -26,6 +26,7 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 - Apply 16 MiB bounds to baseline and integrated JSON manifests before parsing; validate baseline member lengths and SHA-256 descriptor syntax.
 - Bound grouped Count compressed-index reads from the declared matrix shape, cap the shared model member at 16 MiB, and bound the occupancy-model read before decompression.
 - Make the Shared Count runtime loader call the same canonical pinned-source verification used by the dependency downloader, so direct codec imports cannot bypass the cache checks.
+- Authenticate the optional BPCells loopback worker with a one-time 256-bit token delivered over the child stdin pipe (not command-line arguments); reject unauthenticated peers and cap handshake attempts/time.
 
 ## Operational recommendations
 
@@ -37,4 +38,4 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 
 ## Scope and remaining work
 
-This document records a source-level review and targeted hardening. It is not a formal penetration test, independent security certification or guarantee that all attack surfaces have been eliminated. In particular, the repository still needs dedicated adversarial tests for malformed ZIP/HDF5/TIFF inputs, archive resource exhaustion, Windows reparse-point and case-insensitive path behavior, native decoder robustness, and runtime binary provenance. The local application has no per-user authentication or authorization boundary; a future networked service would require a separately designed identity, authorization, transport security and audit architecture.
+This document records a source-level review and targeted hardening. It is not a formal penetration test, independent security certification or guarantee that all attack surfaces have been eliminated. In particular, the repository still needs dedicated adversarial tests for malformed ZIP/HDF5/TIFF inputs, archive resource exhaustion, Windows reparse-point and case-insensitive path behavior, native decoder robustness, and runtime binary provenance. The local application has no per-user account or role authorization boundary. The optional BPCells worker uses authenticated loopback IPC, but this is process-to-process authentication, not user login or authorization. A future networked service would require a separately designed identity, authorization, transport security and audit architecture.
