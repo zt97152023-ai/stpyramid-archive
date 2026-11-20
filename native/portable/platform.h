@@ -95,7 +95,7 @@ inline void WriteNew(const std::filesystem::path& path, const uint8_t* data,
 #ifdef O_NOFOLLOW
   flags |= O_NOFOLLOW;
 #endif
-  const int fd = ::open(path.c_str(), flags, 0666);
+  const int fd = ::open(path.c_str(), flags, 0600);
   Require(fd >= 0, "output exists or cannot create output");
   bool ok = true;
   for (size_t pos = 0; pos < size;) {
