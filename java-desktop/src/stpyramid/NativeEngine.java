@@ -23,16 +23,12 @@ final class NativeEngine {
     }
 
     static void run(Path portable, Map<String, String> request, Consumer<String> log) throws IOException, InterruptedException {
-        if (portable == null) throw new IOException("Provide PORTABLE_RUNTIME or install the packaged runtime next to the JAR");
-        if (!PlatformSupport.isWindows()) {
-            throw new IOException("Native Count＋TIFF compression is currently qualified for Windows only. "
-                + "Use hest-source or source for a byte-exact cross-platform archive.");
+        String problem = PlatformSupport.nativeRuntimeProblem(portable);
+        if (problem != null) {
+            throw new IOException(problem + " Use the source-archive workflow where native compression is unavailable.");
         }
         Path python = portable.resolve("python/python.exe");
         Path script = portable.resolve("app/desktop_worker.py");
-        if (!Files.isRegularFile(python) || !Files.isRegularFile(script)) {
-            throw new IOException("Select the extracted STPyramid Windows portable runtime directory");
-        }
         var launcher = new ProcessBuilder(python.toString(), "-I", "-B", "-X", "utf8", script.toString());
         var child = launcher.directory(portable.toFile()).redirectErrorStream(true).start();
         boolean complete = false;
