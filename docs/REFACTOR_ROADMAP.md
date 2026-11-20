@@ -39,7 +39,8 @@ Before moving code:
 - [x] Add a reusable verifier for historical integrated archives and exact original TIFF/H5AD source pairs: [compatibility verifier](../tests/compatibility/verify_integrated.py).
 - [x] Exercise the historical compatibility verifier against the synthetic Shared 2.0 archive inside the native smoke test.
 - [x] Document the historical compatibility matrix and the evidence required to mark a format family as passed: [compatibility instructions](../tests/compatibility/README.md).
-- [ ] Complete and inspect the Windows native CI run after the PowerShell CMake argument quoting fix; retain its JSON output and generated synthetic archive as CI evidence.
+- [x] Confirm Windows CMake 4.5 configuration succeeds after quoting the `CMAKE_POLICY_VERSION_MINIMUM=3.5` argument for PowerShell.
+- [ ] Complete the native build, ABI staging and synthetic round-trip in the same Windows CI run; retain its JSON output and generated synthetic archive as CI evidence.
 - [ ] Run the verifier on at least one current Shared 2.0 archive and one historical Shared_local archive using their matching native runtimes.
 - [ ] Verify a representative historical image-only archive with its matching runtime; this requires a separate image-only verifier.
 - [ ] Record the baseline source commit, release/runtime pins, archive bytes, decoded Count equality, native RGB equality and manifest summaries.
