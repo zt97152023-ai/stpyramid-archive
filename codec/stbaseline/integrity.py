@@ -1,11 +1,29 @@
 """Streaming integrity and HDF5 semantics, adapted from STCompBench metadata checks."""
 import base64
+import bz2
 import hashlib
 import json
 from pathlib import Path
 
 import h5py
 import numpy as np
+
+
+def bz2_decompress_exact(blob, expected_bytes, label, *, max_bytes=64 * 1024 * 1024):
+    """Bound BZ2 expansion and require one complete stream of exact length."""
+    if (type(expected_bytes) is not int or expected_bytes < 0
+            or type(max_bytes) is not int or max_bytes < 0
+            or expected_bytes > max_bytes
+            or not isinstance(blob, (bytes, bytearray, memoryview))):
+        raise ValueError("Invalid bounded BZ2 member: " + label)
+    decoder = bz2.BZ2Decompressor()
+    try:
+        raw = decoder.decompress(blob, max_length=expected_bytes + 1)
+    except (OSError, EOFError) as exc:
+        raise ValueError("Invalid compressed BZ2 member: " + label) from exc
+    if len(raw) != expected_bytes or not decoder.eof or decoder.unused_data:
+        raise ValueError("BZ2 decompressed length/framing mismatch: " + label)
+    return raw
 
 
 def sha256(path):
