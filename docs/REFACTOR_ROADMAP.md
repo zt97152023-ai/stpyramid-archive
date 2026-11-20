@@ -66,7 +66,7 @@ Before moving code:
 - [x] Add packaging contract tests to prevent worker imports from being omitted in future portable releases.
 - [ ] Extend the same configuration boundary to runtime directory discovery and platform capability reporting.
 
-**Acceptance:** the worker-count helper preserves prior defaults and overrides. The expanded CI matrix passed on Windows, Linux and macOS for commit `5fd374790f828207f7635c1c33f701b68609aece`: 3 CLI contract tests, 7 runtime configuration tests and 11 task protocol tests on each platform. The later roadmap/PR text-only commits do not change the tested code. No codec or archive-format behavior is intentionally changed.
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The expanded CI matrix passed on Windows, Linux and macOS for commit `2847dd95183b870db1bc6df9c06464fca6ba18b6`: 3 CLI contract tests, 7 runtime configuration tests, 11 task protocol tests and 3 packaging contract tests on each platform. No codec or archive-format behavior is intentionally changed.
 
 ### R4 — Separate stable application code from research tooling
 
