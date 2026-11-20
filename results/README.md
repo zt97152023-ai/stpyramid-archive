@@ -12,7 +12,7 @@ The [integrated refactor parity report](integrated-refactor-20261116/README.md) 
 
 ## Integrated Count + image package
 
-On NCBI466, the verified Shared_local plus HF/L1 archive uses 29,562,396 B. The smallest measured direct integrated reference on that slide uses HDF5 gzip9 plus JXL e9 at 33,331,931 B, a difference of 11.31%. The seven-slide batch uses BPCells plus direct JXL e9 as its integrated comparator. The combined byte count decreases from 370,165,418 B to 331,144,730 B, a 10.54% reduction. These totals include Count, scientific metadata, image and package members. Image package bytes and integrated bytes have different denominators. The two modality codecs are composed into one archive.
+On NCBI466, the verified Shared_local plus HF-Detail/Context archive uses 29,562,396 B. The smallest measured direct integrated reference on that slide uses HDF5 gzip9 plus JXL e9 at 33,331,931 B, a difference of 11.31%. The seven-slide batch uses BPCells plus direct JXL e9 as its integrated comparator. The combined byte count decreases from 370,165,418 B to 331,144,730 B, a 10.54% reduction. These totals include Count, scientific metadata, image and package members. Image package bytes and integrated bytes have different denominators. The two modality codecs are composed into one archive.
 
 ## Mechanism and access
 
