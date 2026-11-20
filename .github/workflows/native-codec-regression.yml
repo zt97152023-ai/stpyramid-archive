@@ -61,13 +61,18 @@ jobs:
         run: python stage_runtime.py --bin build/bin --output runtime-windows
 
       - name: Run synthetic end-to-end regression
-        run: python tests/smoke.py --runtime-dir runtime-windows --output runs/native-regression
+        run: |
+          New-Item -ItemType Directory -Force runs | Out-Null
+          python tests/smoke.py --runtime-dir runtime-windows --output runs/native-regression | Tee-Object -FilePath runs/native-regression-report.json
+          if ($LASTEXITCODE -ne 0) { throw "Native regression failed ($LASTEXITCODE)" }
 
       - name: Upload synthetic regression evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: stpyramid-native-regression-${{ github.run_id }}
-          path: runs/native-regression/
+          path: |
+            runs/native-regression/
+            runs/native-regression-report.json
           if-no-files-found: warn
           retention-days: 14
