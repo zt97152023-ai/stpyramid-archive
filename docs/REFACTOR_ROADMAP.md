@@ -27,6 +27,7 @@ The current flat imports are deliberate in several places: the CLI and desktop w
 - [x] Classify root-level research and compatibility scripts.
 - [x] Document contributor and validation expectations.
 - [x] Add dependency-free CLI parser/import contract tests and a three-platform CI workflow.
+- [x] Compile all first-party Python modules in CI to catch syntax errors without importing optional native/scientific dependencies.
 
 **Acceptance:** documentation links resolve; user paths and platform limitations match the published release and current source.
 
