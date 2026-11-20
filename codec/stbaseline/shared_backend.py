@@ -129,6 +129,8 @@ class CountStore:
                     or self.native_manifest.get("method") != "Shared-only"
                     or self.native_manifest.get("shape") != shape
                     or not isinstance(native_files, dict)
+                    or type(self.native_manifest.get("nnz")) is not int
+                    or not 0 <= self.native_manifest["nnz"] <= n * g
                     or set(native_files) != set(MODEL_NAMES) | {"metadata.bz2", "support.rans", "graph.bz2", "values.rans"}
                     or len(names) != len(set(names))
                     or set(names) != set(native_files) | {"manifest.json"}):
