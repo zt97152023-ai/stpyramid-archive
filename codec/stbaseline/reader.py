@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image
 
 from .archive import FORMAT
-from .integrity import count_schema, h5_digest, sha256, text_ids, write_json
+from .integrity import count_schema, h5_digest, sha256, text_ids, validate_hdf5_links, write_json
 import re
 
 MAX_MANIFEST_BYTES = 16 * 1024 * 1024
@@ -105,6 +105,10 @@ class Archive:
             p = self.root / name
             if p.is_symlink() or p.resolve().parent != self.root or p.stat().st_size != m["files"][name]["bytes"]:
                 raise ValueError("Unsafe or size-mismatched member")
+        # Preflight the HDF5 link graph before metadata/count queries can
+        # dereference a soft link or an external file.
+        with h5py.File(self.root / "expression.h5ad", "r") as handle:
+            validate_hdf5_links(handle)
         self._metadata = None
 
     def __enter__(self):
