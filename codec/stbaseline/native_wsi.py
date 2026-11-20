@@ -33,6 +33,7 @@ TILE = 256
 MAX_CELLS = 20_000_000
 MAX_ROI_PIXELS = 16_777_216
 MAX_STRIPE_BYTES = 128 * 1024 * 1024
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 SOURCE_METADATA = "wsi_source.json"
 REQUIRED = {"science.h5", "counts.bank", "counts.index.json", "images.bank", "images.index", SOURCE_METADATA}
 RESERVED = REQUIRED | {"manifest.json", "expression.h5ad", "native_levels.tif", "source_metadata.json", "INCOMPLETE", "failure.json"}
@@ -330,6 +331,8 @@ class WSIArchive(SharedBlockArchive):
         path = self.root / "manifest.json"
         if argument.is_symlink() or path.is_symlink() or (self.root / "INCOMPLETE").exists() or (self.root / "failure.json").exists():
             raise ValueError("Unsafe or incomplete native WSI package")
+        if not path.is_file() or not 0 < path.stat().st_size <= MAX_MANIFEST_BYTES:
+            raise ValueError("Manifest is empty or exceeds 16 MiB")
         blob = path.read_bytes()
         self.manifest, self.manifest_bytes = json.loads(blob), len(blob)
         m = self.manifest
