@@ -14,18 +14,6 @@ on:
       - "fetch_count_runtime.py"
       - "stage_runtime.py"
       - ".github/workflows/native-codec-regression.yml"
-  push:
-    branches:
-      - docs/clean-project-entry
-    paths:
-      - "codec/**"
-      - "native/**"
-      - "CMakeLists.txt"
-      - "tests/smoke.py"
-      - "requirements-windows-tested.txt"
-      - "fetch_count_runtime.py"
-      - "stage_runtime.py"
-      - ".github/workflows/native-codec-regression.yml"
 
 permissions:
   contents: read
