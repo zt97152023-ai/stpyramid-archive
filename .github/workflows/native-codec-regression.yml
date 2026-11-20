@@ -55,7 +55,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
       - name: Build Anchor, Context and HF-Detail codecs
-        run: cmake --build build --parallel 2 --target stpyramid_native_codecs
+        run: cmake --build build --parallel 1 --target stpyramid_native_codecs
 
       - name: Stage and ABI-check native runtime
         run: python stage_runtime.py --bin build/bin --output runtime-windows
