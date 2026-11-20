@@ -53,6 +53,10 @@ Important implementation details:
 - `pack_integrated` binds the independently encoded components into the archive.
 - `IntegratedArchive` owns archive inspection, verification, selective reads and restore.
 
+## Codec naming
+
+- [Codec naming guide](CODEC_NAMING.md) — canonical names, algorithm roles and compatibility boundaries.
+
 ## Python import architecture
 
 - [Python import inventory](PYTHON_IMPORTS.md) — current `sys.path` mutations, dynamic source loaders and dependency paths.
