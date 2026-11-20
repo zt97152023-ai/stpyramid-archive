@@ -28,6 +28,7 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 - Make the Shared Count runtime loader call the same canonical pinned-source verification used by the dependency downloader, so direct codec imports cannot bypass the cache checks.
 - Authenticate the optional BPCells loopback worker with a one-time 256-bit token delivered over the child stdin pipe (not command-line arguments); reject unauthenticated peers and cap handshake attempts/time.
 - Preflight HDF5 object graphs before Count metadata access; reject soft/external links, hard-link aliases/cycles, virtual datasets, external raw storage and object-reference datasets rather than following paths outside the selected HDF5 file.
+- Apply the same HDF5 link preflight to the baseline, integrated, lossless-component, native-WSI and Shared-WSI readers; cap their archive JSON manifests at 16 MiB before parsing.
 
 ## Operational recommendations
 
