@@ -35,7 +35,7 @@ The current flat imports are deliberate in several places: the CLI and desktop w
 
 Before moving code:
 
-- [x] Add a Windows native CI workflow that installs the pinned Python dependencies, fetches and hash-verifies the 19-file Shared Count source, builds 089/091/HF1 encoder/decoder pairs, stages ABI-checked runtimes and runs `tests/smoke.py`.
+- [x] Add a Windows native CI workflow that installs the pinned Python dependencies, fetches and hash-verifies the 19-file Shared Count source, builds the Anchor, Context and HF-Detail encoder/decoder pairs, stages ABI-checked runtimes and runs `tests/smoke.py`.
 - [x] Add a reusable verifier for historical integrated archives and exact original TIFF/H5AD source pairs: [compatibility verifier](../tests/compatibility/verify_integrated.py).
 - [x] Exercise the historical compatibility verifier against the synthetic Shared 2.0 archive inside the native smoke test.
 - [x] Document the historical compatibility matrix and the evidence required to mark a format family as passed: [compatibility instructions](../tests/compatibility/README.md).
