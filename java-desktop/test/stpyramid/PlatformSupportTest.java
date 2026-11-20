@@ -39,6 +39,32 @@ final class PlatformSupportTest {
                 });
             }
         }
+        Path legacyRoot = Files.createTempDirectory("stpyramid-legacy-runtime-");
+        try {
+            for (String relative : PlatformSupport.requiredApplicationFiles()) {
+                Path file = legacyRoot.resolve(relative);
+                if (relative.equals("app/bin/context_codec.exe")) {
+                    file = legacyRoot.resolve("app/bin/slide_jxl091.exe");
+                }
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, "test");
+            }
+            for (String relative : PlatformSupport.legacyCodecRuntimeFiles()) {
+                Path file = legacyRoot.resolve(relative);
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, "test");
+            }
+            if (PlatformSupport.nativeRuntimeProblem(legacyRoot, true) != null) {
+                throw new AssertionError("Legacy runtime layout must remain readable during migration");
+            }
+        } finally {
+            try (var walk = Files.walk(legacyRoot)) {
+                walk.sorted((a, b) -> b.compareTo(a)).forEach(path -> {
+                    try { Files.deleteIfExists(path); }
+                    catch (Exception error) { throw new RuntimeException(error); }
+                });
+            }
+        }
         System.out.println("PlatformSupport runtime layout checks passed");
     }
 }
