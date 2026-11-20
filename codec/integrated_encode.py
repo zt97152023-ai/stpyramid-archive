@@ -20,7 +20,10 @@ def _write_json(path, value):
 
 def runtime_dirs(root):
     root = Path(root).resolve(strict=True)
-    return tuple(root / key for key in ("089", "091", "hf"))
+    public = ("anchor", "context", "hf-detail")
+    legacy = ("089", "091", "hf")
+    return tuple(root / (new if (root / new).is_dir() else old)
+                 for new, old in zip(public, legacy))
 
 
 def _configure_worker(cpu, seconds, workers=1):
