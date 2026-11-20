@@ -1,4 +1,5 @@
 """HDF5 structural preflight tests; links are rejected before dereferencing."""
+import bz2
 import importlib.util
 from pathlib import Path
 import tempfile
@@ -24,6 +25,17 @@ class Hdf5LinkSecurityTests(unittest.TestCase):
         with h5py.File(path, "r") as handle:
             with self.assertRaisesRegex(ValueError, "unsupported|aliases/cycles|External/virtual"):
                 validate_hdf5_links(handle)
+
+    def test_bz2_decompression_is_exact_and_bounded(self):
+        payload = b"A" * 4096
+        packed = bz2.compress(payload)
+        self.assertEqual(INTEGRITY.bz2_decompress_exact(packed, len(payload), "test"), payload)
+        with self.assertRaisesRegex(ValueError, "length/framing mismatch"):
+            INTEGRITY.bz2_decompress_exact(packed, len(payload) - 1, "test")
+        with self.assertRaisesRegex(ValueError, "Invalid bounded BZ2"):
+            INTEGRITY.bz2_decompress_exact(packed, len(payload), "test", max_bytes=1024)
+        with self.assertRaisesRegex(ValueError, "length/framing mismatch"):
+            INTEGRITY.bz2_decompress_exact(packed + b"trailing", len(payload), "test")
 
     def test_external_link_is_rejected_without_opening_target(self):
         target = self.root / "external.h5"
