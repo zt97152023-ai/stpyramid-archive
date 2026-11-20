@@ -42,6 +42,25 @@ class PinnedRuntimeSecurityTests(unittest.TestCase):
     def test_valid_cached_files_are_ready(self):
         self.assertTrue(runtime.count_source_ready())
 
+    def test_noncanonical_source_origin_is_rejected(self):
+        manifest = json.loads((self.vendor / "SOURCE.json").read_text(encoding="utf-8"))
+        manifest["origin"] = "https://raw.githubusercontent.com/zt97152023-ai/shared-st-count-codec"
+        (self.vendor / "SOURCE.json").write_text(json.dumps(manifest), encoding="utf-8")
+        self.assertFalse(runtime.count_source_ready())
+        with self.assertRaisesRegex(ValueError, "pinned upstream revision"):
+            runtime.pinned_files()
+
+    def test_malformed_digest_and_oversized_pin_are_rejected(self):
+        self.rows[0]["sha256"] = "not-a-sha256"
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Invalid Count source size or SHA-256 pin"):
+            runtime.pinned_files()
+        self.rows[0]["sha256"] = "0" * 64
+        self.rows[0]["bytes"] = runtime.MAX_SOURCE_FILE_BYTES + 1
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Invalid Count source size or SHA-256 pin"):
+            runtime.pinned_files()
+
     def test_cached_file_is_rehashed_not_trusted_by_existence(self):
         (self.vendor / self.rows[0]["path"]).write_bytes(b"tampered")
         self.assertFalse(runtime.count_source_ready())
