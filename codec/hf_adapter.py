@@ -108,7 +108,7 @@ def require_worker_resources():
 def native_encode(runtime, number, spool, target):
     """One bounded child; also used for new synthetic089 fixture material only."""
     if number not in ('089', 'hf1'):
-        raise ValueError('Only reusedAnchor Codec/new HF-Detail native children are supported')
+        raise ValueError('Only reused Anchor Codec/new HF-Detail native children are supported')
     require_worker_resources()
     runtime, spool, target = Path(runtime), Path(spool), Path(target)
     if target.exists() or target.is_symlink() or not target.parent.is_dir():
@@ -249,18 +249,18 @@ def build_native(census: Path, old_anchor_package: Path, output_dir: Path,
         old_records = output / 'old089'; old_records.mkdir()
         with old.Reader(old_anchor_package, old_runtime) as reader:
             if reader.manifest['profile'] != 'anchor_pure' or reader.manifest['image']['levels'] != catalog['levels']:
-                raise ValueError('Correction source must be matching frozenAnchor Codec anchor_pure')
+                raise ValueError('Correction source must be matching frozen Anchor Codec anchor_pure')
             if reader.manifest['files']['source.json'] != catalog['files']['source.json']:
                 raise ValueError('Correction source provenance differs from census')
             if reader.manifest['build']['native_runtime'] != runtime_pins['089']:
-                raise ValueError('Correction source used a differentAnchor Codec runtime')
+                raise ValueError('Correction source used a different Anchor Codec runtime')
             reader._verify_files(); reader._setup()
             for gid, level, _, _, w, h in descriptors:
                 if level != 0:
                     continue
                 offset, length, route, crc = reader._entries[gid]
                 if route != old.ANCHORED:
-                    raise ValueError('Every correction source L0 must beAnchor Codec anchored')
+                    raise ValueError('Every correction source L0 must be Anchor Codec anchored')
                 reader._bank.seek(offset); blob = reader._bank.read(length)
                 if len(blob) != length or zlib.crc32(blob) != crc:
                     raise ValueError('Correction source record CRC/length mismatch')
