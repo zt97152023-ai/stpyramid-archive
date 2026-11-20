@@ -44,7 +44,9 @@ $archiveSources = @(
     'codec/stbaseline/grouped_count_encode.py',
     'native_tile_encoder.py',
     'pyramid_image_archive.py',
-    'desktop_worker.py'
+    'desktop_worker.py',
+    'runtime_config.py',
+    'task_contract.py'
 )
 foreach ($path in $archiveSources) {
     Copy-Item -LiteralPath (Join-Path $source $path) -Destination "$target/runtime/app/$path"
