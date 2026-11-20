@@ -63,6 +63,15 @@ Important implementation details:
 - `task_contract.py` — validates incoming desktop requests before codec execution.
 - `runtime_config.py` — validates worker counts and encoding timeout.
 
+## Java runtime capability checks
+
+- `java-desktop/src/stpyramid/PlatformSupport.java` — reports platform support and checks the expected portable runtime file layout.
+- `java-desktop/src/stpyramid/NativeEngine.java` — blocks native task launch when required runtime files are missing.
+- `java-desktop/test/stpyramid/PlatformSupportTest.java` — tests missing/incomplete/complete runtime layouts.
+- `.github/workflows/java-desktop-contract.yml` — compiles Java 17 sources and runs the layout test on three operating systems.
+
+The Java preflight is a file-presence check. The native Python adapters remain responsible for ABI and SHA-256 receipt validation.
+
 ## Desktop packaging
 
 - `desktop/build_portable.py` — builds the Python desktop portable runtime.
