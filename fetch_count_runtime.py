@@ -146,11 +146,20 @@ def pinned_files():
     return rows
 
 
+def verify_cached_count_source():
+    """Raise unless every cached dependency file matches its trusted pin."""
+    rows = pinned_files()
+    for row in rows:
+        if not _matches(*_validate_row(row)):
+            raise ValueError("Cached Count source differs from its pin: " + row["path"])
+    return rows
+
+
 def count_source_ready():
     """Return true only when every cached dependency file matches its pin."""
     try:
-        rows = pinned_files()
-        return all(_matches(*_validate_row(row)) for row in rows)
+        verify_cached_count_source()
+        return True
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
         return False
 
