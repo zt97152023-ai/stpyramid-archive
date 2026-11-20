@@ -55,7 +55,7 @@ def install_app(output):
     manifest = Path("codec/stbaseline/_shared_vendor/SOURCE.json")
     copy_file(ROOT / manifest, output / manifest)
     shutil.copytree(ROOT / "runtime-windows-source", output / "runtime-windows-source")
-    copy_file(ROOT / "bin/slide_jxl091.exe", output / "bin/slide_jxl091.exe")
+    copy_file(ROOT / "bin/slide_jxl091.exe", output / "bin/context_codec.exe")
     for name in ("upstream/libjxl/LICENSE", "upstream/libjxl/PATENTS", "upstream/libjxl/third_party/brotli/LICENSE",
                  "upstream/libjxl/third_party/highway/LICENSE", "upstream/libjxl/third_party/skcms/LICENSE",
                  "native/091/vendor091/LICENSE", "native/hf1/vendorhf/LICENSE"):
