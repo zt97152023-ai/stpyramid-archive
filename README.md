@@ -49,7 +49,9 @@ For the current Java desktop distribution, download the matching package from [R
 
 Keep the launcher, JAR and bundled `jre/` together. The package includes its Java runtime. See the [Java desktop guide](java-desktop/README.md) for platform capabilities, packaging and CLI commands.
 
-The earlier Python desktop client is documented separately in [desktop/README.md](desktop/README.md).\n\n**Workflow distinction:** the integrated Count + TIFF archive uses independent Count and image codecs joined by the unified container. The fast-fused image-only workflow and experimental recursive TIFF format are separate image workflows, not interchangeable archive formats.
+The earlier Python desktop client is documented separately in [desktop/README.md](desktop/README.md).
+
+**Workflow distinction:** the integrated Count + TIFF archive uses independent Count and image codecs joined by the unified container. The fast-fused image-only workflow and experimental recursive TIFF format are separate image workflows, not interchangeable archive formats.
 
 ## Python CLI
 
@@ -120,7 +122,9 @@ Input data
                                 Publish / Inspect / ROI read / Restore
 ```
 
-New here? Start with the [three-minute quick start](docs/QUICKSTART.md). Developing the project? Open the [code map](docs/CODEMAP.md) to locate the exact Count, TIFF and archive implementation files.\n\nThe Count and image codecs retain independent encoding and decoding boundaries. The unified container binds their sample identity, coordinate system and metadata; it does not merge their probability models. See [the architecture note](docs/ARCHITECTURE.md) for module responsibilities and data flow.
+New here? Start with the [three-minute quick start](docs/QUICKSTART.md). Developing the project? Open the [code map](docs/CODEMAP.md) to locate the exact Count, TIFF and archive implementation files.
+
+The Count and image codecs retain independent encoding and decoding boundaries. The unified container binds their sample identity, coordinate system and metadata; it does not merge their probability models. See [the architecture note](docs/ARCHITECTURE.md) for module responsibilities and data flow.
 
 ## Supported scope and important limits
 
