@@ -34,12 +34,12 @@ MODEL_NAMES = ("base_probability.bz2", "shared_odds.u32", "value_q1.bz2",
 @lru_cache(maxsize=1)
 def runtime():
     vendor = Path(__file__).with_name("_shared_vendor")
-    record = json.loads((vendor / "SOURCE.json").read_text(encoding="utf-8-sig"))
-    if not (vendor / 'baseline').is_dir():
-        raise RuntimeError('Run python fetch_count_runtime.py to install the pinned Count source')
-    for f in record["files"]:
-        if sha256(vendor / f["path"]) != f["sha256"]:
-            raise ValueError("Shared source pin mismatch: " + f["path"])
+    if not (vendor / "baseline").is_dir():
+        raise RuntimeError("Run python fetch_count_runtime.py to install the pinned Count source")
+    # Use the same canonical manifest/path/size/hash validation as the downloader.
+    # Do not let direct codec imports bypass the dependency trust boundary.
+    from fetch_count_runtime import verify_cached_count_source
+    verify_cached_count_source()
     sys.path.insert(0, str(vendor))
     p = vendor / "baseline/evidence/COUNT-HEST-SHARED-K32-001/worker.py"
     spec = importlib.util.spec_from_file_location("stbaseline_frozen_k32", p)
