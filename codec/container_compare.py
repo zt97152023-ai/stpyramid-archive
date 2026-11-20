@@ -17,7 +17,7 @@ import tempfile
 import h5py
 import numpy as np
 
-from stbaseline.integrity import count_schema, h5_digest, sha256, text_ids, write_json
+from stbaseline.integrity import count_schema, h5_digest, sha256, text_ids, validate_hdf5_links, write_json
 from stbaseline.lossless_metadata import _copy_attributes
 from stbaseline.reader import Archive, MeteredFile
 from stbaseline.compat_axes import MAP_NAME, write_map, validate_map
@@ -300,6 +300,10 @@ class IntegratedArchive:
         if set(files) != expected:
             raise ValueError("Unexpected component members")
         self._check_members()
+        # Reject external/soft links before any Count metadata access can
+        # follow them into files outside the archive.
+        with h5py.File(self.root / "count" / expression_path, "r") as handle:
+            validate_hdf5_links(handle)
         levels = m["image"]["levels"]
         if (not qualified_image(m["image"].get("format"), m["image"].get("profile"))
                 or not isinstance(levels, list) or not 1 <= len(levels) <= 64):
