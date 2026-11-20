@@ -21,9 +21,19 @@ STPyramid uses mechanism-based names in documentation, user interfaces, build en
 
 ## Compatibility boundary
 
-The current archive format identifiers, record magic bytes, manifest runtime-pin keys, native ABI symbols, historical executable/library filenames, and source module paths are compatibility identifiers. They are not public codec names.
+The current archive format identifiers, record magic bytes, manifest runtime-pin keys, native ABI symbols, and source module paths are compatibility identifiers. They are not public codec names and are unchanged so existing archives remain readable.
 
-They remain unchanged in this naming-only migration so existing archives, runtime receipts and released decoders remain readable. New build entry points are descriptive:
+Newly staged runtime bundles use descriptive folders and executable/library names:
+
+| Codec | Runtime folder | Executable / library |
+|---|---|---|
+| Anchor | `anchor/` | `anchor_codec.exe`, `anchor_codec.dll` |
+| Context | `context/` | `context_codec.exe`, `context_codec.dll` |
+| HF-Detail | `hf-detail/` | `hf_detail_codec.exe`, `hf_detail_codec.dll` |
+
+The runtime readers still accept previously staged folders and filenames during migration. Manifest pin keys and native ABI symbols are translated internally, so historical archives and runtime receipts remain readable.
+
+New build entry points are descriptive:
 
 ```powershell
 cmake --build build --parallel 2 --target stpyramid_native_codecs
