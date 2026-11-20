@@ -1,0 +1,81 @@
+name: Native codec regression
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - product/java-spatial-archive
+    paths:
+      - "codec/**"
+      - "native/**"
+      - "CMakeLists.txt"
+      - "tests/smoke.py"
+      - "requirements-windows-tested.txt"
+      - "fetch_count_runtime.py"
+      - "stage_runtime.py"
+      - ".github/workflows/native-codec-regression.yml"
+  push:
+    branches:
+      - docs/clean-project-entry
+    paths:
+      - "codec/**"
+      - "native/**"
+      - "CMakeLists.txt"
+      - "tests/smoke.py"
+      - "requirements-windows-tested.txt"
+      - "fetch_count_runtime.py"
+      - "stage_runtime.py"
+      - ".github/workflows/native-codec-regression.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-native-regression:
+    name: Windows · Native Count + TIFF round-trip
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC x64 environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-windows-tested.txt
+
+      - name: Install qualified Python dependencies and Ninja
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-windows-tested.txt ninja
+
+      - name: Fetch and verify pinned Shared Count source
+        run: python fetch_count_runtime.py
+
+      - name: Configure native codecs
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build native encoder/decoder pairs
+        run: cmake --build build --parallel 2 --target slide_jxl089 slide_jxl089_shared slide_jxl091 slide_jxl091_shared slide_hf1 slide_hf1_shared
+
+      - name: Stage and ABI-check native runtime
+        run: python stage_runtime.py --bin build/bin --output runtime-windows
+
+      - name: Run synthetic end-to-end regression
+        run: python tests/smoke.py --runtime-dir runtime-windows --output runs/native-regression
+
+      - name: Upload synthetic regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stpyramid-native-regression-${{ github.run_id }}
+          path: runs/native-regression/
+          if-no-files-found: warn
+          retention-days: 14
