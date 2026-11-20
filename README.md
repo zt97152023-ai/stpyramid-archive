@@ -122,14 +122,14 @@ For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE
 
 | Path | Responsibility |
 |---|---|
-| `runtime_config.py` | Validated desktop worker settings |
+| `runtime_config.py`, `task_contract.py` | Validated runtime settings and desktop task requests |
 | `stpyramid.py`, `codec/` | Python CLI and integrated archive/codec implementation |
 | `java-desktop/` | Java desktop application, launchers and package builders |
 | `desktop*.py`, `desktop/` | Python desktop client |
 | `native/`, `CMakeLists.txt` | Native image codec source and build |
 | `tests/` | Synthetic end-to-end smoke test |
 | `results/` | Aggregate results, evidence ledger and release reports |
-| `docs/` | System architecture and advanced workflow documentation |
+| `docs/` | Architecture, quick start, task protocol and advanced workflow documentation |
 | `upstream/` | Third-party source and its retained notices |
 
 ## License and citation
