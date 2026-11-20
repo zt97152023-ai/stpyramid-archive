@@ -29,6 +29,26 @@ FORMAT = "stbaseline-shared-1"
 METHODS = ("BPCells", "Shared_whole", "Shared_blocks", "Shared_local")
 MODEL_NAMES = ("base_probability.bz2", "shared_odds.u32", "value_q1.bz2",
                "value_group.bz2", "value_base_k.bz2", "value_odds.u32", "value_cond_k.bz2")
+MAX_COUNT_INDEX_BYTES = 256 * 1024 * 1024
+MAX_COUNT_MEMBER_BYTES = 512 * 1024 * 1024
+MAX_NATIVE_COUNT_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
+MAX_NATIVE_COUNT_MANIFEST_BYTES = 16 * 1024 * 1024
+MAX_MODEL_DECOMPRESSED_BYTES = 64 * 1024 * 1024
+
+
+def _bz2_exact(blob, expected_bytes, label):
+    if (type(expected_bytes) is not int or expected_bytes < 0
+            or expected_bytes > MAX_MODEL_DECOMPRESSED_BYTES
+            or not isinstance(blob, (bytes, bytearray, memoryview))):
+        raise ValueError("Invalid bounded Count model member: " + label)
+    decoder = bz2.BZ2Decompressor()
+    try:
+        raw = decoder.decompress(blob, max_length=expected_bytes + 1)
+    except (OSError, EOFError) as exc:
+        raise ValueError("Invalid compressed Count model member: " + label) from exc
+    if len(raw) != expected_bytes or not decoder.eof or decoder.unused_data:
+        raise ValueError("Count model decompressed length/framing mismatch: " + label)
+    return raw
 
 
 @lru_cache(maxsize=1)
@@ -76,103 +96,32 @@ def native_parts(path):
     return man, parts
 
 
-def model_tables(parts, *, support_builder='numpy', value_builder='numpy'):
+def model_tables(parts, *, expected_genes, support_builder='numpy', value_builder='numpy'):
     if support_builder not in ('numpy', 'fused'):
         raise ValueError('Unknown support table builder')
     if value_builder not in ('numpy', 'fused'):
         raise ValueError('Unknown value table builder')
+    if type(expected_genes) is not int or not 1 <= expected_genes <= 20_000_000:
+        raise ValueError('Invalid expected gene count for Count model')
     _, entropy, sm, qm, qs, _ = runtime()[0]
-    q0 = np.frombuffer(bz2.decompress(parts["base_probability.bz2"]), "<u2")
-    support_odds = np.frombuffer(parts["shared_odds.u32"], "<u4").reshape(8, 7)
+    q0 = np.frombuffer(_bz2_exact(parts['base_probability.bz2'], expected_genes * 2, 'base_probability'), '<u2')
+    support_odds = np.frombuffer(parts['shared_odds.u32'], '<u4').reshape(8, 7)
     if support_builder == 'numpy':
         support_q = sm.cdf(q0, support_odds)
     else:
         from .support_tables import fused_support_cdf
         support_q = fused_support_cdf(q0, support_odds, sm)
-    groups = np.frombuffer(bz2.decompress(parts["value_group.bz2"]), np.uint8)
-    q = qs.decode(parts["value_q1.bz2"], groups)
-    base = np.frombuffer(bz2.decompress(parts["value_base_k.bz2"]), "<u2").reshape(32, 32)
-    odds = np.frombuffer(parts["value_odds.u32"], "<u4").reshape(32, 7)
-    cond = np.frombuffer(bz2.decompress(parts["value_cond_k.bz2"]), "<u2").reshape(32, 7, 32)
+    groups = np.frombuffer(_bz2_exact(parts['value_group.bz2'], expected_genes, 'value_group'), np.uint8)
+    q = qs.decode(parts['value_q1.bz2'], groups)
+    base = np.frombuffer(_bz2_exact(parts['value_base_k.bz2'], 32 * 32 * 2, 'value_base_k'), '<u2').reshape(32, 32)
+    odds = np.frombuffer(parts['value_odds.u32'], '<u4').reshape(32, 7)
+    cond = np.frombuffer(_bz2_exact(parts['value_cond_k.bz2'], 32 * 7 * 32 * 2, 'value_cond_k'), '<u2').reshape(32, 7, 32)
     if value_builder == 'numpy':
         binary, tail, cdf = qm.tables(q, groups, base, odds, cond)
     else:
         from .value_tables import fused_value_tables
-        binary, tail, cdf = fused_value_tables(q, groups, base, odds, cond)
-    return support_q, groups, binary, tail, cdf
-
-
-def local_streams(x, coords, tables):
-    _, entropy, _, _, _, values = runtime()[0]
-    graph = runtime()[2](coords)
-    sq, groups, binary, tail, cdf = tables
-    support = entropy.packed_support(x.indptr, x.indices, *x.shape)
-    sb, _ = entropy.encode(support, graph, sq, x.shape[1])
-    vb, _, te, rb = values.encode(x.indptr, x.indices, x.data, graph, groups, binary, tail, cdf, True)
-    return {"graph.bz2": bz2.compress(graph.astype("<i4").tobytes(), 9),
-            "support.rans": sb.tobytes(), "values.rans": vb.tobytes()}, {"tail_events": int(te), "remainder_bits": int(rb)}
-
-
-def partition(xy, block_pixels):
-    if not isinstance(block_pixels, int) or block_pixels < 1:
-        raise ValueError("Positive integer block size required")
-    cells = np.floor(np.asarray(xy) / block_pixels).astype(np.int64)
-    keys = sorted(set(map(tuple, cells.tolist())), key=lambda c: (c[1], c[0]))
-    return [(list(map(int, k)), np.flatnonzero(np.all(cells == k, axis=1)).tolist()) for k in keys]
-
-
-def write_count_store(matrix, metadata, level0_xy, output, method, block_pixels=1024):
-    """Common compact envelope for both block arms; identities stored once outside."""
-    output = Path(output)
-    codec, encode_native, _ = runtime()
-    full_input = canonical(matrix, metadata)
-    index = {"version": 1, "method": method, "shape": list(matrix.shape), "block_pixels": block_pixels,
-             "canonical_sha256": codec[0].csr_sha(full_input.matrix), "blocks": [], "models": {}}
-    if method == "Shared_whole":
-        encode_native(full_input, output / "counts.whole.cnt")
-        index["native_file"] = "counts.whole.cnt"
-        write_json(output / "counts.index.json", index)
-        return index
-    spatial_blocks = partition(level0_xy, block_pixels)
-    with tempfile.TemporaryDirectory(prefix="stshared_encode_") as tmp, (output / "counts.bank").open("xb") as bank:
-        def append_member(data, category):
-            member = {"offset": bank.tell(), "bytes": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(), "category": category}
-            bank.write(data)
-            return member
-
-        def append_model(parts):
-            return {name: append_member(parts[name], "models") for name in MODEL_NAMES}
-
-        if method == "Shared_local":
-            # Derive the sample-wide model once. The bank receives only its model members.
-            model_source = Path(tmp) / "whole.cnt"
-            encode_native(full_input, model_source)
-            _, model_parts = native_parts(model_source)
-            index["models"]["global"] = append_model(model_parts)
-            tables = model_tables(model_parts)
-            del model_parts
-        for block_id, (cell, rows) in enumerate(spatial_blocks):
-            block_input = canonical(matrix, metadata, rows)
-            if method == "Shared_blocks":
-                native_record = Path(tmp) / f"{block_id}.cnt"
-                encode_native(block_input, native_record)
-                stats, parts = native_parts(native_record)
-                model_id = str(block_id)
-                index["models"][model_id] = append_model(parts)
-            else:
-                parts, stats = local_streams(block_input.matrix, metadata["coordinates"][rows], tables)
-                model_id = "global"
-            streams = {name: append_member(parts[name], "graph" if name == "graph.bz2" else "streams")
-                       for name in ("graph.bz2", "support.rans", "values.rans")}
-            index["blocks"].append({
-                "cell": cell, "rows": rows, "nnz": int(block_input.matrix.nnz),
-                "model": model_id, "members": streams, "canonical_sha256": codec[0].csr_sha(block_input.matrix),
-                "tail_events": stats["tail_events"], "remainder_bits": stats["remainder_bits"],
-            })
-    write_json(output / "counts.index.json", index)
-    return index
-
+        binary, tail, cdf = fused_value_tables(q, groups, base, odds, cond, qm)
+    return support_q, binary, tail, cdf, groups
 
 class CountStore:
     def __init__(self, root):
