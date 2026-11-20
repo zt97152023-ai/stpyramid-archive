@@ -29,7 +29,11 @@ final class PlatformSupport {
      * ABI and SHA-256 receipt validation remains the native adapter's responsibility.
      */
     static String nativeRuntimeProblem(Path runtime) {
-        if (!isWindows()) {
+        return nativeRuntimeProblem(runtime, isWindows());
+    }
+
+    static String nativeRuntimeProblem(Path runtime, boolean windows) {
+        if (!windows) {
             return "Native Count＋TIFF compression is currently qualified for Windows only.";
         }
         if (runtime == null) {
@@ -37,7 +41,18 @@ final class PlatformSupport {
         }
 
         Path root = runtime.toAbsolutePath().normalize();
-        List<String> required = List.of(
+        List<String> required = requiredNativeRuntimeFiles();
+        for (String relative : required) {
+            Path file = root.resolve(relative).normalize();
+            if (!file.startsWith(root) || !Files.isRegularFile(file)) {
+                return "Windows native runtime is incomplete: missing " + relative;
+            }
+        }
+        return null;
+    }
+
+    static List<String> requiredNativeRuntimeFiles() {
+        return List.of(
             "python/python.exe",
             "app/desktop_worker.py",
             "app/runtime_config.py",
@@ -62,13 +77,6 @@ final class PlatformSupport {
             "app/runtime-windows-source/hf/slide_hf1.dll",
             "app/runtime-windows-source/hf/build_receipt.json"
         );
-        for (String relative : required) {
-            Path file = root.resolve(relative).normalize();
-            if (!file.startsWith(root) || !Files.isRegularFile(file)) {
-                return "Windows native runtime is incomplete: missing " + relative;
-            }
-        }
-        return null;
     }
 
     static String nativeCompressionStatus(Path runtime) {
