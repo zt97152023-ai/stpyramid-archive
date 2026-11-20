@@ -67,7 +67,8 @@ def encode_job(job, emit):
             metadata.write_text("{}\n", encoding="utf-8")
         result = encode_archive(image, counts, metadata, RUNTIME, output,
                                 work=scratch / "work", on_stage=emit,
-                                image_mode="fused" if mode == "integrated-fused" else "maximum",\n                                timeout=encoding_timeout_seconds(),
+                                image_mode="fused" if mode == "integrated-fused" else "maximum",
+                                timeout=encoding_timeout_seconds(),
                                 fused_workers=fused_worker_count()
                                 if mode == "integrated-fused" else 1,
                                 maximum_workers=maximum_worker_count()
@@ -158,7 +159,7 @@ def main():
         print(json.dumps(event, ensure_ascii=True), file=protocol, flush=True)
 
     try:
-        job = json.load(sys.stdin)
+        job = validate_task(json.load(sys.stdin))
         with redirect_stdout(sys.stderr):
             action = job["action"]
             if action == "encode":
