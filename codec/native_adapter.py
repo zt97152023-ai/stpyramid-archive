@@ -66,7 +66,10 @@ def native_encode(runtime, number, spool, target):
     for name in THREAD_VARS:
         env[name] = '1'
     stdout, stderr = target.parent / (target.name + '.stdout.txt'), target.parent / (target.name + '.stderr.txt')
-    command, directory = native_command(runtime / f'slide_jxl{number}.exe', 'encode', spool, target)
+    public_name = 'context_codec.exe' if number == '091' else 'anchor_codec.exe'
+    legacy_name = f'slide_jxl{number}.exe'
+    executable = runtime / (public_name if (runtime / public_name).is_file() else legacy_name)
+    command, directory = native_command(executable, 'encode', spool, target)
     started = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
         result = subprocess.run(command, cwd=directory,
