@@ -1,0 +1,43 @@
+name: CLI contract
+
+on:
+  pull_request:
+    branches:
+      - product/java-spatial-archive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stpyramid-cli-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cli-contract:
+    name: Python 3.12 · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile first-party Python source
+        run: python -m compileall -q stpyramid.py desktop_app.py desktop_worker.py desktop_i18n.py runtime_config.py task_contract.py fetch_count_runtime.py stage_runtime.py native_tile_encoder.py pyramid_image_archive.py recursive_image_archive.py encode_image.py benchmark_read.py cohort.py select_cohort.py build_full.py codec desktop tests
+
+      - name: Run dependency-free CLI and runtime configuration tests
+        run: |
+          python tests/test_cli_contract.py -v
+          python tests/test_runtime_config.py -v
+          python tests/test_task_contract.py -v
+          python tests/test_packaging_contract.py -v
+          python tests/test_readme_contract.py -v
+          python tests/test_codec_naming.py -v

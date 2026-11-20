@@ -2,6 +2,7 @@ package stpyramid;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 final class PlatformSupport {
@@ -23,15 +24,100 @@ final class PlatformSupport {
         return System.getProperty("java.version", "unknown");
     }
 
+    static String nativeRuntimeProblem(Path runtime) {
+        return nativeRuntimeProblem(runtime, isWindows());
+    }
+
+    static String nativeRuntimeProblem(Path runtime, boolean windows) {
+        if (!windows) {
+            return "Native Count＋TIFF compression is currently qualified for Windows only.";
+        }
+        if (runtime == null) {
+            return "Windows native runtime is not installed. Select the extracted STPyramid runtime folder.";
+        }
+
+        Path root = runtime.toAbsolutePath().normalize();
+        for (String relative : requiredApplicationFiles()) {
+            Path file = root.resolve(relative).normalize();
+            if (!file.startsWith(root) || !Files.isRegularFile(file)) {
+                // The separately packaged Context executable has a legacy fallback.
+                if (relative.equals("app/bin/context_codec.exe")
+                        && Files.isRegularFile(root.resolve("app/bin/slide_jxl091.exe"))) continue;
+                return "Windows native runtime is incomplete: missing " + relative;
+            }
+        }
+        if (!containsAll(root, canonicalCodecRuntimeFiles())
+                && !containsAll(root, legacyCodecRuntimeFiles())) {
+            return "Windows native runtime is incomplete: Anchor, Context and HF-Detail codec runtimes are required.";
+        }
+        return null;
+    }
+
+    private static boolean containsAll(Path root, List<String> files) {
+        return files.stream().allMatch(relative -> Files.isRegularFile(root.resolve(relative).normalize()));
+    }
+
+    static List<String> requiredApplicationFiles() {
+        return List.of(
+            "python/python.exe",
+            "app/desktop_worker.py",
+            "app/runtime_config.py",
+            "app/task_contract.py",
+            "app/native_tile_encoder.py",
+            "app/pyramid_image_archive.py",
+            "app/codec/integrated_encode.py",
+            "app/codec/archive_image_encode.py",
+            "app/codec/container_compare.py",
+            "app/codec/joint_next.py",
+            "app/codec/stbaseline/grouped_count_encode.py",
+            "app/codec/stbaseline/grouped_count.py",
+            "app/codec/stbaseline/_shared_vendor/SOURCE.json",
+            "app/bin/context_codec.exe"
+        );
+    }
+
+    static List<String> canonicalCodecRuntimeFiles() {
+        return List.of(
+            "app/runtime-windows-source/anchor/anchor_codec.exe",
+            "app/runtime-windows-source/anchor/anchor_codec.dll",
+            "app/runtime-windows-source/anchor/build_receipt.json",
+            "app/runtime-windows-source/context/context_codec.exe",
+            "app/runtime-windows-source/context/context_codec.dll",
+            "app/runtime-windows-source/context/build_receipt.json",
+            "app/runtime-windows-source/hf-detail/hf_detail_codec.exe",
+            "app/runtime-windows-source/hf-detail/hf_detail_codec.dll",
+            "app/runtime-windows-source/hf-detail/build_receipt.json"
+        );
+    }
+
+    static List<String> legacyCodecRuntimeFiles() {
+        return List.of(
+            "app/runtime-windows-source/089/slide_jxl089.exe",
+            "app/runtime-windows-source/089/slide_jxl089.dll",
+            "app/runtime-windows-source/089/build_receipt.json",
+            "app/runtime-windows-source/091/slide_jxl091.exe",
+            "app/runtime-windows-source/091/slide_jxl091.dll",
+            "app/runtime-windows-source/091/build_receipt.json",
+            "app/runtime-windows-source/hf/slide_hf1.exe",
+            "app/runtime-windows-source/hf/slide_hf1.dll",
+            "app/runtime-windows-source/hf/build_receipt.json"
+        );
+    }
+
+    static List<String> requiredNativeRuntimeFiles() {
+        return java.util.stream.Stream.concat(
+            requiredApplicationFiles().stream(), canonicalCodecRuntimeFiles().stream()
+        ).toList();
+    }
+
     static String nativeCompressionStatus(Path runtime) {
         if (!isWindows()) {
             return "Native Count＋TIFF compression is not bundled for " + osName()
                 + " in this release. Source-directory and HEST byte-exact archive modes are available.";
         }
-        if (runtime == null || !Files.isRegularFile(runtime.resolve("python/python.exe"))
-                || !Files.isRegularFile(runtime.resolve("app/desktop_worker.py"))) {
-            return "Windows native runtime is not installed next to the application.";
-        }
-        return "Windows native Count＋TIFF compression is available.";
+        String problem = nativeRuntimeProblem(runtime);
+        if (problem != null) return problem;
+        return "Windows native runtime files found. Anchor, Context and HF-Detail codec ABI and file pins "
+            + "are checked before use; the pinned Count source is verified before each Count job.";
     }
 }

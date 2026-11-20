@@ -1,0 +1,78 @@
+name: Native codec regression
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - product/java-spatial-archive
+    paths:
+      - "codec/**"
+      - "native/**"
+      - "CMakeLists.txt"
+      - "tests/smoke.py"
+      - "requirements-windows-tested.txt"
+      - "fetch_count_runtime.py"
+      - "stage_runtime.py"
+      - ".github/workflows/native-codec-regression.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stpyramid-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-native-regression:
+    name: Windows · Native codec round-trip
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC x64 environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-windows-tested.txt
+
+      - name: Install qualified Python dependencies and Ninja
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-windows-tested.txt ninja
+
+      - name: Fetch and verify pinned Shared Count source
+        run: python fetch_count_runtime.py
+
+      - name: Configure native codecs
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+
+      - name: Build Anchor, Context and HF-Detail codecs
+        run: cmake --build build --parallel 1 --target stpyramid_native_codecs
+
+      - name: Stage and ABI-check native runtime
+        run: python stage_runtime.py --bin build/bin --output runtime-windows
+
+      - name: Run synthetic end-to-end regression
+        run: |
+          New-Item -ItemType Directory -Force runs | Out-Null
+          python tests/smoke.py --runtime-dir runtime-windows --output runs/native-regression | Tee-Object -FilePath runs/native-regression-report.json
+          if ($LASTEXITCODE -ne 0) { throw "Native regression failed ($LASTEXITCODE)" }
+
+      - name: Upload synthetic regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stpyramid-native-regression-${{ github.run_id }}
+          path: |
+            runs/native-regression/
+            runs/native-regression-report.json
+          if-no-files-found: warn
+          retention-days: 14

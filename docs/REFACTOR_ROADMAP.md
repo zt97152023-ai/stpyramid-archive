@@ -1,0 +1,136 @@
+# Engineering refactor roadmap
+
+This roadmap separates safe maintainability work from changes that could affect scientific values, archive compatibility or published measurements.
+
+## Current baseline
+
+The current implementation has a clear runtime path but a mixed repository layout:
+
+- `stpyramid.py` is the Python CLI entry point.
+- `codec/integrated_encode.py` orchestrates the integrated Count + image workflow.
+- `codec/stbaseline/` contains the grouped Count implementation and supporting codec modules.
+- `codec/archive_image_encode.py` and `codec/joint_next.py` coordinate the integrated image path.
+- `codec/container_compare.py` owns archive composition, verification, selective reads and restoration.
+- Java and Python desktop applications are separate clients.
+- Several root-level scripts are fixed-cohort benchmark tools, historical experiments or compatibility wrappers.
+
+The current flat imports are deliberate in several places: the CLI and desktop worker add `codec/` to `sys.path`, while codec modules import sibling modules by their top-level names. Moving files or converting imports in one pass would be a high-risk change.
+
+## Refactor sequence
+
+### R0 — Make responsibilities discoverable
+
+- [x] Rewrite the root README as a short project entry point.
+- [x] Add a three-minute quick start with verified release downloads.
+- [x] Document the Count, image and archive boundaries.
+- [x] Add a clickable source code map.
+- [x] Classify root-level research and compatibility scripts.
+- [x] Document contributor and validation expectations.
+- [x] Add dependency-free CLI parser/import contract tests and a three-platform CI workflow.
+- [x] Compile all first-party Python modules in CI to catch syntax errors without importing optional native/scientific dependencies.
+
+**Acceptance:** documentation links resolve; user paths and platform limitations match the published release and current source.
+
+### R1 — Establish a behavior baseline
+
+Before moving code:
+
+- [x] Add a Windows native CI workflow that installs the pinned Python dependencies, fetches and hash-verifies the 19-file Shared Count source, builds the Anchor, Context and HF-Detail encoder/decoder pairs, stages ABI-checked runtimes and runs `tests/smoke.py`.
+- [x] Add a reusable verifier for historical integrated archives and exact original TIFF/H5AD source pairs: [compatibility verifier](../tests/compatibility/verify_integrated.py).
+- [x] Exercise the historical compatibility verifier against the synthetic Shared 2.0 archive inside the native smoke test.
+- [x] Document the historical compatibility matrix and the evidence required to mark a format family as passed: [compatibility instructions](../tests/compatibility/README.md).
+- [x] Confirm Windows CMake 4.5 configuration succeeds after quoting the `CMAKE_POLICY_VERSION_MINIMUM=3.5` argument for PowerShell.
+- [ ] Complete the native build, ABI staging and synthetic round-trip in the same Windows CI run; retain its JSON output and generated synthetic archive as CI evidence.
+- [ ] Run the verifier on at least one current Shared 2.0 archive and one historical Shared_local archive using their matching native runtimes.
+- [ ] Verify a representative historical image-only archive with its matching runtime; this requires a separate image-only verifier.
+- [ ] Record the baseline source commit, release/runtime pins, archive bytes, decoded Count equality, native RGB equality and manifest summaries.
+
+**Acceptance:** synthetic native CI passes and historical archive families are verified against their exact original source files and matching runtimes. Store reports as CI artifacts or a private evidence bundle; do not commit study data. Do not proceed with structural code movement if this baseline is unavailable.
+
+### R2 — Add import and CLI contract tests
+
+- [x] Test that importing the CLI does not load scientific/native dependencies.
+- [x] Test each documented CLI subcommand's help/parser contract without a runtime.
+- [x] Add standard-library desktop task request validation independent from GUI code.
+- [x] Test the request shapes currently emitted by the Python and Java desktop clients.
+- [x] Validate incoming worker requests before dispatching codec work.
+- [x] Exercise worker rejection of malformed requests and compile its source in the test suite.
+- [x] Inventory first-party `sys.path` mutations, dynamic loaders and major flat-import paths in [PYTHON_IMPORTS.md](PYTHON_IMPORTS.md).
+
+**Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior. CLI and task-contract checks are wired to GitHub Actions on Windows, Linux and macOS.
+
+### R3 — Centralize runtime configuration
+
+- [x] Add `runtime_config.py` for desktop worker-count environment parsing.
+- [x] Preserve the existing `STPYRAMID_FUSED_WORKERS`, `STPYRAMID_MAXIMUM_WORKERS` and `STPYRAMID_SCAN_WORKERS` names and defaults.
+- [x] Reject non-integer and out-of-range values with actionable errors.
+- [x] Add standard-library unit tests and include them in the three-platform CI workflow.
+- [x] Confirm CLI and runtime configuration tests pass on Windows, Linux and macOS with Python 3.12.
+- [x] Add a bounded `STPYRAMID_TIMEOUT_SECONDS` setting (default 14,400; range 1–86,400) and use it in both integrated and image-only desktop encoding.
+- [x] Add `runtime_config.py` and `task_contract.py` to both Windows desktop package assembly paths.
+- [x] Add packaging contract tests to prevent worker imports from being omitted in future portable releases.
+- [x] Add Java-side preflight checks for the complete expected Windows native runtime file layout before advertising or launching native compression.
+- [x] Adopt Anchor, Context and HF-Detail as canonical codec names across user-facing docs, diagnostics, CMake build targets and newly staged runtime folders/binaries.
+- [x] Preserve old runtime folder/file layouts and historical manifest pin keys through compatibility fallbacks.
+- [x] Add Java 17 compilation and runtime-layout contract tests on Windows, Linux and macOS.
+- [ ] Add Python-side runtime directory discovery and a single structured capability report shared by CLI and desktop clients.
+
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The expanded CI matrix passed on Windows, Linux and macOS for commit `2847dd95183b870db1bc6df9c06464fca6ba18b6`: 3 CLI contract tests, 7 runtime configuration tests, 11 task protocol tests and 3 packaging contract tests on each platform. No codec or archive-format behavior is intentionally changed.
+
+### R4 — Separate stable application code from research tooling
+
+After the dependency inventory, move only scripts with no external path contracts:
+- cohort and benchmark orchestration;
+- historical candidate comparison tools;
+- one-off research utilities.
+
+Retain documented compatibility wrappers when external notebooks, scripts or benchmark records may refer to the old path. Do not move codec modules in this step.
+
+**Acceptance:** benchmark outputs, fixed-cohort membership, source hashes and result ledgers remain unchanged.
+
+### R5 — Introduce explicit Python package boundaries
+
+Only after import-contract tests exist:
+- introduce a package namespace for the stable Python application;
+- replace flat imports incrementally, one module family at a time;
+- keep temporary compatibility shims for old import paths;
+- avoid changing archive serialization and decoder semantics.
+
+**Acceptance:** old CLI invocations, desktop worker jobs, synthetic smoke tests and historical archive reads all pass.
+
+### R6 — Unify task execution interfaces
+
+Define a stable task request/result/event contract shared by CLI and desktop clients. The UI remains a client; it should not own codec logic. Progress events should identify stages, elapsed time, output paths and actionable failures without exposing temporary internal paths unnecessarily.
+
+**Acceptance:** CLI and desktop produce equivalent archive bytes for a fixed deterministic fixture where the encoder is deterministic, and always produce identical decoded scientific values.
+
+## Non-negotiable compatibility gates
+
+Any change touching one of these is a compatibility-sensitive change, not a cosmetic refactor:
+
+- archive format identifiers and manifest schema;
+- Count frame headers, model tables, indexes or coding order;
+- image record routes, anchor mapping or decoder ABI;
+- runtime hashes and pinned external Count source;
+- coordinate conventions and H5AD typed structure;
+- verification semantics and restoration behavior.
+
+For each such change, require:
+1. synthetic exact-recovery tests;
+2. current-format archive verification;
+3. historical archive verification using the declared runtime;
+4. byte and manifest accounting;
+5. documented migration or explicit statement that the format is unchanged.
+
+## Explicitly out of scope for cleanup-only work
+
+- Re-training, re-fitting or re-tuning codec models.
+- Changing compression candidates or tie-breaking rules.
+- Rewriting historical results or benchmark ledgers.
+- Removing old decoders before archive compatibility is established.
+- Claiming Linux/macOS native Count + TIFF support based only on Java packaging success.
+- Moving all files merely to create a visually neat directory tree.
+
+## Next engineering task
+
+The next engineering task is to complete **R1: behavior baseline** and establish an end-to-end codec CI lane before any package moves. Runtime configuration, worker request validation, Java runtime preflight and source import inventory are in place; format-sensitive code remains untouched.

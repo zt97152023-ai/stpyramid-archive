@@ -68,15 +68,15 @@ def run(runtime, output):
             "--metadata", source / "metadata.json", "--output", package, "--runtime-dir", runtime,
             "--timeout", 240)
     import hf_adapter
-    from stbaseline.wsi_conditioned091 import NativeRuntime as Runtime091
+    from stbaseline.wsi_conditioned091 import NativeRuntime as ContextRuntime
 
     work = package.with_name(package.name + ".work")
     fine, middle, _ = levels
     height, width, _ = fine.shape
     record091 = (work / "prior091/native/conditional/000000.bin").read_bytes()
     recordhf = (work / "hf/native/ms/000000.bin").read_bytes()
-    np.testing.assert_array_equal(Runtime091(runtime / "091").decode(record091, width, height, 0, middle), fine)
-    np.testing.assert_array_equal(hf_adapter.NativeRuntime(runtime / "hf").decode(recordhf, width, height, 0, middle), fine)
+    np.testing.assert_array_equal(ContextRuntime(runtime / "context").decode(record091, width, height, 0, middle), fine)
+    np.testing.assert_array_equal(hf_adapter.NativeRuntime(runtime / "hf-detail").decode(recordhf, width, height, 0, middle), fine)
     routes = json.loads((package / "image/manifest.json").read_bytes())["routes"]
     assert sum(value for route, value in routes.items() if route != "1") > 0, routes
     assert json.loads((package / "manifest.json").read_bytes())["count"]["kind"] == "Shared_2"
@@ -110,7 +110,7 @@ def run(runtime, output):
         np.testing.assert_array_equal(result["gene_positions"], [3, 1, 2])
         np.testing.assert_array_equal(result["level0_xy"], [[1.25, 3]])
         assert reader.metrics()["image"] is None
-    runtimes = tuple(runtime / name for name in ("089", "091", "hf"))
+    runtimes = tuple(runtime / name for name in ("anchor", "context", "hf-detail"))
     with IntegratedArchive(package, image_factory=lambda path: Reader(path, *runtimes)) as reader:
         result = reader.region(bbox, level=1, genes=[3, 1, 2])
         np.testing.assert_array_equal(result["image_bbox"], [0, 1, 8, 26])
@@ -124,9 +124,23 @@ def run(runtime, output):
         handle.write(bytes([value[0] ^ 1]))
     rejected = invoke("verify", corrupted, "--files-only")
     assert rejected.returncode != 0 and "mismatch" in rejected.stderr.lower(), rejected.stderr
+
+    compatibility = subprocess.run(
+        [sys.executable, "-B", str(ROOT / "tests/compatibility/verify_integrated.py"),
+         "--archive", str(package), "--original-tiff", str(source / "pyramid.tif"),
+         "--original-h5ad", str(source / "counts.h5ad"), "--metadata", str(source / "metadata.json"),
+         "--runtime-dir", str(runtime), "--output", str(output / "compatibility-restored"), "--timeout", "240"],
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
+    if compatibility.returncode:
+        raise RuntimeError("Compatibility verifier failed: " + compatibility.stderr[-6000:])
+    compatibility_report = json.loads(compatibility.stdout)
+    assert compatibility_report["status"] == "PASS", compatibility_report
+
     print(json.dumps({"status": "PASS", "levels": len(levels), "count_shape": list(counts.shape), "image_routes": routes,
+                      "compatibility_verifier": compatibility_report,
                       "verified": ["full_rgb", "tiff_tags", "typed_h5ad", "metadata", "image_roi",
-                                   "count_subset", "aligned_region", "091_and_hf_native_decode", "altered_member_rejected"]}))
+                                   "count_subset", "aligned_region", "context_and_hf_detail_native_decode", "altered_member_rejected",
+                                   "compatibility_harness"]}))
 
 
 if __name__ == "__main__":

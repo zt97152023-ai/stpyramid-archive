@@ -1,7 +1,7 @@
-"""New-task adapter for the immutable, qualified 091 paired Modular backend.
+"""New-task adapter for the immutable, qualified Context Codec paired Modular backend.
 
-This module deliberately does not call 091.build or its historical execution
-gate. The new task uses paid 089 corrections and JXL9 references; only the L0
+This module deliberately does not call the Context Codec's historical build or execution
+gate. The new task uses paid Anchor corrections and JXL9 references; only the L0
 paired HF streams are new work. All output identities are create-only.
 """
 import ctypes
@@ -54,7 +54,7 @@ def require_worker_resources():
 def native_encode(runtime, number, spool, target):
     """One bounded child; also used for new synthetic089 fixture material only."""
     if number not in ('089', '091'):
-        raise ValueError('Only frozen089/091 native children are supported')
+        raise ValueError('Only frozen Anchor/Context native children are supported')
     require_worker_resources()
     runtime, spool, target = Path(runtime), Path(spool), Path(target)
     if target.exists() or target.is_symlink() or not target.parent.is_dir():
@@ -66,7 +66,10 @@ def native_encode(runtime, number, spool, target):
     for name in THREAD_VARS:
         env[name] = '1'
     stdout, stderr = target.parent / (target.name + '.stdout.txt'), target.parent / (target.name + '.stderr.txt')
-    command, directory = native_command(runtime / f'slide_jxl{number}.exe', 'encode', spool, target)
+    public_name = 'context_codec.exe' if number == '091' else 'anchor_codec.exe'
+    legacy_name = f'slide_jxl{number}.exe'
+    executable = runtime / (public_name if (runtime / public_name).is_file() else legacy_name)
+    command, directory = native_command(executable, 'encode', spool, target)
     started = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
         result = subprocess.run(command, cwd=directory,
@@ -145,18 +148,18 @@ def build_native(census: Path, old_anchor_package: Path, output_dir: Path,
         old_records = output / 'old089'; old_records.mkdir()
         with old.Reader(old_anchor_package, old_runtime) as reader:
             if reader.manifest['profile'] != 'anchor_pure' or reader.manifest['image']['levels'] != catalog['levels']:
-                raise ValueError('Correction source must be matching frozen089 anchor_pure')
+                raise ValueError('Correction source must be matching frozen Anchor anchor_pure')
             if reader.manifest['files']['source.json'] != catalog['files']['source.json']:
                 raise ValueError('Correction source provenance differs from census')
             if reader.manifest['build']['native_runtime'] != runtime_pins['089']:
-                raise ValueError('Correction source used a different089 runtime')
+                raise ValueError('Correction source used a different Anchor runtime')
             reader._verify_files(); reader._setup()
             for gid, level, _, _, w, h in descriptors:
                 if level != 0:
                     continue
                 offset, length, route, crc = reader._entries[gid]
                 if route != old.ANCHORED:
-                    raise ValueError('Every correction source L0 must be089 anchored')
+                    raise ValueError('Every correction source L0 must be Anchor anchored')
                 reader._bank.seek(offset); blob = reader._bank.read(length)
                 if len(blob) != length or zlib.crc32(blob) != crc:
                     raise ValueError('Correction source record CRC/length mismatch')
@@ -211,7 +214,7 @@ def build_native(census: Path, old_anchor_package: Path, output_dir: Path,
                              'native_receipt_validation_seconds': validation_seconds,
                              'final_input_runtime_verification_seconds': final_check_seconds,
                              'total_adapter_seconds': time.perf_counter() - started,
-                             'scope': 'Paired incremental L0 work; shared work is not split into invented per-arm times; old089 correction/P/JXL encoding time is historical'},
+                             'scope': 'Paired incremental L0 work; shared work is not split into invented per-arm times; old Anchor correction/P/JXL encoding time is historical'},
                   'scope': 'Same coefficients and backend; only explicit known-parent property gate differs. Both arms retain parent-derived threshold candidates. No neural training.'}
         write_json(output / 'adapter.json', result)
         (output / 'INCOMPLETE').unlink()

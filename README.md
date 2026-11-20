@@ -1,48 +1,62 @@
 # STPyramid Archive
 
+**A unified archive for spatial-transcriptomics data.** STPyramid combines spatial Count data, whole-slide image pyramids and metadata in a verifiable package, with lossless recovery and spatial access.
+
+[Releases](https://github.com/zt97152023-ai/stpyramid-archive/releases) · [Source scope](OPEN_SOURCE_SCOPE.md) · [Third-party notices](THIRD_PARTY.md) · [Results](results/README.md)
+
 ## Choose a version
 
-| Version | Fixed tag | Scope |
+| Version / workflow | Fixed source | Intended use |
 |---|---|---|
-| Desktop v0.1.0 | [desktop-v0.1.0](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/desktop-v0.1.0) | Windows app with English and Chinese interfaces for compression, verification and restoration |
-| Maximum compression | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF+L1 candidate search and Shared Count integration |
-| Fast fused v1 | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | One selected encoder per tile for the native RGB image pyramid |
-| Java Desktop v0.2.4 | [java-desktop-v0.2.4](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.4) | No-configuration Java desktop, Windows native backend, Linux/macOS source-archive packages |
-| Source-only v0.2.5 | [java-desktop-v0.2.5](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.5) | Clean open-source tree without native runtime binaries or study data |
+| Java Desktop v0.2.4 | [java-desktop-v0.2.4](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.4) | Desktop application; Windows native Count + TIFF backend, cross-platform source archive |
+| Source-only v0.2.5 | [java-desktop-v0.2.5](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.5) | Clean source release without study data or bundled native runtime binaries |
+| Maximum-compression research | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF + L1 image candidate search with Shared Count integration |
+| Fast fused image workflow | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | Fast native-pyramid image encoding; image-only research workflow |
+| Current development source | [product/java-spatial-archive](https://github.com/zt97152023-ai/stpyramid-archive/tree/product/java-spatial-archive) | Current maintained source branch and integrated codec implementation |
 
-## Open-source source release
+The published [v0.2.5 release assets](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/v0.2.5) include desktop packages. The Windows ZIP retains a `0.2.4` filename even though it is attached to release `v0.2.5`; see the [quick start](docs/QUICKSTART.md) for exact downloads and platform capability limits.
 
-The current source branch is `product/java-spatial-archive`. It contains the
-Java desktop, the original codec source, cross-platform launchers and package
-builders. The repository intentionally excludes study data, native binaries
-and the external Count source whose upstream license is pending. See
-[OPEN_SOURCE_SCOPE.md](OPEN_SOURCE_SCOPE.md), [LICENSE](LICENSE) and
-[THIRD_PARTY.md](THIRD_PARTY.md).
+## Choose what you need
 
-The Windows offline package is assembled outside the source repository. Linux
-and macOS users can build a no-configuration package on the matching operating
-system with `java-desktop/package-linux.sh` or
-`java-desktop/package-macos.sh`. The package includes a matching JRE, so the
-target computer does not need Java or JAVA_HOME.
+| Goal | Start here |
+|---|---|
+| Get started in three minutes | [Quick start](docs/QUICKSTART.md) |
+| Use the desktop application | [Desktop guide](java-desktop/README.md) |
+| Run the Python integrated workflow | [CLI quick start](#python-cli) |
+| Understand the system design | [Architecture](docs/ARCHITECTURE.md) |
+| Find the exact implementation files | [Code map](docs/CODEMAP.md) |
+| Understand Python imports before refactoring | [Import inventory](docs/PYTHON_IMPORTS.md) |
+| Build from source | [Build instructions](#build-from-source) |
+| Explore advanced and experimental workflows | [Advanced workflows](docs/ADVANCED_WORKFLOWS.md) |
+| Contribute or modify the code | [Contributing guide](CONTRIBUTING.md) |
+| Understand planned engineering improvements | [Refactor roadmap](docs/REFACTOR_ROADMAP.md) |
+| Check methods and evidence | [Results and reproducibility](results/README.md) |
+| Validate a historical integrated archive | [Compatibility verifier](tests/compatibility/README.md) |
 
-This branch adds the fused image encoder, using the original container and a compatible decoder. The [fast Windows quick start](results/fast-fused-v1/README.md) covers encoding, verification, ROI reads and TIFF restoration. [Methods](results/fast-fused-v1/METHODS.md) and [ten-slide results](results/fast-fused-v1/RESULTS.md) report the image component. The integrated commands below still use the maximum-compression image path and Shared Count.
+## What is included
 
-## Maximum-compression integrated workflow
+- **Count archive** — preserves typed H5AD structure and integer count values; the integrated writer uses Shared 2.0.
+- **Image archive** — encodes native RGB image-pyramid levels and retains the information required for exact reconstruction.
+- **Unified package** — records component identity and metadata, verifies the package before publication, and supports image-region and Count-subset reads.
+- **Desktop applications** — Java desktop workflow and the earlier Python desktop workflow are maintained as distinct clients.
 
-Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its spatial-transcriptomics H5AD in one lossless directory package. The image encoder selects complete records from direct JPEG XL e9 and the 089/091/HF1 native-pyramid paths. New integrated archives use Shared 2.0 for Count. This checkout reads both Shared 2.0 and historical Shared_local archives. Use the current checkout to read archives that declare `Shared_2`.
+## Quick start: desktop
 
-## Inputs and recovery scope
+For the current Java desktop distribution, download the matching package from [Releases](https://github.com/zt97152023-ai/stpyramid-archive/releases), extract the complete folder, and launch it:
 
-- A supported tiled, contiguous RGB8 TIFF or BigTIFF with 3–16 stored levels. The two finest transitions require floor-sized 2× geometry, and this reader accepts uncompressed, LZW or Deflate TIFF tiles.
-- An H5AD containing nonnegative integer-valued Count data and `obsm/spatial` in level-0 pixel coordinates. The qualified Count bound is 20 million matrix cells.
-- A JSON metadata object to preserve as an attachment.
-- Verification covers all decoded native RGB values, retained image metadata and supported H5AD contents/types. TIFF and H5AD container bytes can change on restoration.
+- Windows: `Launch-STPyramidJava.cmd`
+- Linux: `Launch-STPyramidJava.sh`
+- macOS: `Launch-STPyramidJava.command`
 
-## Windows quick start
+Keep the launcher, JAR and bundled `jre/` together. The package includes its Java runtime. See the [Java desktop guide](java-desktop/README.md) for platform capabilities, packaging and CLI commands.
 
-The [desktop app](desktop/README.md) runs the integrated Count and image workflow or the fast image-only workflow from a queue. Use `python desktop_app.py` from a qualified Windows environment, or build the portable app with `python desktop/build_portable.py --output runs/STPyramid-Desktop --zip` after installing the pinned Python dependencies. Open `STPyramid.exe` from the extracted directory. The app downloads and checks the pinned entropy-coding dependency on the first Count job.
+The earlier Python desktop client is documented separately in [desktop/README.md](desktop/README.md).
 
-Use 64-bit CPython 3.12. The local Windows delivery includes `runtime-windows`. For a source checkout, stage runtime binaries from a local CMake/Ninja build as shown below.
+**Workflow distinction:** the integrated Count + TIFF archive uses independent Count and image codecs joined by the unified container. The fast-fused image-only workflow and experimental recursive TIFF format are separate image workflows, not interchangeable archive formats.
+
+## Python CLI
+
+The integrated Python CLI is currently qualified for **Windows**. Use 64-bit CPython 3.12.
 
 ```powershell
 py -3.12 -m venv .venv
@@ -52,55 +66,94 @@ python fetch_count_runtime.py
 python tests/smoke.py --runtime-dir .\runtime-windows --output .\runs\smoke
 ```
 
+Create and inspect an archive:
+
 ```powershell
 python stpyramid.py encode --image slide.tif --counts spots.h5ad --metadata metadata.json --runtime-dir runtime-windows --output runs/archive
 python stpyramid.py inspect runs/archive
 python stpyramid.py verify runs/archive --runtime-dir runtime-windows
 python stpyramid.py restore runs/archive --runtime-dir runtime-windows --output runs/restored
+```
+
+Additional reads:
+
+```powershell
 python stpyramid.py image runs/archive --runtime-dir runtime-windows --level 0 --bbox 0 0 64 64 --output runs/roi.npy
 python stpyramid.py counts runs/archive --rows 0 --genes 0 1 --output runs/counts.npz
 ```
 
-Use fresh outputs. Encoding keeps a sibling `archive.work` directory with intermediate streams and a verification receipt. Only the final archive directory enters the data-package ledger. The backend runs on one Windows logical CPU at low priority. The timeout is checked between stages and bounds native encoder subprocesses. This CLI does not provide the historical batch queue's OS process-tree memory supervisor.
+Use a **new output path** for each encoding run. The encoder uses a sibling work directory for intermediate streams and verification receipts; only the verified final archive is published.
 
-## Integrated code path
+## Build from source
 
-1. `stpyramid.py` handles the CLI. `encode_archive` validates the inputs and runtimes, scans the stored image levels, stages each component and publishes the directory once both modalities pass verification. [CLI](stpyramid.py) · [Integrated encoder](codec/integrated_encode.py)
-2. Shared 2.0 stores the typed H5AD structure in `science.h5` and indexes independent Count frames by 1024-pixel L0 spatial block and gene group. Panels with at most 1,024 genes use groups of 64 and cluster same-group frames within runs of 32 blocks. Larger panels use groups of 256 in spatial block order. For blocks with at most 12 spots, the encoder compares the original position stream against the nonzero cardinality and subset rank stream. It keeps the occupancy model only when it lowers the complete Count component size, including the model, index and manifest. [Count component](codec/integrated_encode.py) · [Writer](codec/stbaseline/grouped_count_encode.py) · [Reader](codec/stbaseline/grouped_count.py)
-3. `encode_images` produces direct JPEG XL records and the 089, 091 and HF candidates. It prepares native parent references for L0 and L1, retains the smallest eligible records in the prescribed order, and writes both the direct baseline and the selected HF + L1 image component. [Image candidate generation](codec/archive_image_encode.py) · [Image archive](codec/joint_next.py)
-4. `pack_integrated` checks the component source and level identities, copies the verified members and binds them in one manifest. `IntegratedArchive.region` selects spots in a half-open L0 box and maps the box to covering pixels at the requested image level. Full restore writes the native TIFF levels and reinserts the decoded Count values into the original H5AD structure. [Integrated container and reader](codec/container_compare.py)
+### Native Windows runtime
 
-## Build the native Windows runtime
-
-With Visual Studio 2022 C++ tools, CMake and Ninja installed, run the following in an x64 Developer PowerShell. A clean Windows source build and the resulting end-to-end smoke passed with this toolchain. Use the resulting runtime for both encoding and verification. Existing archives bind their native runtime hashes and may require the matching historical binaries.
+With Visual Studio 2022 C++ tools, CMake and Ninja:
 
 ```powershell
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-cmake --build build --parallel 2 --target slide_jxl089 slide_jxl089_shared slide_jxl091 slide_jxl091_shared slide_hf1 slide_hf1_shared
+cmake --build build --parallel 2 --target stpyramid_native_codecs
 python stage_runtime.py --bin build/bin --output runtime-windows
 python tests/smoke.py --runtime-dir runtime-windows --output runs/source-build-smoke
 ```
 
-The integrated CLI is currently scoped to Windows. The native source contains a macOS platform layer. The integrated Count+WSI workflow has not been qualified on macOS or Linux.
+### Java desktop
 
-## Experimental recursive TIFF encoder
+Build and package on the target operating system. Linux and macOS packages bundle a matching JRE:
 
-`recursive_image_archive.py` encodes eligible native levels against the next original TIFF level. Coarsest levels, scale transitions without exact floor-sized 2× geometry, and periodic checkpoints use independent lossless JPEG XL e9. The parent index resolves each conditional tile to one coarser tile. Every level and the source metadata are verified before the archive directory is published.
-
-After compiling the native `slide_jxl091` target from this branch, run the experiment with a fresh work directory and output path.
-
-```powershell
-python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder build/bin/slide_jxl091.exe --preset fast --max-depth 3
-python recursive_image_archive.py verify runs/recursive-image
-python recursive_image_archive.py restore runs/recursive-image runs/recursive-restored
+```sh
+./java-desktop/package-linux.sh /path/to/jdk-17 /tmp/STPyramid-Linux-x64
+./java-desktop/package-macos.sh /path/to/jdk-17 /tmp/STPyramid-macOS-arm64
 ```
 
-`--max-depth 15` permits the full eligible chain for TIFFs with up to 16 levels. `--preset regular` retains the fused encoder search settings. `--preset fast` uses a lower MA-tree sample fraction and non-optimal LZ77 parsing. Both presets consolidate conditional-tile verification into the final recursive archive verification. This experiment uses its own image format identifier and CLI.
+See [java-desktop/README.md](java-desktop/README.md) for Windows packaging and details.
 
-## Evidence and licensing
+## Codec modules
 
-- [Results and reproducibility notes](results/README.md)
-- [Numeric evidence ledger](results/evidence.json)
-- [Third-party notices and scope](THIRD_PARTY.md)
+STPyramid uses three mechanism-based image codec names: **Anchor**, **Context**, and **HF-Detail**. They are per-tile coding modules used by the integrated image archive, not interchangeable archive formats. See the [codec naming guide](docs/CODEC_NAMING.md) for their roles and compatibility boundaries.
 
-The source release contains no study images, Count matrices, H5AD files or historical data archives. The included smoke test generates all its inputs. The published Count dependency is installed from its fixed commit and validated against 19 SHA-256 pins. The license for original STPyramid source is recorded in [LICENSE](LICENSE).
+## Architecture at a glance
+
+```text
+Input data
+  ├── H5AD ──> Count validation ──> Count codec ─────┐
+  ├── TIFF ──> Pyramid scan ──────> Image codec ─────┤
+  └── JSON ──> Metadata validation ─────────────────┤
+                                                     v
+                                      Unified archive + manifest
+                                                     |
+                                      Verify all components
+                                                     |
+                                Publish / Inspect / ROI read / Restore
+```
+
+New here? Start with the [three-minute quick start](docs/QUICKSTART.md). Developing the project? Open the [code map](docs/CODEMAP.md) to locate the exact Count, TIFF and archive implementation files.
+
+The Count and image codecs retain independent encoding and decoding boundaries. The unified container binds their sample identity, coordinate system and metadata; it does not merge their probability models. See [the architecture note](docs/ARCHITECTURE.md) for module responsibilities and data flow.
+
+## Supported scope and important limits
+
+- Integrated Python Count + TIFF encoding/verification is qualified on Windows.
+- Linux and macOS Java packages support the platform-independent source-archive workflow. Do not assume the native Count + TIFF backend is qualified on those platforms.
+- TIFF input must meet the documented tiled RGB8 pyramid geometry and compression constraints; H5AD Count values must be nonnegative integers with spatial coordinates in L0 pixel coordinates.
+- The source repository intentionally excludes study data and native runtime binaries. The Shared Count dependency is fetched at a pinned revision because its upstream original-code license remains pending.
+
+For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE.md](OPEN_SOURCE_SCOPE.md), [THIRD_PARTY.md](THIRD_PARTY.md) and [advanced workflow notes](docs/ADVANCED_WORKFLOWS.md).
+
+## Project structure
+
+| Path | Responsibility |
+|---|---|
+| `runtime_config.py`, `task_contract.py` | Validated runtime settings and desktop task requests |
+| `stpyramid.py`, `codec/` | Python CLI and integrated archive/codec implementation |
+| `java-desktop/` | Java desktop application, launchers and package builders |
+| `desktop*.py`, `desktop/` | Python desktop client |
+| `native/`, `CMakeLists.txt` | Native image codec source and build |
+| `tests/` | CLI, runtime, task protocol, packaging, native regression and historical compatibility tests |
+| `results/` | Aggregate results, evidence ledger and release reports |
+| `docs/` | Architecture, quick start, task protocol and advanced workflow documentation |
+| `upstream/` | Third-party source and its retained notices |
+
+## License and citation
+
+STPyramid original source is released under the [BSD 3-Clause License](LICENSE). Third-party components retain their own licenses and notices; see [THIRD_PARTY.md](THIRD_PARTY.md). Dataset access and dataset licensing are separate from software licensing.

@@ -1,4 +1,4 @@
-"""New dense-MS native adapter; old089/091/P code and artifacts stay immutable."""
+"""HF-Detail Codec adapter; historical Anchor/Context implementation artifacts remain immutable."""
 import ctypes
 import hashlib
 import json
@@ -29,18 +29,39 @@ def _runtime(runtime_dir):
     root = arg.resolve()
     raw = conditioned._read_bounded(root / 'build_receipt.json', 4*1024*1024)
     receipt = json.loads(raw)
-    if (receipt.get('schema') != 'wsi-hf1-runtime-build-1' or receipt.get('abi_version') != 1
+    if (receipt.get('schema') not in ('stpyramid-hf-detail-runtime-build-1', 'wsi-hf1-runtime-build-1')
+            or receipt.get('abi_version') != 1
             or receipt.get('representation') != 'dense_magnitude_sign_v1'
             or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1')):
-        raise ValueError('HF runtime recipe differs from fixed MS build')
+        raise ValueError('HF-Detail runtime recipe differs from the fixed build')
     pins = {}
-    for name in ('slide_hf1.exe', 'slide_hf1.dll'):
+    legacy_outputs = {}
+    for public_name, legacy_name in (('hf_detail_codec.exe', 'slide_hf1.exe'),
+                                     ('hf_detail_codec.dll', 'slide_hf1.dll')):
+        name = public_name if (root / public_name).is_file() else legacy_name
         p = root / name; info = receipt.get('outputs', {}).get(name, {})
         if (p.is_symlink() or not p.is_file() or p.stat().st_size != info.get('bytes')
                 or sha256(p) != info.get('sha256')):
-            raise ValueError('HF runtime differs from build receipt: ' + name)
-        pins[name] = {'bytes': info['bytes'], 'sha256': info['sha256']}
-    pins['build_receipt.json'] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+            raise ValueError('HF-Detail runtime differs from build receipt: ' + name)
+        pin = {'bytes': info['bytes'], 'sha256': info['sha256']}
+        pins[legacy_name] = pin
+        legacy_outputs[legacy_name] = pin
+
+    # Normalize the new public receipt to the historical pin representation.
+    # This lets old manifests validate against a newly staged runtime while the
+    # actual receipt and binary files are still checked above.
+    compatibility_receipt = {
+        'abi_version': receipt['abi_version'],
+        'release_profile': receipt.get('release_profile'),
+        'outputs': legacy_outputs,
+        'schema': 'wsi-hf1-runtime-build-1',
+        'representation': 'dense_magnitude_sign_v1',
+    }
+    compatibility_bytes = (json.dumps(compatibility_receipt, indent=2, sort_keys=True) + '\n').encode('utf-8')
+    pins['build_receipt.json'] = {
+        'bytes': len(compatibility_bytes),
+        'sha256': hashlib.sha256(compatibility_bytes).hexdigest(),
+    }
     return root, pins
 
 
@@ -53,7 +74,7 @@ def qualified_runtimes(runtimeHF, runtime089):
 
 def _record(blob, gid, w, h):
     if not isinstance(blob, bytes) or not 260 <= len(blob) <= MAX_PAYLOAD or blob[:8] != b'SHF1TIL1':
-        raise ValueError('HF1 record magic/length')
+        raise ValueError('HF-Detail record magic/length')
     # Header/framing is deliberately byte-layout compatible with091; the MS
     # magic and forced mode1 are checked separately, without changing old code.
     return conditioned._record(b'S091TIL1' + blob[8:], gid, w, h, 1)
@@ -64,7 +85,8 @@ class NativeRuntime:
         self.root, self.pins = _runtime(runtime_dir)
         if expected is not None and self.pins != expected:
             raise ValueError('HF runtime differs from archive pins')
-        self.library = lib = ctypes.CDLL(str(self.root / 'slide_hf1.dll'))
+        library = self.root / 'hf_detail_codec.dll' if (self.root / 'hf_detail_codec.dll').is_file() else self.root / 'slide_hf1.dll'
+        self.library = lib = ctypes.CDLL(str(library))
         lib.sthf1_abi_version.argtypes = []; lib.sthf1_abi_version.restype = ctypes.c_uint32
         if lib.sthf1_abi_version() != 1:
             raise ValueError('Unsupported HF ABI')
@@ -108,7 +130,7 @@ def require_worker_resources():
 def native_encode(runtime, number, spool, target):
     """One bounded child; also used for new synthetic089 fixture material only."""
     if number not in ('089', 'hf1'):
-        raise ValueError('Only reused089/newHF1 native children are supported')
+        raise ValueError('Only reused Anchor Codec/new HF-Detail native children are supported')
     require_worker_resources()
     runtime, spool, target = Path(runtime), Path(spool), Path(target)
     if target.exists() or target.is_symlink() or not target.parent.is_dir():
@@ -120,7 +142,10 @@ def native_encode(runtime, number, spool, target):
     for name in THREAD_VARS:
         env[name] = '1'
     stdout, stderr = target.parent / (target.name + '.stdout.txt'), target.parent / (target.name + '.stderr.txt')
-    executable = runtime / ('slide_hf1.exe' if number == 'hf1' else 'slide_jxl089.exe')
+    if number == 'hf1':
+        executable = runtime / ('hf_detail_codec.exe' if (runtime / 'hf_detail_codec.exe').is_file() else 'slide_hf1.exe')
+    else:
+        executable = runtime / ('anchor_codec.exe' if (runtime / 'anchor_codec.exe').is_file() else 'slide_jxl089.exe')
     command, directory = native_command(executable, 'encode', spool, target)
     started = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
@@ -182,7 +207,7 @@ def validate_native_directory(native, catalog, descriptors, anchors, old_records
             if view[key] != record.get(key):
                 raise ValueError('HF serialized binding differs')
         if view['low']['frame'] != oldblob[-48-oldview['low']['bytes']:]:
-            raise ValueError('HF paid correction frame not exact old089 reuse')
+            raise ValueError('HF paid correction frame not exact Anchor reuse')
         ms = record['ms']; conditioned._validate_stream_receipt(ms, view['detail'], doubled, 'Zero')
         if (ms.get('coefficient_sha256') != record.get('hf_coefficient_sha256')
                 or any(type(ms.get(k)) is not int or ms[k] != doubled for k in ('target_values', 'decoder_target_values'))):
@@ -249,18 +274,18 @@ def build_native(census: Path, old_anchor_package: Path, output_dir: Path,
         old_records = output / 'old089'; old_records.mkdir()
         with old.Reader(old_anchor_package, old_runtime) as reader:
             if reader.manifest['profile'] != 'anchor_pure' or reader.manifest['image']['levels'] != catalog['levels']:
-                raise ValueError('Correction source must be matching frozen089 anchor_pure')
+                raise ValueError('Correction source must be matching frozen Anchor Codec anchor_pure')
             if reader.manifest['files']['source.json'] != catalog['files']['source.json']:
                 raise ValueError('Correction source provenance differs from census')
             if reader.manifest['build']['native_runtime'] != runtime_pins['089']:
-                raise ValueError('Correction source used a different089 runtime')
+                raise ValueError('Correction source used a different Anchor Codec runtime')
             reader._verify_files(); reader._setup()
             for gid, level, _, _, w, h in descriptors:
                 if level != 0:
                     continue
                 offset, length, route, crc = reader._entries[gid]
                 if route != old.ANCHORED:
-                    raise ValueError('Every correction source L0 must be089 anchored')
+                    raise ValueError('Every correction source L0 must be Anchor Codec anchored')
                 reader._bank.seek(offset); blob = reader._bank.read(length)
                 if len(blob) != length or zlib.crc32(blob) != crc:
                     raise ValueError('Correction source record CRC/length mismatch')

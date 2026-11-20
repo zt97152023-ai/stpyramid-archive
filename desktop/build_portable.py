@@ -12,7 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 DISTRIBUTIONS = ("numpy", "scipy", "h5py", "tifffile", "imagecodecs", "psutil", "numba", "llvmlite", "Pillow",
                  "zstandard")
-SCRIPTS = ("desktop_app.py", "desktop_i18n.py", "desktop_worker.py", "fetch_count_runtime.py",
+SCRIPTS = ("desktop_app.py", "desktop_i18n.py", "desktop_worker.py", "runtime_config.py", "task_contract.py", "fetch_count_runtime.py",
            "native_tile_encoder.py", "pyramid_image_archive.py", "THIRD_PARTY.md")
 CACHE = shutil.ignore_patterns("__pycache__", "*.pyc", "*.nbc", "*.nbi")
 
@@ -55,7 +55,10 @@ def install_app(output):
     manifest = Path("codec/stbaseline/_shared_vendor/SOURCE.json")
     copy_file(ROOT / manifest, output / manifest)
     shutil.copytree(ROOT / "runtime-windows-source", output / "runtime-windows-source")
-    copy_file(ROOT / "bin/slide_jxl091.exe", output / "bin/slide_jxl091.exe")
+    context_executable = ROOT / "bin/context_codec.exe"
+    if not context_executable.is_file():
+        context_executable = ROOT / "bin/slide_jxl091.exe"  # legacy build output
+    copy_file(context_executable, output / "bin/context_codec.exe")
     for name in ("upstream/libjxl/LICENSE", "upstream/libjxl/PATENTS", "upstream/libjxl/third_party/brotli/LICENSE",
                  "upstream/libjxl/third_party/highway/LICENSE", "upstream/libjxl/third_party/skcms/LICENSE",
                  "native/091/vendor091/LICENSE", "native/hf1/vendorhf/LICENSE"):
