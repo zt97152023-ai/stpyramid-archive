@@ -29,7 +29,7 @@ jobs:
       - name: Run dependency trust-boundary regression tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
       - name: Compile Python security-sensitive modules
-        run: python -m compileall -q fetch_count_runtime.py codec/stbaseline/reader.py codec/stbaseline/grouped_count.py codec/stbaseline/shared_backend.py codec/container_compare.py codec/stbaseline/comparison.py codec/stbaseline/local_ipc.py codec/stbaseline/integrity.py desktop_worker.py
+        run: python -m compileall -q fetch_count_runtime.py codec/stbaseline/reader.py codec/stbaseline/grouped_count.py codec/stbaseline/shared_backend.py codec/container_compare.py codec/stbaseline/comparison.py codec/stbaseline/local_ipc.py codec/stbaseline/integrity.py codec/stbaseline/wsi_shared.py codec/stbaseline/lossless_components.py codec/stbaseline/native_wsi.py desktop_worker.py
 
   java-source-archive:
     name: Java source archive regression tests
