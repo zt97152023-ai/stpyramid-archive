@@ -4,6 +4,18 @@
 
 [Releases](https://github.com/zt97152023-ai/stpyramid-archive/releases) · [Source scope](OPEN_SOURCE_SCOPE.md) · [Third-party notices](THIRD_PARTY.md) · [Results](results/README.md)
 
+## Choose a version
+
+| Version / workflow | Fixed source | Intended use |
+|---|---|---|
+| Java Desktop v0.2.4 | [java-desktop-v0.2.4](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.4) | Desktop application; Windows native Count + TIFF backend, cross-platform source archive |
+| Source-only v0.2.5 | [java-desktop-v0.2.5](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.5) | Clean source release without study data or bundled native runtime binaries |
+| Maximum-compression research | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF + L1 image candidate search with Shared Count integration |
+| Fast fused image workflow | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | Fast native-pyramid image encoding; image-only research workflow |
+| Current development source | [product/java-spatial-archive](https://github.com/zt97152023-ai/stpyramid-archive/tree/product/java-spatial-archive) | Current maintained source branch and integrated codec implementation |
+
+The published [v0.2.5 release assets](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/v0.2.5) include desktop packages. The Windows ZIP retains a `0.2.4` filename even though it is attached to release `v0.2.5`; see the [quick start](docs/QUICKSTART.md) for exact downloads and platform capability limits.
+
 ## Choose what you need
 
 | Goal | Start here |
@@ -37,7 +49,7 @@ For the current Java desktop distribution, download the matching package from [R
 
 Keep the launcher, JAR and bundled `jre/` together. The package includes its Java runtime. See the [Java desktop guide](java-desktop/README.md) for platform capabilities, packaging and CLI commands.
 
-The earlier Python desktop client is documented separately in [desktop/README.md](desktop/README.md).
+The earlier Python desktop client is documented separately in [desktop/README.md](desktop/README.md).\n\n**Workflow distinction:** the integrated Count + TIFF archive uses independent Count and image codecs joined by the unified container. The fast-fused image-only workflow and experimental recursive TIFF format are separate image workflows, not interchangeable archive formats.
 
 ## Python CLI
 
@@ -128,7 +140,7 @@ For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE
 | `java-desktop/` | Java desktop application, launchers and package builders |
 | `desktop*.py`, `desktop/` | Python desktop client |
 | `native/`, `CMakeLists.txt` | Native image codec source and build |
-| `tests/` | Synthetic end-to-end smoke test |
+| `tests/` | CLI, runtime, task protocol, packaging and synthetic end-to-end tests |
 | `results/` | Aggregate results, evidence ledger and release reports |
 | `docs/` | Architecture, quick start, task protocol and advanced workflow documentation |
 | `upstream/` | Third-party source and its retained notices |
