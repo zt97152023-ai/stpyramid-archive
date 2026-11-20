@@ -62,10 +62,10 @@ def _hash(data):
 
 def _read_bounded(path, limit):
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= limit:
-        raise ValueError('Missing, unsafe or unboundedContext Codec member: ' + path.name)
+        raise ValueError('Missing, unsafe or unbounded Context Codec member: ' + path.name)
     data = path.read_bytes()
     if not 0 < len(data) <= limit:
-        raise ValueError('Changed or unboundedContext Codec member')
+        raise ValueError('Changed or unbounded Context Codec member')
     return data
 
 
@@ -103,14 +103,14 @@ def _anchor(levels, descriptor, fetch):
 def _runtime(runtime_dir=None):
     value = runtime_dir or os.environ.get('ST091_RUNTIME')
     if not value:
-        raise RuntimeError('STContext Codec_RUNTIME or runtime_dir must name the qualifiedContext Codec build')
+        raise RuntimeError('ST091_RUNTIME or runtime_dir must name the qualified Context Codec build')
     arg = Path(value)
     if arg.is_symlink() or not arg.is_dir():
-        raise ValueError('Unsafe nativeContext Codec runtime directory')
+        raise ValueError('Unsafe native Context Codec runtime directory')
     root = arg.resolve()
     receipt = json.loads(_read_bounded(root/'build_receipt.json', 4*1024*1024))
     if receipt.get('abi_version') != ABI_VERSION or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1'):
-        raise ValueError('UnqualifiedContext Codec runtime receipt')
+        raise ValueError('Unqualified Context Codec runtime receipt')
     pins = {}
     for name in ('slide_jxl091.exe', 'slide_jxl091.dll'):
         path = root/name; info = receipt.get('outputs', {}).get(name, {})
@@ -130,7 +130,7 @@ class NativeRuntime:
         self.library = lib = ctypes.CDLL(str(self.root/'slide_jxl091.dll'))
         lib.st091_abi_version.argtypes = []; lib.st091_abi_version.restype = ctypes.c_uint32
         if lib.st091_abi_version() != ABI_VERSION:
-            raise ValueError('UnsupportedContext Codec ABI')
+            raise ValueError('Unsupported Context Codec ABI')
         ptr, size, u32 = ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32
         lib.st091_decode.argtypes = [ptr, size, ptr, size, u32, u32, u32, ptr, size, ptr, size]
         lib.st091_decode.restype = ctypes.c_int
@@ -149,7 +149,7 @@ class NativeRuntime:
         pixels = np.empty((h, w, 3), np.uint8); error = ctypes.create_string_buffer(2048)
         if self.library.st091_decode(payload, len(blob), anchor_pointer, anchor_size,
                                      gid, w, h, pixels.ctypes.data, pixels.nbytes, error, len(error)):
-            raise ValueError('stContext Codec_decode: ' + error.value.decode('utf8', 'replace'))
+            raise ValueError('Context Codec decoder (native ABI): ' + error.value.decode('utf8', 'replace'))
         return pixels
 
 
@@ -180,7 +180,7 @@ def _record(blob, gid, w, h, mode):
     pos = 164; streams = []
     for i in range(2):
         if pos+48 > len(blob):
-            raise ValueError('TruncatedContext Codec stream header')
+            raise ValueError('Truncated Context Codec stream header')
         bits, size = struct.unpack_from('<QQ', blob, pos); digest = blob[pos+16:pos+48]
         pos += 48
         empty = i == 1 and w == h == 1
@@ -194,7 +194,7 @@ def _record(blob, gid, w, h, mode):
         streams.append({'bytes': size, 'bits': bits, 'sha256': digest.hex(), 'payload': payload,
                         'frame': blob[pos-size-48:pos]})
     if pos != len(blob):
-        raise ValueError('TrailingContext Codec record bytes')
+        raise ValueError('Trailing Context Codec record bytes')
     return {'raw_sha256': blob[36:68].hex(), 'anchor_sha256': blob[68:100].hex(),
             'prefix_v_sha256': blob[100:132].hex(), 'prefix_h_sha256': blob[132:164].hex(),
             'low': streams[0], 'detail': streams[1]}
@@ -243,7 +243,7 @@ def _validate_native(native, catalog, descriptors, anchors, old_records):
                           'control_hf_stream_bytes', 'conditional_hf_stream_bytes'), 0)
     for desc, record in zip(targets, receipt['tiles']):
         gid, level, x, y, w, h = desc; aw, ah = (w+1)//2, (h+1)//2
-        old_blob = _read_bounded(old_records/f'{gid:06d}.old089', previous089.MAX_PAYLOAD)
+        old_blob = _read_bounded(old_records/f'{gid:06d}.old Anchor Codec', previous089.MAX_PAYLOAD)
         old = previous089._record(old_blob, gid, w, h, 1)
         expected = {'gid': gid, 'level': level, 'x': x, 'y': y, 'w': w, 'h': h,
                     'anchor_w': aw, 'anchor_h': ah, 'raw_sha256': catalog['tiles'][gid]['native_sha256'],
@@ -252,7 +252,7 @@ def _validate_native(native, catalog, descriptors, anchors, old_records):
         if any(type(record.get(k)) is not type(v) or record[k] != v for k, v in expected.items()):
             raise ValueError('NativeContext Codec source/anchor/old-record receipt differs')
         if old['raw_sha256'] != expected['raw_sha256'] or old['anchor_sha256'] != anchors[gid]:
-            raise ValueError('Old089 LP source identity differs')
+            raise ValueError('Anchor Codec LP source identity differs')
         for key in ('prefix_v_sha256', 'prefix_h_sha256', 'hf_coefficient_sha256'):
             if not isinstance(record.get(key), str) or base.HEX.fullmatch(record[key]) is None:
                 raise ValueError('NativeContext Codec coefficient/prefix digest missing')
@@ -269,7 +269,7 @@ def _validate_native(native, catalog, descriptors, anchors, old_records):
                 if view[key] != record[key]:
                     raise ValueError('NativeContext Codec serialized source/parent prefix binding differs')
             if view['low']['frame'] != old_blob[-48-old['low']['bytes']:]:
-                raise ValueError('NativeContext Codec lowpass header/payload is not exact089 reuse')
+                raise ValueError('NativeContext Codec lowpass header/payload is not exact Anchor Codec reuse')
             detail = record[family]
             _validate_stream_receipt(detail, view['detail'], 3*w*h-3*aw*ah, 'Zero')
             if any(type(detail.get(key)) is not int or detail[key] != detail['coefficients']
@@ -285,19 +285,19 @@ def _validate_native(native, catalog, descriptors, anchors, old_records):
             costs[f'{family}_bytes'] += len(blob)
             costs[f'{family}_hf_stream_bytes'] += view['detail']['bytes']
         if views[0]['low'] != views[1]['low']:
-            raise ValueError('MatchedContext Codec correction frames differ')
+            raise ValueError('Matched Context Codec correction frames differ')
         correction = record['correction']; stream = views[0]['low']
         expected_correction = {'bytes': stream['bytes'], 'bits': stream['bits'],
                                'consumed_bits': stream['bits'], 'sha256': stream['sha256'],
                                'coefficients': 3*aw*ah, 'reused': True}
         if any(type(correction.get(k)) is not type(v) or correction[k] != v for k, v in expected_correction.items()):
-            raise ValueError('ReusedContext Codec LP receipt differs from actual stream')
+            raise ValueError('Reused Context Codec LP receipt differs from actual stream')
         if (not isinstance(correction.get('coefficient_sha256'), str)
                 or base.HEX.fullmatch(correction['coefficient_sha256']) is None
                 or type(correction.get('lz77_enabled')) is not bool
                 or type(correction.get('tree_nodes')) is not int
                 or not 1 <= correction['tree_nodes'] <= 4095 or correction['tree_nodes'] % 2 != 1):
-            raise ValueError('ReusedContext Codec LP model receipt invalid')
+            raise ValueError('Reused Context Codec LP model receipt invalid')
         costs['correction_stream_bytes'] += stream['bytes']
     costs['record_header_bytes_per_tile'] = 260
     if receipt.get('costs') != costs:
@@ -371,7 +371,7 @@ def build(censusdir, direct090dir, anchor089dir, output, workspace, runtime_dir=
                 if len(data) != length or zlib.crc32(data) != crc:
                     raise ValueError('Context Codec reused direct corrupt')
                 (reused/f'{gid:06d}.bin').write_bytes(data)
-        old_records = work/'old089'; old_records.mkdir()
+        old_records = work/'old Anchor Codec'; old_records.mkdir()
         with previous089.Reader(old_root) as old_reader:
             if old_reader.manifest['profile'] != 'anchor_pure' or old_reader.manifest['image']['levels'] != catalog['levels']:
                 raise ValueError('Context Codec reused correction differs from frozen anchor-pure scope')
@@ -390,7 +390,7 @@ def build(censusdir, direct090dir, anchor089dir, output, workspace, runtime_dir=
                 view = previous089._record(data, gid, w, h, 1)
                 if view['raw_sha256'] != catalog['tiles'][gid]['native_sha256']:
                     raise ValueError('Context Codec Anchor source pixels differ')
-                (old_records/f'{gid:06d}.old089').write_bytes(data)
+                (old_records/f'{gid:06d}.old Anchor Codec').write_bytes(data)
         input_seconds = time.perf_counter()-then
         then = time.perf_counter(); spool = work/'spool'; spool.mkdir(); anchors = {}
         with (spool/'index.tsv').open('x', encoding='ascii', newline='\n') as index:
@@ -403,11 +403,11 @@ def build(censusdir, direct090dir, anchor089dir, output, workspace, runtime_dir=
                 (spool/f'{gid:06d}.rgb').write_bytes(pixels.tobytes())
                 data = anchor.tobytes(); anchors[gid] = _hash(data)
                 (spool/f'{gid:06d}.anchor').write_bytes(data)
-                old_blob = _read_bounded(old_records/f'{gid:06d}.old089', previous089.MAX_PAYLOAD)
+                old_blob = _read_bounded(old_records/f'{gid:06d}.old Anchor Codec', previous089.MAX_PAYLOAD)
                 if previous089._record(old_blob, gid, w, h, 1)['anchor_sha256'] != anchors[gid]:
                     raise ValueError('Context Codec Anchor anchor differs from current exact nativeL1')
-                (spool/f'{gid:06d}.old089').write_bytes(old_blob)
-                index.write(f'{gid}\t{level}\t{x}\t{y}\t{w}\t{h}\t{gid:06d}.rgb\t{gid:06d}.anchor\t{gid:06d}.old089\n')
+                (spool/f'{gid:06d}.old Anchor Codec').write_bytes(old_blob)
+                index.write(f'{gid}\t{level}\t{x}\t{y}\t{w}\t{h}\t{gid:06d}.rgb\t{gid:06d}.anchor\t{gid:06d}.old Anchor Codec\n')
                 if gid % 64 == 0:
                     print(json.dumps({'stage': '091_spool', 'gid': gid}), flush=True)
         spool_seconds = time.perf_counter()-then; native = work/'native'
@@ -453,13 +453,13 @@ class Reader(base.Reader):
     def __init__(self, directory, runtime_dir=None):
         arg = Path(directory); self.root = arg.resolve(); path = self.root/'manifest.json'
         if arg.is_symlink() or path.is_symlink() or (self.root/'INCOMPLETE').exists() or (self.root/'failure.json').exists():
-            raise ValueError('Unsafe or incompleteContext Codec archive')
+            raise ValueError('Unsafe or incomplete Context Codec archive')
         blob = _read_bounded(path, base.MAX_MANIFEST_BYTES); self.manifest_bytes = len(blob)
         self.manifest = m = json.loads(blob)
         if m.get('format') != FORMAT or m.get('profile') not in PROFILES or m.get('image_only') is not True:
-            raise ValueError('UnsupportedContext Codec archive')
+            raise ValueError('Unsupported Context Codec archive')
         if m.get('parameters') != FIXED or any(type(m['parameters'][k]) is not type(v) for k, v in FIXED.items()):
-            raise ValueError('UnsupportedContext Codec fixed parameters')
+            raise ValueError('Unsupported Context Codec fixed parameters')
         self.family = m['profile'].split('_')[0]
         self._descriptors = list(base._descriptors(m['image']['levels']))
         _anchor_geometry(m['image']['levels'])
