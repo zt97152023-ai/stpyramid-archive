@@ -1,7 +1,7 @@
-"""New-task adapter for the immutable, qualified 091 paired Modular backend.
+"""New-task adapter for the immutable, qualified Context Codec paired Modular backend.
 
-This module deliberately does not call 091.build or its historical execution
-gate. The new task uses paid 089 corrections and JXL9 references; only the L0
+This module deliberately does not call the Context Codec's historical build or execution
+gate. The new task uses paid Anchor corrections and JXL9 references; only the L0
 paired HF streams are new work. All output identities are create-only.
 """
 import ctypes
