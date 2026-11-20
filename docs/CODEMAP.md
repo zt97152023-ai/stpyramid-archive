@@ -76,6 +76,12 @@ Important implementation details:
 
 The Java preflight is a file-presence check. The native Python adapters remain responsible for ABI and SHA-256 receipt validation.
 
+## Native codec runtime staging
+
+- `CMakeLists.txt` exposes `stpyramid_anchor`, `stpyramid_context`, `stpyramid_hf_detail` and `stpyramid_native_codecs` build targets.
+- `stage_runtime.py` stages `anchor/`, `context/` and `hf-detail/` folders with descriptive executable/library names.
+- Python decoders accept the previous runtime layout during migration while retaining historical manifest pin keys.
+
 ## Desktop packaging
 
 - `desktop/build_portable.py` — builds the Python desktop portable runtime.
