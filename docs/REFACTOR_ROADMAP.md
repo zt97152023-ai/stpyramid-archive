@@ -35,13 +35,15 @@ The current flat imports are deliberate in several places: the CLI and desktop w
 
 Before moving code:
 
-1. Record the current source commit and release/runtime pins.
-2. Run `tests/smoke.py` with the qualified Windows runtime.
-3. Verify at least one current Shared 2.0 archive and one historical Shared_local archive.
-4. Verify a representative historical image archive with its matching native runtime.
-5. Save machine-readable outputs, source identities, decoded Count equality, native RGB equality and manifest summaries.
+- [x] Add a Windows native CI workflow that installs the pinned Python dependencies, fetches and hash-verifies the 19-file Shared Count source, builds 089/091/HF1 encoder/decoder pairs, stages ABI-checked runtimes and runs `tests/smoke.py`.
+- [x] Add a reusable verifier for historical integrated archives and exact original TIFF/H5AD source pairs: [compatibility verifier](../tests/compatibility/verify_integrated.py).
+- [x] Document the historical compatibility matrix and the evidence required to mark a format family as passed: [compatibility instructions](../tests/compatibility/README.md).
+- [ ] Complete and inspect the first Windows native CI run; retain its JSON output and generated synthetic archive as CI evidence.
+- [ ] Run the verifier on at least one current Shared 2.0 archive and one historical Shared_local archive using their matching native runtimes.
+- [ ] Verify a representative historical image-only archive with its matching runtime; this requires a separate image-only verifier.
+- [ ] Record the baseline source commit, release/runtime pins, archive bytes, decoded Count equality, native RGB equality and manifest summaries.
 
-**Acceptance:** baseline evidence is reproducible and stored separately from source code. Do not proceed with structural code movement if this baseline is unavailable.
+**Acceptance:** synthetic native CI passes and historical archive families are verified against their exact original source files and matching runtimes. Store reports as CI artifacts or a private evidence bundle; do not commit study data. Do not proceed with structural code movement if this baseline is unavailable.
 
 ### R2 — Add import and CLI contract tests
 
