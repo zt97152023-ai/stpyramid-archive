@@ -64,7 +64,7 @@ Before moving code:
 - [x] Add a bounded `STPYRAMID_TIMEOUT_SECONDS` setting (default 14,400; range 1–86,400) and use it in both integrated and image-only desktop encoding.
 - [ ] Extend the same configuration boundary to runtime directory discovery and platform capability reporting.
 
-**Acceptance:** the worker-count helper preserves prior defaults and overrides. The three-platform CI matrix passed for the initial worker-count configuration. The expanded worker protocol and timeout tests are now included in CI; check the latest run before treating this increment as complete. No codec or archive-format behavior is intentionally changed.
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The expanded CI matrix passed on Windows, Linux and macOS for commit `5fd374790f828207f7635c1c33f701b68609aece`: 3 CLI contract tests, 7 runtime configuration tests and 11 task protocol tests on each platform. The later roadmap/PR text-only commits do not change the tested code. No codec or archive-format behavior is intentionally changed.
 
 ### R4 — Separate stable application code from research tooling
 
