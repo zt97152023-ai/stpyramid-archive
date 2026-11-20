@@ -26,7 +26,7 @@ _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 def _safe_target(row):
     raw = row.get("path") if isinstance(row, dict) else None
-    if (not isinstance(raw, str) or not raw or "\\\\" in raw or ":" in raw
+    if (not isinstance(raw, str) or not raw or "\\" in raw or ":" in raw
             or raw.startswith("/") or any(part in ("", ".", "..") for part in raw.split("/"))):
         raise ValueError("Unexpected Count source member")
     relative = PurePosixPath(raw)
@@ -131,7 +131,7 @@ def fetch(row):
 def pinned_files():
     manifest = json.loads((VENDOR / "SOURCE.json").read_text(encoding="utf-8-sig"))
     if (not isinstance(manifest, dict) or manifest.get("commit") != COMMIT
-            or manifest.get("origin") != ORIGIN.rstrip("/")
+            or manifest.get("origin") != "https://github.com/zt97152023-ai/shared-st-count-codec"
             or not isinstance(manifest.get("files"), list)
             or len(manifest["files"]) != EXPECTED_FILES):
         raise ValueError("Count source manifest does not match the pinned upstream revision")
