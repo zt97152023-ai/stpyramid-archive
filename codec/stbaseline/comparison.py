@@ -23,6 +23,7 @@ import numpy as np
 
 from .integrity import h5_digest, sha256, text_ids, write_json
 from .reader import Archive, MeteredFile
+from .local_ipc import authenticate_loopback, new_ipc_token
 
 FORMAT = "stbaseline-comparison-1"
 METHODS = ("A_spatialdata", "B_native_tiff", "C_zstd_tiff", "D_jxl_tiles")
@@ -212,60 +213,73 @@ def _recompress_zarr(group, level):
 
 class BPWorker:
     def __init__(self, path, rscript, library):
-        listener=socket.socket()
-        listener.bind(("127.0.0.1",0))
-        listener.listen(1)
-        listener.settimeout(30)
-        self.process = subprocess.Popen([rscript, "--vanilla", str(Path(__file__).with_name("bpcells_worker.R")),
-                                         "serve", str(path), str(listener.getsockname()[1])], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, text=True, bufsize=1, cwd=str(path.parent),
-                                        env=r_environment(library))
+        listener = socket.socket()
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(16)
+        token = new_ipc_token()
+        self.process = subprocess.Popen(
+            [rscript, "--vanilla", str(Path(__file__).with_name("bpcells_worker.R")),
+             "serve", str(path), str(listener.getsockname()[1])],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1, cwd=str(path.parent), env=r_environment(library))
         try:
-            self.channel,_=listener.accept()
+            # The one-time secret travels over the private child stdin pipe, not
+            # argv (which is commonly visible in process listings).
+            self.process.stdin.write(token + "\\n")
+            self.process.stdin.flush()
+            self.process.stdin.close()
+            self.channel = authenticate_loopback(listener, token, timeout=30)
             self.channel.settimeout(120)
-            self.channel.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)
+            self.channel.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         except Exception:
-            self.process.terminate()
-            self.process.wait(timeout=10)
+            if self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=5)
+            for stream in (self.process.stdin, self.process.stdout, self.process.stderr):
+                if stream is not None and not stream.closed:
+                    stream.close()
             raise
         finally:
             listener.close()
-        if self._receive(4)!=b"BPC1":
-            raise RuntimeError("BPCells binary handshake failed")
         self.last_native_seconds = None
 
-    def _receive(self,n):
-        result=bytearray(n)
-        view=memoryview(result)
-        done=0
-        while done<n:
-            got=self.channel.recv_into(view[done:])
-            if got==0:
+    def _receive(self, n):
+        result = bytearray(n)
+        view = memoryview(result)
+        done = 0
+        while done < n:
+            got = self.channel.recv_into(view[done:])
+            if got == 0:
                 raise RuntimeError("BPCells worker closed its binary connection")
-            done+=got
+            done += got
         return result
 
     def read(self, rows, genes, all_genes=False):
         if not len(rows) or not len(genes):
-            return np.zeros((len(rows),len(genes)), dtype=np.uint64)
-        field="*" if all_genes else ",".join(map(str,genes))
-        self.channel.sendall((",".join(map(str,rows))+"\t"+field+"\n").encode("ascii"))
-        elapsed,size=struct.unpack("<dd",self._receive(16))
-        if elapsed<0:
-            raise RuntimeError(self._receive(int(size)).decode("utf-8",errors="replace"))
-        if size!=len(rows)*len(genes):
+            return np.zeros((len(rows), len(genes)), dtype=np.uint64)
+        field = "*" if all_genes else ",".join(map(str, genes))
+        self.channel.sendall((",".join(map(str, rows)) + "\\t" + field + "\\n").encode("ascii"))
+        elapsed, size = struct.unpack("<dd", self._receive(16))
+        if elapsed < 0:
+            raise RuntimeError(self._receive(int(size)).decode("utf-8", errors="replace"))
+        if size != len(rows) * len(genes) or size < 0:
             raise ValueError("BPCells binary response shape mismatch")
         self.last_native_seconds = elapsed
-        arr = np.frombuffer(self._receive(int(size)*8),dtype="<f8").astype(np.uint64)
-        return arr.reshape(len(rows),len(genes))
+        arr = np.frombuffer(self._receive(int(size) * 8), dtype="<f8").astype(np.uint64)
+        return arr.reshape(len(rows), len(genes))
 
     def close(self):
         if self.process.poll() is None:
-            self.channel.sendall(b"QUIT\n")
+            self.channel.sendall(b"QUIT\\n")
             self.process.wait(timeout=15)
         self.channel.close()
-        for f in (self.process.stdin,self.process.stdout,self.process.stderr):
-            f.close()
+        for stream in (self.process.stdin, self.process.stdout, self.process.stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
 
 
 class BaselineArchive(Archive):
