@@ -35,7 +35,8 @@ Do not infer backward compatibility from a successful new synthetic smoke test. 
 After building the **Context Codec** through the descriptive `stpyramid_context` target, set `PATH_TO_CONTEXT_CODEC_EXECUTABLE` to the matching native executable from your staged runtime. This experimental recursive image workflow is separate from the integrated Count + TIFF archive. Run with a fresh work directory and output path:
 
 ```powershell
-python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder <PATH_TO_CONTEXT_CODEC_EXECUTABLE> --preset fast --max-depth 3
+$contextEncoder = Read-Host "Path to the Context Codec native executable"
+python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder $contextEncoder --preset fast --max-depth 3
 python recursive_image_archive.py verify runs/recursive-image
 python recursive_image_archive.py restore runs/recursive-image runs/recursive-restored
 ```
