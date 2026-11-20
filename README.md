@@ -13,6 +13,7 @@
 | Run the Python integrated workflow | [CLI quick start](#python-cli) |
 | Understand the system design | [Architecture](docs/ARCHITECTURE.md) |
 | Find the exact implementation files | [Code map](docs/CODEMAP.md) |
+| Understand Python imports before refactoring | [Import inventory](docs/PYTHON_IMPORTS.md) |
 | Build from source | [Build instructions](#build-from-source) |
 | Explore advanced and experimental workflows | [Advanced workflows](docs/ADVANCED_WORKFLOWS.md) |
 | Contribute or modify the code | [Contributing guide](CONTRIBUTING.md) |
