@@ -46,11 +46,11 @@ Before moving code:
 
 - [x] Test that importing the CLI does not load scientific/native dependencies.
 - [x] Test each documented CLI subcommand's help/parser contract without a runtime.
-- [ ] Test desktop-worker request validation independently from GUI code.
+- [x] Add standard-library desktop task request validation independent from GUI code.
+- [x] Test the request shapes currently emitted by the Python and Java desktop clients.
 - [ ] Inventory every `sys.path` mutation and flat import before changing package boundaries.
-- Test desktop-worker request validation independently from GUI code.
 
-**Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior. The initial CLI checks are wired to GitHub Actions on Windows, Linux and macOS; they remain pending until the workflow reports a successful run.
+**Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior. CLI and task-contract checks are wired to GitHub Actions on Windows, Linux and macOS.
 
 ### R3 — Centralize runtime configuration
 
@@ -59,9 +59,10 @@ Before moving code:
 - [x] Reject non-integer and out-of-range values with actionable errors.
 - [x] Add standard-library unit tests and include them in the three-platform CI workflow.
 - [x] Confirm CLI and runtime configuration tests pass on Windows, Linux and macOS with Python 3.12.
-- [ ] Extend the same configuration boundary to runtime directory discovery, timeout validation and platform capability reporting.
+- [x] Add a bounded `STPYRAMID_TIMEOUT_SECONDS` setting (default 14,400; range 1–86,400) and use it in both integrated and image-only desktop encoding.
+- [ ] Extend the same configuration boundary to runtime directory discovery and platform capability reporting.
 
-**Acceptance:** the worker-count helper preserves prior defaults and overrides. The three-platform CI matrix passed for commit `0deb472055b6f18643efddc58b85d181ee81f492`; no codec, runtime selection or CPU affinity policy is changed.
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The three-platform CI matrix passed for the initial worker-count configuration. The new task-contract and timeout tests are awaiting their own CI run. No codec or archive-format behavior is intentionally changed.
 
 ### R4 — Separate stable application code from research tooling
 
