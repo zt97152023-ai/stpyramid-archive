@@ -20,7 +20,7 @@ import numpy as np
 
 from .comparison import csr_from_h5, science_skeleton
 from .image_shared import ENTRY, HEADER, MAGIC
-from .integrity import count_schema, h5_digest, sha256, write_json
+from .integrity import count_schema, h5_digest, sha256, validate_hdf5_links, write_json
 from .lossless_components import ComponentArchive
 from .lossless_metadata import _copy_attributes, repack_metadata
 from .shared_backend import write_count_store
@@ -346,6 +346,8 @@ class WSIArchive(SharedBlockArchive):
             if (not _safe_name(name) or member.is_symlink() or not member.is_file()
                     or member.resolve().parent != self.root or member.stat().st_size != desc["bytes"]):
                 raise ValueError("Unsafe or size-mismatched member: " + name)
+        with h5py.File(self.root / "science.h5", "r") as handle:
+            validate_hdf5_links(handle)
         shape = m["expression"]["shape"]
         if len(shape) != 2 or any(not _integer(n) or n < 1 for n in shape) or math.prod(shape) > MAX_CELLS:
             raise ValueError("Expression shape exceeds qualified Count bound")
