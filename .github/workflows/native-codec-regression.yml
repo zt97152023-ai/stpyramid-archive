@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   windows-native-regression:
-    name: Windows · Native Count + TIFF round-trip
+    name: Windows · Native codec round-trip
     runs-on: windows-latest
     timeout-minutes: 180
     steps:
@@ -54,8 +54,8 @@ jobs:
       - name: Configure native codecs
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
-      - name: Build native encoder/decoder pairs
-        run: cmake --build build --parallel 2 --target slide_jxl089 slide_jxl089_shared slide_jxl091 slide_jxl091_shared slide_hf1 slide_hf1_shared
+      - name: Build Anchor, Context and HF-Detail codecs
+        run: cmake --build build --parallel 2 --target stpyramid_native_codecs
 
       - name: Stage and ABI-check native runtime
         run: python stage_runtime.py --bin build/bin --output runtime-windows
