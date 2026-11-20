@@ -57,10 +57,10 @@ def _hash(data):
 
 def _read_bounded(path, limit):
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= limit:
-        raise ValueError('Missing, unsafe or unboundedAnchor Codec member: ' + path.name)
+        raise ValueError('Missing, unsafe or unbounded Anchor Codec member: ' + path.name)
     data = path.read_bytes()
     if not 0 < len(data) <= limit:
-        raise ValueError('Changed or unboundedAnchor Codec member')
+        raise ValueError('Changed or unbounded Anchor Codec member')
     return data
 
 
@@ -98,14 +98,14 @@ def _anchor(levels, descriptor, fetch):
 def _runtime(runtime_dir=None):
     value = runtime_dir or os.environ.get('ST089_RUNTIME')
     if not value:
-        raise RuntimeError('STAnchor Codec_RUNTIME or runtime_dir must name the qualifiedAnchor Codec build')
+        raise RuntimeError('ST089_RUNTIME or runtime_dir must name the qualified Anchor Codec build')
     arg = Path(value)
     if arg.is_symlink() or not arg.is_dir():
-        raise ValueError('Unsafe nativeAnchor Codec runtime directory')
+        raise ValueError('Unsafe native Anchor Codec runtime directory')
     root = arg.resolve()
     receipt = json.loads(_read_bounded(root/'build_receipt.json', 4*1024*1024))
     if receipt.get('abi_version') != ABI_VERSION or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1'):
-        raise ValueError('UnqualifiedAnchor Codec runtime receipt')
+        raise ValueError('Unqualified Anchor Codec runtime receipt')
     pins = {}
     for name in ('slide_jxl089.exe', 'slide_jxl089.dll'):
         path = root/name; info = receipt.get('outputs', {}).get(name, {})
@@ -125,7 +125,7 @@ class NativeRuntime:
         self.library = lib = ctypes.CDLL(str(self.root/'slide_jxl089.dll'))
         lib.st089_abi_version.argtypes = []; lib.st089_abi_version.restype = ctypes.c_uint32
         if lib.st089_abi_version() != ABI_VERSION:
-            raise ValueError('UnsupportedAnchor Codec ABI')
+            raise ValueError('Unsupported Anchor Codec ABI')
         ptr, size, u32 = ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32
         lib.st089_decode.argtypes = [ptr, size, ptr, size, u32, u32, u32, ptr, size, ptr, size]
         lib.st089_decode.restype = ctypes.c_int
@@ -145,7 +145,7 @@ class NativeRuntime:
         pixels = np.empty((h, w, 3), np.uint8); error = ctypes.create_string_buffer(2048)
         if self.library.st089_decode(payload, len(blob), anchor_pointer, anchor_size,
                                      gid, w, h, pixels.ctypes.data, pixels.nbytes, error, len(error)):
-            raise ValueError('stAnchor Codec_decode: ' + error.value.decode('utf8', 'replace'))
+            raise ValueError('Anchor Codec decoder (native ABI): ' + error.value.decode('utf8', 'replace'))
         return pixels
 
 
@@ -253,7 +253,7 @@ def _validate_native(native, catalog, descriptors, anchors):
                 raise ValueError('NativeAnchor Codec serialized source/anchor binding differs')
             costs[f'{family}_bytes'] += len(blob)
         if views[0]['detail'] != views[1]['detail']:
-            raise ValueError('MatchedAnchor Codec detail bytes differ')
+            raise ValueError('Matched Anchor Codec detail bytes differ')
         low_count = 3*aw*ah
         _validate_stream_receipt(record['detail'], views[0]['detail'], 3*w*h-low_count, 'Zero')
         _validate_stream_receipt(record['lowpass'], views[0]['low'], low_count, 'Best')
@@ -389,13 +389,13 @@ class Reader(base.Reader):
     def __init__(self, directory, runtime_dir=None):
         arg = Path(directory); self.root = arg.resolve(); path = self.root/'manifest.json'
         if arg.is_symlink() or path.is_symlink() or (self.root/'INCOMPLETE').exists() or (self.root/'failure.json').exists():
-            raise ValueError('Unsafe or incompleteAnchor Codec archive')
+            raise ValueError('Unsafe or incomplete Anchor Codec archive')
         blob = _read_bounded(path, base.MAX_MANIFEST_BYTES); self.manifest_bytes = len(blob)
         self.manifest = m = json.loads(blob)
         if m.get('format') != FORMAT or m.get('profile') not in PROFILES or m.get('image_only') is not True:
-            raise ValueError('UnsupportedAnchor Codec archive')
+            raise ValueError('Unsupported Anchor Codec archive')
         if m.get('parameters') != FIXED or any(type(m['parameters'][k]) is not type(v) for k, v in FIXED.items()):
-            raise ValueError('UnsupportedAnchor Codec fixed parameters')
+            raise ValueError('Unsupported Anchor Codec fixed parameters')
         self.family = m['profile'].split('_')[0]
         self._descriptors = list(base._descriptors(m['image']['levels']))
         _anchor_geometry(m['image']['levels'])
