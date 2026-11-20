@@ -18,6 +18,7 @@ from .reader import Archive, MeteredFile
 FORMAT = "stlossless-components-1"
 COUNT_IDS = ("hdf5", "shared_local", "shared_blocks")
 IMAGE_IDS = ("hdf5", "jxl", "residual_zstd", "hybrid_independent", "zstd_tiff")
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 
 
 def _safe_name(name):
@@ -132,6 +133,8 @@ class ComponentArchive(Archive):
         manifest_path = self.root / "manifest.json"
         if manifest_path.is_symlink() or not manifest_path.is_file():
             raise ValueError("Unsafe manifest")
+        if manifest_path.stat().st_size <= 0 or manifest_path.stat().st_size > MAX_MANIFEST_BYTES:
+            raise ValueError("Manifest is empty or exceeds 16 MiB")
         blob = manifest_path.read_bytes()
         self.manifest, self.manifest_bytes = json.loads(blob), len(blob)
         m = self.manifest
