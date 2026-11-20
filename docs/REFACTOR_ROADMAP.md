@@ -64,7 +64,9 @@ Before moving code:
 - [x] Add a bounded `STPYRAMID_TIMEOUT_SECONDS` setting (default 14,400; range 1–86,400) and use it in both integrated and image-only desktop encoding.
 - [x] Add `runtime_config.py` and `task_contract.py` to both Windows desktop package assembly paths.
 - [x] Add packaging contract tests to prevent worker imports from being omitted in future portable releases.
-- [ ] Extend the same configuration boundary to runtime directory discovery and platform capability reporting.
+- [x] Add Java-side preflight checks for the complete expected Windows native runtime file layout before advertising or launching native compression.
+- [x] Add Java 17 compilation and runtime-layout contract tests on Windows, Linux and macOS.
+- [ ] Add Python-side runtime directory discovery and a single structured capability report shared by CLI and desktop clients.
 
 **Acceptance:** the worker-count helper preserves prior defaults and overrides. The expanded CI matrix passed on Windows, Linux and macOS for commit `2847dd95183b870db1bc6df9c06464fca6ba18b6`: 3 CLI contract tests, 7 runtime configuration tests, 11 task protocol tests and 3 packaging contract tests on each platform. No codec or archive-format behavior is intentionally changed.
 
@@ -124,4 +126,4 @@ For each such change, require:
 
 ## Next engineering task
 
-The next engineering task is to complete **R1: behavior baseline** and **R2: import inventory** before any package moves. Runtime configuration and task request validation are now in place; format-sensitive code remains untouched.
+The next engineering task is to complete **R1: behavior baseline** and establish an end-to-end codec CI lane before any package moves. Runtime configuration, worker request validation, Java runtime preflight and source import inventory are in place; format-sensitive code remains untouched.
