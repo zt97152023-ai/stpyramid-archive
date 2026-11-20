@@ -9,7 +9,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-import h5py
 import numpy as np
 import tifffile
 
@@ -74,8 +73,7 @@ def run(args):
     restored_digest = h5_digest(restored_h5ad)
     if source_digest != restored_digest:
         raise AssertionError("Restored H5AD semantic digest differs from the original")
-    with h5py.File(counts, "r") as source:
-        validate(restored_h5ad, capture(source))
+    validate(restored_h5ad, capture(counts))
 
     if args.metadata is not None:
         metadata = args.metadata.resolve(strict=True)
@@ -83,10 +81,11 @@ def run(args):
         if not restored_metadata.is_file() or restored_metadata.read_bytes() != metadata.read_bytes():
             raise AssertionError("Restored metadata attachment differs from the original")
 
+    manifest = json.loads((archive / "manifest.json").read_text(encoding="utf-8"))
     report = {
         "status": "PASS",
         "archive": str(archive),
-        "count_kind": verification.get("ledger", {}).get("count_kind"),
+        "count_kind": manifest.get("count", {}).get("kind"),
         "archive_bytes": verification.get("ledger", {}).get("total_package_bytes"),
         "tiff_levels": levels,
         "h5ad_semantic_sha256": source_digest,
