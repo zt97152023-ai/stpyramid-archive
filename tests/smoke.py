@@ -75,8 +75,8 @@ def run(runtime, output):
     height, width, _ = fine.shape
     record091 = (work / "prior091/native/conditional/000000.bin").read_bytes()
     recordhf = (work / "hf/native/ms/000000.bin").read_bytes()
-    np.testing.assert_array_equal(ContextRuntime(runtime / "091").decode(record091, width, height, 0, middle), fine)
-    np.testing.assert_array_equal(hf_adapter.NativeRuntime(runtime / "hf").decode(recordhf, width, height, 0, middle), fine)
+    np.testing.assert_array_equal(ContextRuntime(runtime / "context").decode(record091, width, height, 0, middle), fine)
+    np.testing.assert_array_equal(hf_adapter.NativeRuntime(runtime / "hf-detail").decode(recordhf, width, height, 0, middle), fine)
     routes = json.loads((package / "image/manifest.json").read_bytes())["routes"]
     assert sum(value for route, value in routes.items() if route != "1") > 0, routes
     assert json.loads((package / "manifest.json").read_bytes())["count"]["kind"] == "Shared_2"
@@ -110,7 +110,7 @@ def run(runtime, output):
         np.testing.assert_array_equal(result["gene_positions"], [3, 1, 2])
         np.testing.assert_array_equal(result["level0_xy"], [[1.25, 3]])
         assert reader.metrics()["image"] is None
-    runtimes = tuple(runtime / name for name in ("089", "091", "hf"))
+    runtimes = tuple(runtime / name for name in ("anchor", "context", "hf-detail"))
     with IntegratedArchive(package, image_factory=lambda path: Reader(path, *runtimes)) as reader:
         result = reader.region(bbox, level=1, genes=[3, 1, 2])
         np.testing.assert_array_equal(result["image_bbox"], [0, 1, 8, 26])
