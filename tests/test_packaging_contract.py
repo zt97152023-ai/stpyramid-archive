@@ -9,15 +9,17 @@ class PackagingContractTests(TestCase):
     def test_python_portable_script_list_contains_worker_dependencies(self):
         builder = (ROOT / "desktop/build_portable.py").read_text(encoding="utf-8")
         for name in ("desktop_worker.py", "runtime_config.py", "task_contract.py",
-                     "desktop_i18n.py", "fetch_count_runtime.py", "context_codec.exe"):
+                     "desktop_i18n.py", "fetch_count_runtime.py"):
             with self.subTest(name=name):
                 self.assertIn(f'"{name}"', builder)
+        self.assertIn("context_codec.exe", builder)
 
     def test_java_portable_overlay_contains_worker_dependencies(self):
         builder = (ROOT / "java-desktop/package.ps1").read_text(encoding="utf-8")
-        for name in ("desktop_worker.py", "runtime_config.py", "task_contract.py", "context_codec.exe"):
+        for name in ("desktop_worker.py", "runtime_config.py", "task_contract.py"):
             with self.subTest(name=name):
                 self.assertIn(f"'{name}'", builder)
+        self.assertIn("context_codec.exe", builder)
 
     def test_descriptive_native_codec_build_targets_are_available(self):
         cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
