@@ -1,5 +1,9 @@
 # Codec naming
 
+**Status: FROZEN · Naming contract v1.0 · 2026-11-21**
+
+The canonical public names below are fixed for STPyramid. Do not introduce new aliases or rename these modules casually. Any future change requires a documented architecture decision, a migration plan, and tests proving that existing archives and runtime bundles remain readable.
+
 STPyramid uses mechanism-based names in documentation, user interfaces, build entry points and research figures. Historical experiment numbers are not public codec names.
 
 ## Canonical names
@@ -18,6 +22,16 @@ STPyramid uses mechanism-based names in documentation, user interfaces, build en
 4. Keep the three names distinct from standard JPEG XL. They are STPyramid codec modules that use qualified native JPEG XL-derived components; they are not three standard JPEG XL profiles.
 5. Describe a route by its function (direct JXL, anchored correction, context-conditioned detail, or HF detail) rather than by an internal route integer.
 6. Do not imply that Anchor or Context alone encodes an entire TIFF pyramid. The current integrated archive selects among per-tile routes and keeps native levels at or below their existing decoder boundaries.
+
+## Frozen naming contract
+
+The following names are stable and must be used consistently in README, desktop UI, CLI output, logs, benchmark tables, paper figures, CMake targets and release notes:
+
+- Anchor Codec — `anchor/` — `anchor_codec.exe` / `anchor_codec.dll` — `stpyramid_anchor`
+- Context Codec — `context/` — `context_codec.exe` / `context_codec.dll` — `stpyramid_context`
+- HF-Detail Codec — `hf-detail/` — `hf_detail_codec.exe` / `hf_detail_codec.dll` — `stpyramid_hf_detail`
+
+The aggregate build target is `stpyramid_native_codecs`. The names are mechanism-based, not experiment sequence numbers. Do not abbreviate HF-Detail to HF1 or refer to Anchor/Context by historical run numbers in user-facing material.
 
 ## Compatibility boundary
 
