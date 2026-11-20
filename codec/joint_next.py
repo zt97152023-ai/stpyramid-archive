@@ -1,6 +1,6 @@
 """Read and write tile records for the native-pyramid archive format.
 
-091 at native L1 uses level-local IDs, not colliding global L0 identities.
+The Context Codec at native L1 uses level-local IDs, not colliding global L0 identities.
 Only the two candidate axes change; all native L>=2 are independent JXL9.
 """
 import copy
@@ -53,12 +53,12 @@ PROFILES = ('direct', 'retained', 'hf_only', 'l1_control', 'l1_conditional',
 FIXED = {
     'tile': 256, 'jpegxl_effort': 9, 'threads': 1, 'training': False,
     'HF': 'One fixed MS representation/reference construction on L0; frozen new runtime',
-    'L1': 'Unchanged091 known-parent gate, same backend and paid089 correction',
+    'L1': 'Unchanged Context Codec known-parent gate, same backend and paid Anchor correction',
     'gate_control': 'Parent properties zero; parent-derived thresholds and LL retained',
     'gate_conditional': 'Known-parent reference properties enabled',
     'max_depth': 2, 'independent_levels': 'all native levels >= 2',
     'native_record_id': 'gid minus true native level start; ABI virtual level0',
-    'L1_selection': 'min currentP, directJXL9, allP089 anchored, named091; ties currentP',
+    'L1_selection': 'min currentP, directJXL9, all Anchor-anchored, named Context route; ties currentP',
     'L0_selection': 'min retained joint-champion record, fixedMS record; ties retained',
     'cache_bytes': 8*1024*1024, 'persistent_pixel_cache': False,
     'image_only': True, 'standard_jxl': False,
