@@ -55,6 +55,8 @@ Important implementation details:
 
 ## Codec naming
 
+- Naming is frozen at v1.0: Anchor Codec, Context Codec and HF-Detail Codec. See [the canonical naming contract](CODEC_NAMING.md).
+
 - [Codec naming guide](CODEC_NAMING.md) — canonical names, algorithm roles and compatibility boundaries.
 
 ## Python import architecture
