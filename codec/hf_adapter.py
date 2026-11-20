@@ -29,17 +29,20 @@ def _runtime(runtime_dir):
     root = arg.resolve()
     raw = conditioned._read_bounded(root / 'build_receipt.json', 4*1024*1024)
     receipt = json.loads(raw)
-    if (receipt.get('schema') != 'wsi-hf1-runtime-build-1' or receipt.get('abi_version') != 1
+    if (receipt.get('schema') not in ('stpyramid-hf-detail-runtime-build-1', 'wsi-hf1-runtime-build-1')
+            or receipt.get('abi_version') != 1
             or receipt.get('representation') != 'dense_magnitude_sign_v1'
             or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1')):
-        raise ValueError('HF runtime recipe differs from fixed MS build')
+        raise ValueError('HF-Detail runtime recipe differs from the fixed build')
     pins = {}
-    for name in ('slide_hf1.exe', 'slide_hf1.dll'):
+    for public_name, legacy_name in (('hf_detail_codec.exe', 'slide_hf1.exe'),
+                                     ('hf_detail_codec.dll', 'slide_hf1.dll')):
+        name = public_name if (root / public_name).is_file() else legacy_name
         p = root / name; info = receipt.get('outputs', {}).get(name, {})
         if (p.is_symlink() or not p.is_file() or p.stat().st_size != info.get('bytes')
                 or sha256(p) != info.get('sha256')):
-            raise ValueError('HF runtime differs from build receipt: ' + name)
-        pins[name] = {'bytes': info['bytes'], 'sha256': info['sha256']}
+            raise ValueError('HF-Detail runtime differs from build receipt: ' + name)
+        pins[legacy_name] = {'bytes': info['bytes'], 'sha256': info['sha256']}
     pins['build_receipt.json'] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
     return root, pins
 
@@ -64,7 +67,8 @@ class NativeRuntime:
         self.root, self.pins = _runtime(runtime_dir)
         if expected is not None and self.pins != expected:
             raise ValueError('HF runtime differs from archive pins')
-        self.library = lib = ctypes.CDLL(str(self.root / 'slide_hf1.dll'))
+        library = self.root / 'hf_detail_codec.dll' if (self.root / 'hf_detail_codec.dll').is_file() else self.root / 'slide_hf1.dll'
+        self.library = lib = ctypes.CDLL(str(library))
         lib.sthf1_abi_version.argtypes = []; lib.sthf1_abi_version.restype = ctypes.c_uint32
         if lib.sthf1_abi_version() != 1:
             raise ValueError('Unsupported HF ABI')
@@ -120,7 +124,10 @@ def native_encode(runtime, number, spool, target):
     for name in THREAD_VARS:
         env[name] = '1'
     stdout, stderr = target.parent / (target.name + '.stdout.txt'), target.parent / (target.name + '.stderr.txt')
-    executable = runtime / ('slide_hf1.exe' if number == 'hf1' else 'slide_jxl089.exe')
+    if number == 'hf1':
+        executable = runtime / ('hf_detail_codec.exe' if (runtime / 'hf_detail_codec.exe').is_file() else 'slide_hf1.exe')
+    else:
+        executable = runtime / ('anchor_codec.exe' if (runtime / 'anchor_codec.exe').is_file() else 'slide_jxl089.exe')
     command, directory = native_command(executable, 'encode', spool, target)
     started = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
