@@ -16,10 +16,10 @@ On NCBI466, the verified Shared_local plus HF/L1 archive uses 29,562,396 B. The 
 
 ## Mechanism and access
 
-The 089 ablation holds the high-frequency stream fixed at 16,585,179 B. Replacing independent low-frequency storage with exact native-parent correction reduces the low-frequency stream from 7,436,065 B to 2,065,475 B. In a separate fixed-091 experiment, switching on the decoder-derived low-frequency context reduces the complete package from 28,648,255 B to 28,293,399 B.
+The Anchor Codec ablation holds the high-frequency stream fixed at 16,585,179 B. Replacing independent low-frequency storage with exact native-parent correction reduces the low-frequency stream from 7,436,065 B to 2,065,475 B. In a separate fixed-Context experiment, switching on the decoder-derived low-frequency context reduces the complete package from 28,648,255 B to 28,293,399 B.
 
 For NCBI466, the same-position 64×64 tissue ROI took 9.12 ms with direct e9 and 31.95 ms with the final pyramid. Full restore took 8.87 and 27.88 seconds, respectively, including writing and verification. These historical timings use uncontrolled OS cache. A background scheduling guarantee or measurement of interference with foreground viewing remains separate from these results.
 
 ## Release check
 
-The Windows source build produced the three encoder/decoder executable and library pairs. A new synthetic archive selected a 091 reference record and restored all three native levels and the typed H5AD in separate processes. The smoke also decodes 091 and HF candidates directly, checks ROI and Count subsets, and rejects a copied archive with an altered payload. The release reader also re-verified the historical NCBI218 integrated archive with its pinned historical runtime.
+The Windows source build produced the three encoder/decoder executable and library pairs. A new synthetic archive selected a Context Codec reference record and restored all three native levels and the typed H5AD in separate processes. The smoke also decodes Context and HF-Detail candidates directly, checks ROI and Count subsets, and rejects a copied archive with an altered payload. The release reader also re-verified the historical NCBI218 integrated archive with its pinned historical runtime.
