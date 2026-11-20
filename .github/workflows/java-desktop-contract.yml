@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: stpyramid-java-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   java-desktop:
     name: Java 17 · ${{ matrix.os }}
