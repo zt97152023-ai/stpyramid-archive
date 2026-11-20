@@ -25,6 +25,7 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 - Preserve the existing source archive format identifier and member payload representation. These checks do not change the scientific Count or TIFF codec streams.
 - Apply 16 MiB bounds to baseline and integrated JSON manifests before parsing; validate baseline member lengths and SHA-256 descriptor syntax.
 - Bound grouped Count compressed-index reads from the declared matrix shape, cap the shared model member at 16 MiB, and bound the occupancy-model read before decompression.
+- Bound legacy Shared Count JSON indexes (256 MiB), native Count ZIP archives (2 GiB), individual bank/model members (512/16 MiB), and exact BZ2 model/graph expansion using declared gene/row counts.
 - Make the Shared Count runtime loader call the same canonical pinned-source verification used by the dependency downloader, so direct codec imports cannot bypass the cache checks.
 - Authenticate the optional BPCells loopback worker with a one-time 256-bit token delivered over the child stdin pipe (not command-line arguments); reject unauthenticated peers and cap handshake attempts/time.
 - Preflight HDF5 object graphs before Count metadata access; reject soft/external links, hard-link aliases/cycles, virtual datasets, external raw storage and object-reference datasets rather than following paths outside the selected HDF5 file.
