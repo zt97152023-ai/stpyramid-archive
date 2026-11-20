@@ -31,6 +31,7 @@ MODEL_NAMES = ("base_probability.bz2", "shared_odds.u32", "value_q1.bz2",
                "value_group.bz2", "value_base_k.bz2", "value_odds.u32", "value_cond_k.bz2")
 MAX_COUNT_INDEX_BYTES = 256 * 1024 * 1024
 MAX_COUNT_MEMBER_BYTES = 512 * 1024 * 1024
+MAX_COUNT_MODEL_MEMBER_BYTES = 16 * 1024 * 1024
 MAX_NATIVE_COUNT_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
 MAX_NATIVE_COUNT_MANIFEST_BYTES = 16 * 1024 * 1024
 MAX_MODEL_DECOMPRESSED_BYTES = 64 * 1024 * 1024
@@ -171,10 +172,11 @@ class CountStore:
             if len(self.row_map) != n:
                 raise ValueError("Incomplete row partition")
 
-    def member(self, desc):
+    def member(self, desc, *, name=None):
+        limit = MAX_COUNT_MODEL_MEMBER_BYTES if name in MODEL_NAMES else MAX_COUNT_MEMBER_BYTES
         if (not isinstance(desc, dict) or type(desc.get("offset")) is not int
                 or type(desc.get("bytes")) is not int or desc["offset"] < 0
-                or not 0 < desc["bytes"] <= MAX_COUNT_MEMBER_BYTES):
+                or not 0 < desc["bytes"] <= limit):
             raise ValueError("Invalid or oversized Shared Count member descriptor")
         self.file.seek(desc["offset"])
         data = self.file.read(desc["bytes"])
@@ -185,7 +187,8 @@ class CountStore:
     def native_member(self, name):
         d = self.native_manifest["files"][name]
         info = self._zip.getinfo(name)
-        if (type(d.get("bytes")) is not int or not 0 < d["bytes"] <= MAX_COUNT_MEMBER_BYTES
+        limit = MAX_COUNT_MODEL_MEMBER_BYTES if name in MODEL_NAMES else MAX_COUNT_MEMBER_BYTES
+        if (type(d.get("bytes")) is not int or not 0 < d["bytes"] <= limit
                 or info.file_size != d["bytes"] or info.compress_type != zipfile.ZIP_STORED):
             raise ValueError("Invalid native Shared member size/storage")
         data = self._zip.read(name)
@@ -205,8 +208,8 @@ class CountStore:
             b = self.index["blocks"][bid]
             nr, ng = len(b["rows"]), self.index["shape"][1]
             model_id = b["model"]
-            get = lambda name: self.member(b["members"][name])
-            model_get = lambda name: self.member(self.index["models"][model_id][name])
+            get = lambda name: self.member(b["members"][name], name=name)
+            model_get = lambda name: self.member(self.index["models"][model_id][name], name=name)
         if model_id not in self.tables:
             self.tables[model_id] = model_tables({n: model_get(n) for n in MODEL_NAMES}, expected_genes=ng)
         sq, groups, binary, tail, cdf = self.tables[model_id]
