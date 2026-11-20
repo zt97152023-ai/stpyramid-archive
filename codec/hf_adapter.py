@@ -108,7 +108,7 @@ def require_worker_resources():
 def native_encode(runtime, number, spool, target):
     """One bounded child; also used for new synthetic089 fixture material only."""
     if number not in ('089', 'hf1'):
-        raise ValueError('Only reused089/new HF-Detail native children are supported')
+        raise ValueError('Only reusedAnchor Codec/new HF-Detail native children are supported')
     require_worker_resources()
     runtime, spool, target = Path(runtime), Path(spool), Path(target)
     if target.exists() or target.is_symlink() or not target.parent.is_dir():
@@ -182,7 +182,7 @@ def validate_native_directory(native, catalog, descriptors, anchors, old_records
             if view[key] != record.get(key):
                 raise ValueError('HF serialized binding differs')
         if view['low']['frame'] != oldblob[-48-oldview['low']['bytes']:]:
-            raise ValueError('HF paid correction frame not exact old089 reuse')
+            raise ValueError('HF paid correction frame not exact Anchor reuse')
         ms = record['ms']; conditioned._validate_stream_receipt(ms, view['detail'], doubled, 'Zero')
         if (ms.get('coefficient_sha256') != record.get('hf_coefficient_sha256')
                 or any(type(ms.get(k)) is not int or ms[k] != doubled for k in ('target_values', 'decoder_target_values'))):
@@ -249,18 +249,18 @@ def build_native(census: Path, old_anchor_package: Path, output_dir: Path,
         old_records = output / 'old089'; old_records.mkdir()
         with old.Reader(old_anchor_package, old_runtime) as reader:
             if reader.manifest['profile'] != 'anchor_pure' or reader.manifest['image']['levels'] != catalog['levels']:
-                raise ValueError('Correction source must be matching frozen089 anchor_pure')
+                raise ValueError('Correction source must be matching frozenAnchor Codec anchor_pure')
             if reader.manifest['files']['source.json'] != catalog['files']['source.json']:
                 raise ValueError('Correction source provenance differs from census')
             if reader.manifest['build']['native_runtime'] != runtime_pins['089']:
-                raise ValueError('Correction source used a different089 runtime')
+                raise ValueError('Correction source used a differentAnchor Codec runtime')
             reader._verify_files(); reader._setup()
             for gid, level, _, _, w, h in descriptors:
                 if level != 0:
                     continue
                 offset, length, route, crc = reader._entries[gid]
                 if route != old.ANCHORED:
-                    raise ValueError('Every correction source L0 must be089 anchored')
+                    raise ValueError('Every correction source L0 must beAnchor Codec anchored')
                 reader._bank.seek(offset); blob = reader._bank.read(length)
                 if len(blob) != length or zlib.crc32(blob) != crc:
                     raise ValueError('Correction source record CRC/length mismatch')
