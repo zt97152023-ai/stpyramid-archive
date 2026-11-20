@@ -19,6 +19,14 @@ class PackagingContractTests(TestCase):
             with self.subTest(name=name):
                 self.assertIn(f"'{name}'", builder)
 
+    def test_descriptive_native_codec_build_targets_are_available(self):
+        cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github/workflows/native-codec-regression.yml").read_text(encoding="utf-8")
+        for target in ("stpyramid_anchor", "stpyramid_context", "stpyramid_hf_detail", "stpyramid_native_codecs"):
+            with self.subTest(target=target):
+                self.assertIn(f"add_custom_target({target}", cmake)
+        self.assertIn("--target stpyramid_native_codecs", workflow)
+
     def test_worker_root_imports_are_packaged(self):
         worker = (ROOT / "desktop_worker.py").read_text(encoding="utf-8")
         builder = (ROOT / "desktop/build_portable.py").read_text(encoding="utf-8")
