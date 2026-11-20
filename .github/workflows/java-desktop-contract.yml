@@ -1,0 +1,48 @@
+name: Java desktop contract
+
+on:
+  push:
+    branches:
+      - product/java-spatial-archive
+      - docs/clean-project-entry
+  pull_request:
+    branches:
+      - product/java-spatial-archive
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  java-desktop:
+    name: Java 17 · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Compile desktop and run runtime-layout contract
+        shell: pwsh
+        run: |
+          $classes = Join-Path $env:RUNNER_TEMP "stpyramid-java-classes"
+          New-Item -ItemType Directory -Force -Path $classes | Out-Null
+          $sources = @(
+            Get-ChildItem -Path "java-desktop/src/stpyramid" -Filter "*.java" -File |
+              ForEach-Object { $_.FullName }
+            Get-ChildItem -Path "java-desktop/test/stpyramid" -Filter "*.java" -File |
+              ForEach-Object { $_.FullName }
+          )
+          & javac -encoding UTF-8 --release 17 -Xlint:all -d $classes $sources
+          if ($LASTEXITCODE -ne 0) { throw "Java compilation failed ($LASTEXITCODE)" }
+          & java -cp $classes stpyramid.PlatformSupportTest
+          if ($LASTEXITCODE -ne 0) { throw "Java runtime contract test failed ($LASTEXITCODE)" }
