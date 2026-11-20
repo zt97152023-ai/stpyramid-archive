@@ -1,10 +1,6 @@
 name: Java desktop contract
 
 on:
-  push:
-    branches:
-      - product/java-spatial-archive
-      - docs/clean-project-entry
   pull_request:
     branches:
       - product/java-spatial-archive
