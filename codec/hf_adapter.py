@@ -1,4 +1,4 @@
-"""New dense-MS native adapter; old089/091/P code and artifacts stay immutable."""
+"""HF-Detail Codec adapter; historical Anchor/Context implementation artifacts remain immutable."""
 import ctypes
 import hashlib
 import json
@@ -53,7 +53,7 @@ def qualified_runtimes(runtimeHF, runtime089):
 
 def _record(blob, gid, w, h):
     if not isinstance(blob, bytes) or not 260 <= len(blob) <= MAX_PAYLOAD or blob[:8] != b'SHF1TIL1':
-        raise ValueError('HF1 record magic/length')
+        raise ValueError('HF-Detail record magic/length')
     # Header/framing is deliberately byte-layout compatible with091; the MS
     # magic and forced mode1 are checked separately, without changing old code.
     return conditioned._record(b'S091TIL1' + blob[8:], gid, w, h, 1)
@@ -108,7 +108,7 @@ def require_worker_resources():
 def native_encode(runtime, number, spool, target):
     """One bounded child; also used for new synthetic089 fixture material only."""
     if number not in ('089', 'hf1'):
-        raise ValueError('Only reused089/newHF1 native children are supported')
+        raise ValueError('Only reused089/new HF-Detail native children are supported')
     require_worker_resources()
     runtime, spool, target = Path(runtime), Path(spool), Path(target)
     if target.exists() or target.is_symlink() or not target.parent.is_dir():
