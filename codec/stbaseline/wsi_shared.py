@@ -16,7 +16,7 @@ import time
 import numpy as np
 import tifffile
 
-from .integrity import sha256, write_json
+from .integrity import sha256, validate_hdf5_links, write_json
 from .shared_streaming import SharedBlockArchive
 
 FORMAT = 'stlossless-wsi-shared-1'
@@ -157,6 +157,8 @@ class WSISharedArchive(SharedBlockArchive):
             p = self.root / name
             if not _name(name) or p.is_symlink() or not p.is_file() or p.stat().st_size != desc['bytes']:
                 raise ValueError('Unsafe or size-mismatched package member')
+        with h5py.File(self.root / 'science.h5', 'r') as handle:
+            validate_hdf5_links(handle)
         if type(cache_groups) is not int or not 0 <= cache_groups <= 2:
             raise ValueError('Group cache must be 0, 1 or 2')
         levels, pages = m['image']['levels'], m['wjxl']['pages']
