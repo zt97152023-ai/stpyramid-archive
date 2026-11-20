@@ -51,7 +51,7 @@ def write_grouped_candidates(matrix, metadata, output):
     model_source.unlink()
     model = MODEL_HEADER.pack(*(len(parts[name]) for name in MODEL_NAMES))
     (output / "counts.model").write_bytes(model + b"".join(parts[name] for name in MODEL_NAMES))
-    support, groups, binary, tail, cdf = model_tables(parts)
+    support, groups, binary, tail, cdf = model_tables(parts, expected_genes=g)
 
     eligible = []
     for _, rows in spatial:

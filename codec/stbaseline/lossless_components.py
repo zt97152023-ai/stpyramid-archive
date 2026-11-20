@@ -12,12 +12,13 @@ import h5py
 import numpy as np
 from PIL import Image
 
-from .integrity import count_schema, h5_digest, sha256, text_ids
+from .integrity import count_schema, h5_digest, sha256, text_ids, validate_hdf5_links
 from .reader import Archive, MeteredFile
 
 FORMAT = "stlossless-components-1"
 COUNT_IDS = ("hdf5", "shared_local", "shared_blocks")
 IMAGE_IDS = ("hdf5", "jxl", "residual_zstd", "hybrid_independent", "zstd_tiff")
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 
 
 def _safe_name(name):
@@ -132,6 +133,8 @@ class ComponentArchive(Archive):
         manifest_path = self.root / "manifest.json"
         if manifest_path.is_symlink() or not manifest_path.is_file():
             raise ValueError("Unsafe manifest")
+        if manifest_path.stat().st_size <= 0 or manifest_path.stat().st_size > MAX_MANIFEST_BYTES:
+            raise ValueError("Manifest is empty or exceeds 16 MiB")
         blob = manifest_path.read_bytes()
         self.manifest, self.manifest_bytes = json.loads(blob), len(blob)
         m = self.manifest
@@ -154,6 +157,8 @@ class ComponentArchive(Archive):
             p = self.root / name
             if not _safe_name(name) or p.is_symlink() or p.resolve().parent != self.root or not p.is_file() or p.stat().st_size != desc["bytes"]:
                 raise ValueError("Unsafe or size-mismatched member: " + name)
+        with h5py.File(self.root / expected_expression, "r") as handle:
+            validate_hdf5_links(handle)
         self.handles, self.files, self._metadata = {}, {}, None
         self._count_store, self._tiff, self._entries = None, None, None
         self.index_read_bytes, self.image_tiles_decoded = 0, 0

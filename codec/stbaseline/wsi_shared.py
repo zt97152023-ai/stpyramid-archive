@@ -13,16 +13,18 @@ from pathlib import Path
 import shutil
 import time
 
+import h5py
 import numpy as np
 import tifffile
 
-from .integrity import sha256, write_json
+from .integrity import sha256, validate_hdf5_links, write_json
 from .shared_streaming import SharedBlockArchive
 
 FORMAT = 'stlossless-wsi-shared-1'
 UPSTREAM_COMMIT = '935633b2b2b0cbd0a621b8780df7ec0d99cf9eae'
 MAX_PIXELS = 150_000_000
 MAX_SEGMENT = 128 * 1024 * 1024
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 
 
 def _name(value):
@@ -142,6 +144,8 @@ class WSISharedArchive(SharedBlockArchive):
         manifest = self.root / 'manifest.json'
         if manifest.is_symlink():
             raise ValueError('Unsafe manifest')
+        if not manifest.is_file() or not 0 < manifest.stat().st_size <= MAX_MANIFEST_BYTES:
+            raise ValueError('Manifest is empty or exceeds 16 MiB')
         blob = manifest.read_bytes()
         self.manifest, self.manifest_bytes = json.loads(blob), len(blob)
         m = self.manifest
@@ -157,6 +161,8 @@ class WSISharedArchive(SharedBlockArchive):
             p = self.root / name
             if not _name(name) or p.is_symlink() or not p.is_file() or p.stat().st_size != desc['bytes']:
                 raise ValueError('Unsafe or size-mismatched package member')
+        with h5py.File(self.root / 'science.h5', 'r') as handle:
+            validate_hdf5_links(handle)
         if type(cache_groups) is not int or not 0 <= cache_groups <= 2:
             raise ValueError('Group cache must be 0, 1 or 2')
         levels, pages = m['image']['levels'], m['wjxl']['pages']

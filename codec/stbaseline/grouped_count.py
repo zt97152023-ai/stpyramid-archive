@@ -30,6 +30,8 @@ READ_GAP = 128
 MAX_WINDOW = 256 * 1024
 MAX_GRAPH_CACHE = 1024 * 1024
 MAX_RESTORE_CELLS = 1_048_576
+MAX_MODEL_BYTES = 16 * 1024 * 1024
+MAX_INDEX_OVERHEAD = 1024 * 1024
 _EMPTY_POSITION_TABLES = np.empty((0, 0, 0), dtype=np.uint16)
 
 
@@ -37,7 +39,7 @@ def decode_zstd(data, maximum):
     """Only accept an exact single frame with a bounded declared size."""
     if not 0 < zstd.frame_content_size(data) <= maximum:
         raise ValueError("Invalid Count Zstandard frame size")
-    return zstd.ZstdDecompressor().decompress(data, allow_extra_data=False)
+    return zstd.ZstdDecompressor().decompress(data, max_output_size=maximum, allow_extra_data=False)
 
 
 def group_order(blocks):
@@ -186,10 +188,21 @@ class GroupedCountStore:
 
     def __init__(self, root, *, expected_shape):
         self.root = Path(root)
-        packed = (self.root / "counts.index.zst").read_bytes()
-        self.index_bytes = len(packed)
+        if (not isinstance(expected_shape, (tuple, list)) or len(expected_shape) != 2
+                or any(type(v) is not int or v < 1 for v in expected_shape)
+                or expected_shape[0] * expected_shape[1] > 20_000_000):
+            raise ValueError("Invalid or unqualified Count shape")
         n, g = expected_shape
         maximum = HEADER.size + n * (BLOCK.size + 4 + ((g + 63) // 64) * FRAME.size)
+        index_path = self.root / "counts.index.zst"
+        index_size = index_path.stat().st_size
+        if not 0 < index_size <= maximum + MAX_INDEX_OVERHEAD:
+            raise ValueError("Compressed Count index exceeds its derived bound")
+        with index_path.open("rb") as handle:
+            packed = handle.read(maximum + MAX_INDEX_OVERHEAD + 1)
+        if len(packed) != index_size:
+            raise ValueError("Count index changed or exceeded its derived bound")
+        self.index_bytes = len(packed)
         raw = decode_zstd(packed, maximum)
         magic, n, g, width, blocks = HEADER.unpack_from(raw)
         if (magic not in {BLOCK_ORDER, GROUP_ORDER_MAGIC, SUPPORT_PROFILE_MAGIC, GROUP_PROFILE_MAGIC}
@@ -259,7 +272,14 @@ class GroupedCountStore:
 
     def _model(self):
         if self.model is None:
-            raw = (self.root / "counts.model").read_bytes()
+            model_path = self.root / "counts.model"
+            model_size = model_path.stat().st_size
+            if not 0 < model_size <= MAX_MODEL_BYTES:
+                raise ValueError("Count model exceeds its 16 MiB bound")
+            with model_path.open("rb") as handle:
+                raw = handle.read(MAX_MODEL_BYTES + 1)
+            if len(raw) != model_size:
+                raise ValueError("Count model changed while reading")
             lengths = MODEL_HEADER.unpack_from(raw)
             if not all(lengths) or sum(lengths) + MODEL_HEADER.size != len(raw):
                 raise ValueError("Count model member lengths disagree")
@@ -267,14 +287,23 @@ class GroupedCountStore:
             for name, length in zip(MODEL_NAMES, lengths):
                 parts[name] = raw[start:start + length]
                 start += length
-            self.model = model_tables(parts, support_builder="fused", value_builder="fused")
+            self.model = model_tables(parts, expected_genes=self.shape[1], support_builder="fused", value_builder="fused")
         return self.model
 
     def _support_set_tables(self):
         if not self.support_profile:
             return _EMPTY_POSITION_TABLES
         if self._position_tables is None:
-            raw = decode_zstd((self.root / PROFILE_NAME).read_bytes(), int(np.prod(PROFILE_SHAPE)) * 2)
+            maximum = int(np.prod(PROFILE_SHAPE)) * 2
+            path = self.root / PROFILE_NAME
+            size = path.stat().st_size
+            if not 0 < size <= maximum + MAX_INDEX_OVERHEAD:
+                raise ValueError("Count occupancy model exceeds its derived bound")
+            with path.open("rb") as handle:
+                packed = handle.read(maximum + MAX_INDEX_OVERHEAD + 1)
+            if len(packed) != size:
+                raise ValueError("Count occupancy model changed while reading")
+            raw = decode_zstd(packed, maximum)
             profile = np.frombuffer(raw, "<u2").reshape(PROFILE_SHAPE)
             if np.any(profile < SCALE // 16) or np.any(profile > SCALE * 15):
                 raise ValueError("Invalid Count occupancy multiplier")

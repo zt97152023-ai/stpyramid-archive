@@ -22,39 +22,20 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from .comparison import BaselineArchive, csr_from_h5
-from .integrity import sha256, write_json
+from .integrity import bz2_decompress_exact as _bz2_exact, sha256, write_json
 from .reader import MeteredFile
 
 FORMAT = "stbaseline-shared-1"
 METHODS = ("BPCells", "Shared_whole", "Shared_blocks", "Shared_local")
 MODEL_NAMES = ("base_probability.bz2", "shared_odds.u32", "value_q1.bz2",
                "value_group.bz2", "value_base_k.bz2", "value_odds.u32", "value_cond_k.bz2")
-
-
-@lru_cache(maxsize=1)
-def runtime():
-    vendor = Path(__file__).with_name("_shared_vendor")
-    record = json.loads((vendor / "SOURCE.json").read_text(encoding="utf-8-sig"))
-    if not (vendor / 'baseline').is_dir():
-        raise RuntimeError('Run python fetch_count_runtime.py to install the pinned Count source')
-    for f in record["files"]:
-        if sha256(vendor / f["path"]) != f["sha256"]:
-            raise ValueError("Shared source pin mismatch: " + f["path"])
-    sys.path.insert(0, str(vendor))
-    p = vendor / "baseline/evidence/COUNT-HEST-SHARED-K32-001/worker.py"
-    spec = importlib.util.spec_from_file_location("stbaseline_frozen_k32", p)
-    worker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(worker)
-    rt = worker.load(32)
-    from baseline.hest_large_runtime import shared
-    # Same substitutions as the frozen K32 worker, without diagnostic wrappers.
-    src = inspect.getsource(shared.encode).replace("load_qpatch_runtime()", "_runtime()")
-    src = src.replace("    from .archive import write_shared",
-                      "    info.update(value_group_count=32, value_group_rule='fixed-log-axis-v1')\n    from .archive import write_shared")
-    ns = dict(shared.__dict__)
-    ns.update(_runtime=lambda: rt)
-    exec(compile(src, str(p), "exec"), ns)
-    return rt, ns["encode"], shared.graph_for
+MAX_COUNT_INDEX_BYTES = 256 * 1024 * 1024
+MAX_COUNT_MEMBER_BYTES = 512 * 1024 * 1024
+MAX_COUNT_MODEL_MEMBER_BYTES = 16 * 1024 * 1024
+MAX_NATIVE_COUNT_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
+MAX_NATIVE_COUNT_MANIFEST_BYTES = 16 * 1024 * 1024
+MAX_MODEL_DECOMPRESSED_BYTES = 64 * 1024 * 1024
+MAX_GRAPH_DECOMPRESSED_BYTES = 512 * 1024 * 1024
 
 
 def canonical(matrix, metadata, rows=None):
@@ -76,121 +57,84 @@ def native_parts(path):
     return man, parts
 
 
-def model_tables(parts, *, support_builder='numpy', value_builder='numpy'):
+def model_tables(parts, *, expected_genes, support_builder='numpy', value_builder='numpy'):
     if support_builder not in ('numpy', 'fused'):
         raise ValueError('Unknown support table builder')
     if value_builder not in ('numpy', 'fused'):
         raise ValueError('Unknown value table builder')
+    if type(expected_genes) is not int or not 1 <= expected_genes <= 20_000_000:
+        raise ValueError('Invalid expected gene count for Count model')
     _, entropy, sm, qm, qs, _ = runtime()[0]
-    q0 = np.frombuffer(bz2.decompress(parts["base_probability.bz2"]), "<u2")
-    support_odds = np.frombuffer(parts["shared_odds.u32"], "<u4").reshape(8, 7)
+    q0 = np.frombuffer(_bz2_exact(parts['base_probability.bz2'], expected_genes * 2, 'base_probability'), '<u2')
+    support_odds = np.frombuffer(parts['shared_odds.u32'], '<u4').reshape(8, 7)
     if support_builder == 'numpy':
         support_q = sm.cdf(q0, support_odds)
     else:
         from .support_tables import fused_support_cdf
         support_q = fused_support_cdf(q0, support_odds, sm)
-    groups = np.frombuffer(bz2.decompress(parts["value_group.bz2"]), np.uint8)
-    q = qs.decode(parts["value_q1.bz2"], groups)
-    base = np.frombuffer(bz2.decompress(parts["value_base_k.bz2"]), "<u2").reshape(32, 32)
-    odds = np.frombuffer(parts["value_odds.u32"], "<u4").reshape(32, 7)
-    cond = np.frombuffer(bz2.decompress(parts["value_cond_k.bz2"]), "<u2").reshape(32, 7, 32)
+    groups = np.frombuffer(_bz2_exact(parts['value_group.bz2'], expected_genes, 'value_group'), np.uint8)
+    q = qs.decode(parts['value_q1.bz2'], groups)
+    base = np.frombuffer(_bz2_exact(parts['value_base_k.bz2'], 32 * 32 * 2, 'value_base_k'), '<u2').reshape(32, 32)
+    odds = np.frombuffer(parts['value_odds.u32'], '<u4').reshape(32, 7)
+    cond = np.frombuffer(_bz2_exact(parts['value_cond_k.bz2'], 32 * 7 * 32 * 2, 'value_cond_k'), '<u2').reshape(32, 7, 32)
     if value_builder == 'numpy':
         binary, tail, cdf = qm.tables(q, groups, base, odds, cond)
     else:
         from .value_tables import fused_value_tables
-        binary, tail, cdf = fused_value_tables(q, groups, base, odds, cond)
+        binary, tail, cdf = fused_value_tables(q, groups, base, odds, cond, qm)
     return support_q, groups, binary, tail, cdf
-
-
-def local_streams(x, coords, tables):
-    _, entropy, _, _, _, values = runtime()[0]
-    graph = runtime()[2](coords)
-    sq, groups, binary, tail, cdf = tables
-    support = entropy.packed_support(x.indptr, x.indices, *x.shape)
-    sb, _ = entropy.encode(support, graph, sq, x.shape[1])
-    vb, _, te, rb = values.encode(x.indptr, x.indices, x.data, graph, groups, binary, tail, cdf, True)
-    return {"graph.bz2": bz2.compress(graph.astype("<i4").tobytes(), 9),
-            "support.rans": sb.tobytes(), "values.rans": vb.tobytes()}, {"tail_events": int(te), "remainder_bits": int(rb)}
-
-
-def partition(xy, block_pixels):
-    if not isinstance(block_pixels, int) or block_pixels < 1:
-        raise ValueError("Positive integer block size required")
-    cells = np.floor(np.asarray(xy) / block_pixels).astype(np.int64)
-    keys = sorted(set(map(tuple, cells.tolist())), key=lambda c: (c[1], c[0]))
-    return [(list(map(int, k)), np.flatnonzero(np.all(cells == k, axis=1)).tolist()) for k in keys]
-
-
-def write_count_store(matrix, metadata, level0_xy, output, method, block_pixels=1024):
-    """Common compact envelope for both block arms; identities stored once outside."""
-    output = Path(output)
-    codec, encode_native, _ = runtime()
-    full_input = canonical(matrix, metadata)
-    index = {"version": 1, "method": method, "shape": list(matrix.shape), "block_pixels": block_pixels,
-             "canonical_sha256": codec[0].csr_sha(full_input.matrix), "blocks": [], "models": {}}
-    if method == "Shared_whole":
-        encode_native(full_input, output / "counts.whole.cnt")
-        index["native_file"] = "counts.whole.cnt"
-        write_json(output / "counts.index.json", index)
-        return index
-    spatial_blocks = partition(level0_xy, block_pixels)
-    with tempfile.TemporaryDirectory(prefix="stshared_encode_") as tmp, (output / "counts.bank").open("xb") as bank:
-        def append_member(data, category):
-            member = {"offset": bank.tell(), "bytes": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(), "category": category}
-            bank.write(data)
-            return member
-
-        def append_model(parts):
-            return {name: append_member(parts[name], "models") for name in MODEL_NAMES}
-
-        if method == "Shared_local":
-            # Derive the sample-wide model once. The bank receives only its model members.
-            model_source = Path(tmp) / "whole.cnt"
-            encode_native(full_input, model_source)
-            _, model_parts = native_parts(model_source)
-            index["models"]["global"] = append_model(model_parts)
-            tables = model_tables(model_parts)
-            del model_parts
-        for block_id, (cell, rows) in enumerate(spatial_blocks):
-            block_input = canonical(matrix, metadata, rows)
-            if method == "Shared_blocks":
-                native_record = Path(tmp) / f"{block_id}.cnt"
-                encode_native(block_input, native_record)
-                stats, parts = native_parts(native_record)
-                model_id = str(block_id)
-                index["models"][model_id] = append_model(parts)
-            else:
-                parts, stats = local_streams(block_input.matrix, metadata["coordinates"][rows], tables)
-                model_id = "global"
-            streams = {name: append_member(parts[name], "graph" if name == "graph.bz2" else "streams")
-                       for name in ("graph.bz2", "support.rans", "values.rans")}
-            index["blocks"].append({
-                "cell": cell, "rows": rows, "nnz": int(block_input.matrix.nnz),
-                "model": model_id, "members": streams, "canonical_sha256": codec[0].csr_sha(block_input.matrix),
-                "tail_events": stats["tail_events"], "remainder_bits": stats["remainder_bits"],
-            })
-    write_json(output / "counts.index.json", index)
-    return index
-
 
 class CountStore:
     def __init__(self, root):
         self.root = Path(root)
-        blob = (self.root / "counts.index.json").read_bytes()
+        index_path = self.root / "counts.index.json"
+        index_size = index_path.stat().st_size
+        if not 0 < index_size <= MAX_COUNT_INDEX_BYTES:
+            raise ValueError("Shared Count index exceeds its 256 MiB bound")
+        with index_path.open("rb") as handle:
+            blob = handle.read(MAX_COUNT_INDEX_BYTES + 1)
+        if len(blob) != index_size:
+            raise ValueError("Shared Count index changed while reading")
         self.index = json.loads(blob)
         self.index_bytes = len(blob)
         self.tables = {}
         self.decoded_rows = 0
         self.decoded_blocks = 0
         self._zip = None
-        self._native = self.index["method"] == "Shared_whole"
-        self.file = MeteredFile(self.root / ("counts.whole.cnt" if self._native else "counts.bank"))
-        n, g = self.index["shape"]
+        method = self.index.get("method")
+        if method not in ("Shared_whole", "Shared_blocks", "Shared_local"):
+            raise ValueError("Unsupported Shared Count method")
+        self._native = method == "Shared_whole"
+        shape = self.index.get("shape")
+        if (not isinstance(shape, list) or len(shape) != 2
+                or any(type(v) is not int or v < 1 for v in shape)
+                or shape[0] * shape[1] > 20_000_000):
+            raise ValueError("Invalid Shared Count shape")
+        n, g = shape
+        archive_path = self.root / ("counts.whole.cnt" if self._native else "counts.bank")
+        if self._native and archive_path.stat().st_size > MAX_NATIVE_COUNT_ARCHIVE_BYTES:
+            raise ValueError("Native Count archive exceeds its 2 GiB bound")
+        self.file = MeteredFile(archive_path)
         self.row_map = {}
         if self._native:
             self._zip = zipfile.ZipFile(self.file)
+            manifest_info = self._zip.getinfo("manifest.json")
+            if (manifest_info.file_size <= 0 or manifest_info.file_size > MAX_NATIVE_COUNT_MANIFEST_BYTES
+                    or manifest_info.compress_type != zipfile.ZIP_STORED):
+                raise ValueError("Invalid native Count manifest storage/bound")
             self.native_manifest = json.loads(self._zip.read("manifest.json"))
+            native_files = self.native_manifest.get("files")
+            names = self._zip.namelist()
+            if (self.native_manifest.get("schema") != "qpatch-count-v1"
+                    or self.native_manifest.get("method") != "Shared-only"
+                    or self.native_manifest.get("shape") != shape
+                    or not isinstance(native_files, dict)
+                    or type(self.native_manifest.get("nnz")) is not int
+                    or not 0 <= self.native_manifest["nnz"] <= n * g
+                    or set(native_files) != set(MODEL_NAMES) | {"metadata.bz2", "support.rans", "graph.bz2", "values.rans"}
+                    or len(names) != len(set(names))
+                    or set(names) != set(native_files) | {"manifest.json"}):
+                raise ValueError("Native Shared Count manifest/member mismatch")
         else:
             for bid, b in enumerate(self.index["blocks"]):
                 for local, row in enumerate(b["rows"]):
@@ -203,7 +147,12 @@ class CountStore:
             if len(self.row_map) != n:
                 raise ValueError("Incomplete row partition")
 
-    def member(self, desc):
+    def member(self, desc, *, name=None):
+        limit = MAX_COUNT_MODEL_MEMBER_BYTES if name in MODEL_NAMES else MAX_COUNT_MEMBER_BYTES
+        if (not isinstance(desc, dict) or type(desc.get("offset")) is not int
+                or type(desc.get("bytes")) is not int or desc["offset"] < 0
+                or not 0 < desc["bytes"] <= limit):
+            raise ValueError("Invalid or oversized Shared Count member descriptor")
         self.file.seek(desc["offset"])
         data = self.file.read(desc["bytes"])
         if len(data) != desc["bytes"] or hashlib.sha256(data).hexdigest() != desc["sha256"]:
@@ -211,8 +160,13 @@ class CountStore:
         return data
 
     def native_member(self, name):
-        data = self._zip.read(name)
         d = self.native_manifest["files"][name]
+        info = self._zip.getinfo(name)
+        limit = MAX_COUNT_MODEL_MEMBER_BYTES if name in MODEL_NAMES else MAX_COUNT_MEMBER_BYTES
+        if (type(d.get("bytes")) is not int or not 0 < d["bytes"] <= limit
+                or info.file_size != d["bytes"] or info.compress_type != zipfile.ZIP_STORED):
+            raise ValueError("Invalid native Shared member size/storage")
+        data = self._zip.read(name)
         if len(data) != d["bytes"] or hashlib.sha256(data).hexdigest() != d["sha256"]:
             raise ValueError("Native Shared integrity failure")
         return data
@@ -229,12 +183,12 @@ class CountStore:
             b = self.index["blocks"][bid]
             nr, ng = len(b["rows"]), self.index["shape"][1]
             model_id = b["model"]
-            get = lambda name: self.member(b["members"][name])
-            model_get = lambda name: self.member(self.index["models"][model_id][name])
+            get = lambda name: self.member(b["members"][name], name=name)
+            model_get = lambda name: self.member(self.index["models"][model_id][name], name=name)
         if model_id not in self.tables:
-            self.tables[model_id] = model_tables({n: model_get(n) for n in MODEL_NAMES})
+            self.tables[model_id] = model_tables({n: model_get(n) for n in MODEL_NAMES}, expected_genes=ng)
         sq, groups, binary, tail, cdf = self.tables[model_id]
-        graph = np.frombuffer(bz2.decompress(get("graph.bz2")), "<i4").reshape(nr, 6).copy()
+        graph = np.frombuffer(_bz2_exact(get("graph.bz2"), nr * 6 * 4, "graph", max_bytes=MAX_GRAPH_DECOMPRESSED_BYTES), "<i4").reshape(nr, 6).copy()
         for i, row in enumerate(graph):
             k = min(i, 6)
             if np.any(row[:k] < 0) or np.any(row[:k] >= i) or len(set(row[:k])) != k or np.any(row[k:] != -1):

@@ -97,6 +97,14 @@ python recursive_image_archive.py restore runs/recursive-image runs/recursive-re
 
 `--max-depth 15` permits the full eligible chain for TIFFs with up to 16 levels. `--preset regular` retains the fused encoder search settings. `--preset fast` uses a lower MA-tree sample fraction and non-optimal LZ77 parsing. Both presets consolidate conditional-tile verification into the final recursive archive verification. This experiment uses its own image format identifier and CLI.
 
+## Security
+
+STPyramid is a local desktop/CLI application; it does not currently provide application user accounts, password login, OAuth/OIDC, JWT or bearer-token sessions, or per-user authorization. Local access is governed by the operating system account and filesystem permissions.
+
+Archive SHA-256 and CRC32 checks are integrity checks, not proof of archive authorship. The Count dependency downloader validates the pinned upstream revision and each file's expected size and SHA-256; it does not implement signed updates. Treat third-party archives and portable runtimes as untrusted until verified through a trusted distribution channel.
+
+This source branch hardens cached dependency verification and Java source-archive path/manifest handling. See [SECURITY.md](SECURITY.md) for trust boundaries, operational guidance, implemented changes and remaining audit scope. Report suspected vulnerabilities privately to the maintainers; do not include patient data or confidential slide content.
+
 ## Evidence and licensing
 
 - [Results and reproducibility notes](results/README.md)

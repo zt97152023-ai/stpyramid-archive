@@ -1,0 +1,50 @@
+name: Security regression checks
+
+on:
+  push:
+    branches:
+      - security-audit-hardening-20261120
+  pull_request:
+    branches:
+      - product/java-spatial-archive
+
+permissions:
+  contents: read
+
+jobs:
+  python-dependency-pins:
+    name: Pinned dependency validation tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install HDF5 test dependencies
+        run: python -m pip install --disable-pip-version-check numpy h5py
+      - name: Run dependency trust-boundary regression tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Compile Python security-sensitive modules
+        run: python -m compileall -q fetch_count_runtime.py codec/stbaseline/reader.py codec/stbaseline/grouped_count.py codec/stbaseline/grouped_count_encode.py codec/stbaseline/shared_backend.py codec/container_compare.py codec/stbaseline/comparison.py codec/stbaseline/local_ipc.py codec/stbaseline/integrity.py codec/stbaseline/wsi_shared.py codec/stbaseline/lossless_components.py codec/stbaseline/native_wsi.py desktop_worker.py
+
+  java-source-archive:
+    name: Java source archive regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Compile source archive test harness
+        run: |
+          mkdir -p build/security-tests
+          javac -d build/security-tests \
+            java-desktop/src/stpyramid/SourceArchive.java \
+            tests/java/stpyramid/SourceArchiveSecurityTest.java
+      - name: Run source archive security tests
+        run: java -cp build/security-tests stpyramid.SourceArchiveSecurityTest

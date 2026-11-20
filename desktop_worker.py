@@ -141,6 +141,8 @@ def read_job(job, emit):
 
 
 def main():
+    if os.name == "posix":
+        os.umask(0o077)
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS",
                  "NUMBA_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "BLIS_NUM_THREADS"):
         os.environ[name] = "1"

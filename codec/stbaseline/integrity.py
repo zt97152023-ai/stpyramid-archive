@@ -1,11 +1,29 @@
 """Streaming integrity and HDF5 semantics, adapted from STCompBench metadata checks."""
 import base64
+import bz2
 import hashlib
 import json
 from pathlib import Path
 
 import h5py
 import numpy as np
+
+
+def bz2_decompress_exact(blob, expected_bytes, label, *, max_bytes=64 * 1024 * 1024):
+    """Bound BZ2 expansion and require one complete stream of exact length."""
+    if (type(expected_bytes) is not int or expected_bytes < 0
+            or type(max_bytes) is not int or max_bytes < 0
+            or expected_bytes > max_bytes
+            or not isinstance(blob, (bytes, bytearray, memoryview))):
+        raise ValueError("Invalid bounded BZ2 member: " + label)
+    decoder = bz2.BZ2Decompressor()
+    try:
+        raw = decoder.decompress(blob, max_length=expected_bytes + 1)
+    except (OSError, EOFError) as exc:
+        raise ValueError("Invalid compressed BZ2 member: " + label) from exc
+    if len(raw) != expected_bytes or not decoder.eof or decoder.unused_data:
+        raise ValueError("BZ2 decompressed length/framing mismatch: " + label)
+    return raw
 
 
 def sha256(path):
@@ -21,6 +39,35 @@ def token(value):
     head = json.dumps([str(a.dtype), a.shape]).encode()
     body = repr(a.tolist()).encode("utf-8") if a.dtype.kind in "OUS" else a.tobytes()
     return head + b"\n" + body
+
+
+def validate_hdf5_links(root, *, max_objects=2_000_000):
+    """Reject links and storage references that can escape the selected HDF5 file.
+
+    Traverse link metadata before dereferencing children. Only hard links are
+    accepted; aliases/cycles, soft/external links, virtual datasets, external
+    raw storage and object references are outside the supported H5AD contract.
+    """
+    seen = set()
+    pending = [root]
+    while pending:
+        node = pending.pop()
+        address = h5py.h5o.get_info(node.id).addr
+        if address in seen:
+            raise ValueError("HDF5 hard-link aliases/cycles are unsupported")
+        seen.add(address)
+        if len(seen) > max_objects:
+            raise ValueError("HDF5 object count exceeds the qualified bound")
+        if isinstance(node, h5py.Dataset):
+            if node.is_virtual or node.external:
+                raise ValueError("External/virtual HDF5 datasets must be materialized first")
+            if h5py.check_dtype(ref=node.dtype) is not None:
+                raise ValueError("HDF5 object references are unsupported")
+            continue
+        for key in node:
+            if not isinstance(node.get(key, getlink=True), h5py.HardLink):
+                raise ValueError("Soft/external HDF5 links are unsupported")
+            pending.append(node[key])
 
 
 def h5_digest(path):
@@ -66,6 +113,7 @@ def h5_digest(path):
                 visit(node[key], name.rstrip("/") + "/" + key)
 
     with h5py.File(path, "r") as f:
+        validate_hdf5_links(f)
         visit(f, "/")
     return h.hexdigest()
 
@@ -105,6 +153,7 @@ def text_ids(group):
 
 
 def count_schema(f, spatial_key):
+    validate_hdf5_links(f)
     rows, genes = text_ids(f["obs"]), text_ids(f["var"])
     if not rows or not genes or len(set(rows)) != len(rows) :
         raise ValueError("Empty axes or duplicate obs IDs")

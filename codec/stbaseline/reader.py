@@ -12,7 +12,25 @@ import numpy as np
 from PIL import Image
 
 from .archive import FORMAT
-from .integrity import count_schema, h5_digest, sha256, text_ids, write_json
+from .integrity import count_schema, h5_digest, sha256, text_ids, validate_hdf5_links, write_json
+import re
+
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
+HEX_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+
+
+def _read_manifest(path):
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Unsafe archive manifest")
+    size = path.stat().st_size
+    if not 0 < size <= MAX_MANIFEST_BYTES:
+        raise ValueError("Archive manifest is empty or exceeds 16 MiB")
+    with path.open("rb") as handle:
+        blob = handle.read(MAX_MANIFEST_BYTES + 1)
+    if len(blob) != size or len(blob) > MAX_MANIFEST_BYTES:
+        raise ValueError("Archive manifest changed or exceeded its bound")
+    return blob
 
 
 class MeteredFile(io.RawIOBase):
@@ -55,11 +73,14 @@ class MeteredFile(io.RawIOBase):
 
 class Archive:
     def __init__(self, directory):
-        self.root = Path(directory).resolve()
+        argument = Path(directory)
+        if argument.is_symlink():
+            raise ValueError("Archive directory symlinks are unsupported")
+        self.root = argument.resolve()
         self.handles, self.files = {}, {}
         if (self.root / "INCOMPLETE").exists():
             raise ValueError("Incomplete archive")
-        blob = (self.root / "manifest.json").read_bytes()
+        blob = _read_manifest(self.root / "manifest.json")
         self.manifest_bytes = len(blob)
         self.manifest = json.loads(blob)
         m = self.manifest
@@ -67,14 +88,27 @@ class Archive:
             raise ValueError("Unsupported archive version")
         if m["image"].get("codec") != "hdf5-gzip-shuffle-fletcher32":
             raise ValueError("Unsupported image codec; register an explicit decoder before reading")
-        if set(m["files"]) != {"expression.h5ad", "images.h5", *m.get("attachments", [])} or m["expression"]["path"] != "expression.h5ad" or m["image"]["path"] != "images.h5":
+        attachments = m.get("attachments", [])
+        if (not isinstance(attachments, list) or len(set(attachments)) != len(attachments)
+                or not isinstance(m.get("files"), dict)
+                or set(m["files"]) != {"expression.h5ad", "images.h5", *attachments}
+                or m["expression"]["path"] != "expression.h5ad" or m["image"]["path"] != "images.h5"):
             raise ValueError("Unexpected archive members")
-        for name in m["files"]:
+        for name, descriptor in m["files"].items():
+            if (not isinstance(name, str) or Path(name).name != name
+                    or type(descriptor.get("bytes")) is not int or descriptor["bytes"] < 0
+                    or not isinstance(descriptor.get("sha256"), str)
+                    or HEX_SHA256.fullmatch(descriptor["sha256"]) is None):
+                raise ValueError("Invalid archive member descriptor")
             if Path(name).name != name or name in ("", ".", "..", "manifest.json", "source_metadata.json", "native_levels.tif"):
                 raise ValueError("Unsafe archive filename")
             p = self.root / name
             if p.is_symlink() or p.resolve().parent != self.root or p.stat().st_size != m["files"][name]["bytes"]:
                 raise ValueError("Unsafe or size-mismatched member")
+        # Preflight the HDF5 link graph before metadata/count queries can
+        # dereference a soft link or an external file.
+        with h5py.File(self.root / "expression.h5ad", "r") as handle:
+            validate_hdf5_links(handle)
         self._metadata = None
 
     def __enter__(self):
