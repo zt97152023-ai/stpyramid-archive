@@ -23,6 +23,35 @@ def token(value):
     return head + b"\n" + body
 
 
+def validate_hdf5_links(root, *, max_objects=2_000_000):
+    """Reject links and storage references that can escape the selected HDF5 file.
+
+    Traverse link metadata before dereferencing children. Only hard links are
+    accepted; aliases/cycles, soft/external links, virtual datasets, external
+    raw storage and object references are outside the supported H5AD contract.
+    """
+    seen = set()
+    pending = [root]
+    while pending:
+        node = pending.pop()
+        address = h5py.h5o.get_info(node.id).addr
+        if address in seen:
+            raise ValueError("HDF5 hard-link aliases/cycles are unsupported")
+        seen.add(address)
+        if len(seen) > max_objects:
+            raise ValueError("HDF5 object count exceeds the qualified bound")
+        if isinstance(node, h5py.Dataset):
+            if node.is_virtual or node.external:
+                raise ValueError("External/virtual HDF5 datasets must be materialized first")
+            if h5py.check_dtype(ref=node.dtype) is not None:
+                raise ValueError("HDF5 object references are unsupported")
+            continue
+        for key in node:
+            if not isinstance(node.get(key, getlink=True), h5py.HardLink):
+                raise ValueError("Soft/external HDF5 links are unsupported")
+            pending.append(node[key])
+
+
 def h5_digest(path):
     """Includes dataset values, dtype, shape and all attributes, excluding layout."""
     h = hashlib.sha256()
@@ -66,6 +95,7 @@ def h5_digest(path):
                 visit(node[key], name.rstrip("/") + "/" + key)
 
     with h5py.File(path, "r") as f:
+        validate_hdf5_links(f)
         visit(f, "/")
     return h.hexdigest()
 
@@ -105,6 +135,7 @@ def text_ids(group):
 
 
 def count_schema(f, spatial_key):
+    validate_hdf5_links(f)
     rows, genes = text_ids(f["obs"]), text_ids(f["var"])
     if not rows or not genes or len(set(rows)) != len(rows) :
         raise ValueError("Empty axes or duplicate obs IDs")
