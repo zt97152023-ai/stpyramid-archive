@@ -14,7 +14,11 @@ STPyramid accepts three inputs:
 
 The Count and image components are encoded independently. The archive layer binds them to the same sample, coordinate frame and metadata.
 
-## 2. Main components
+## 2. Image codec modules
+
+The integrated image path combines three mechanism-based modules: **Anchor Codec** (native-parent anchored correction), **Context Codec** (known-parent-conditioned detail coding), and **HF-Detail Codec** (dense high-frequency magnitude/sign representation). The archive selects routes per tile; these names do not imply three independent whole-slide formats. See [codec naming](CODEC_NAMING.md).
+
+## 3. Main components
 
 | Component | Main source | Responsibility |
 |---|---|---|
