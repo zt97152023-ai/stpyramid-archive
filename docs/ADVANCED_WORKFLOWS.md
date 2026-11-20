@@ -32,7 +32,7 @@ Do not infer backward compatibility from a successful new synthetic smoke test. 
 
 `recursive_image_archive.py` is a separate experimental image format and CLI. It encodes eligible native levels against the next original TIFF level. Coarsest levels, scale transitions without exact floor-sized 2× geometry, and periodic checkpoints use independent lossless JPEG XL e9. A parent index resolves each conditional tile to one coarser tile. Every level and source metadata are verified before the archive directory is published.
 
-After compiling the native `slide_jxl091` target, run with a fresh work directory and output path:
+After building the **Context Codec** through the descriptive `stpyramid_context` target, the experimental recursive image workflow can use the matching compatibility executable from the staged native runtime. Run with a fresh work directory and output path:
 
 ```powershell
 python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder build/bin/slide_jxl091.exe --preset fast --max-depth 3
