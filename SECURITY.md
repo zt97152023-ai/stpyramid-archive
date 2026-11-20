@@ -30,6 +30,10 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 - Preflight HDF5 object graphs before Count metadata access; reject soft/external links, hard-link aliases/cycles, virtual datasets, external raw storage and object-reference datasets rather than following paths outside the selected HDF5 file.
 - Apply the same HDF5 link preflight to the baseline, integrated, lossless-component, native-WSI and Shared-WSI readers; cap their archive JSON manifests at 16 MiB before parsing.
 
+## Output permissions
+
+The Python CLI and desktop worker set a restrictive POSIX umask (`077`) before creating archive outputs. Native POSIX codec output files use owner-only mode (`0600`). Java source-archive restoration stages into a private temporary directory before publishing it. On Windows, output permissions inherit the parent directory ACL; use an ACL-restricted destination for patient or otherwise sensitive data. Existing archives are not retroactively chmod'ed. Users who intentionally need group sharing can explicitly adjust permissions after creation and should apply equivalent controls to every archive member and parent directory.
+
 ## Operational recommendations
 
 1. Keep the application, source code and portable runtime in directories not writable by untrusted users.
