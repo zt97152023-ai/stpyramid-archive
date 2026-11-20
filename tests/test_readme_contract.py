@@ -21,6 +21,11 @@ class ReadmeContractTests(TestCase):
             "Fast fused image workflow",
             "Current development source",
             "Workflow distinction",
+            "Anchor",
+            "Context",
+            "HF-Detail",
+            "docs/CODEC_NAMING.md",
+            "stpyramid_native_codecs",
         ):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, content)
