@@ -92,7 +92,7 @@ With Visual Studio 2022 C++ tools, CMake and Ninja:
 
 ```powershell
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-cmake --build build --parallel 2 --target slide_jxl089 slide_jxl089_shared slide_jxl091 slide_jxl091_shared slide_hf1 slide_hf1_shared
+cmake --build build --parallel 2 --target stpyramid_native_codecs
 python stage_runtime.py --bin build/bin --output runtime-windows
 python tests/smoke.py --runtime-dir runtime-windows --output runs/source-build-smoke
 ```
@@ -107,6 +107,10 @@ Build and package on the target operating system. Linux and macOS packages bundl
 ```
 
 See [java-desktop/README.md](java-desktop/README.md) for Windows packaging and details.
+
+## Codec modules
+
+STPyramid uses three mechanism-based image codec names: **Anchor**, **Context**, and **HF-Detail**. They are per-tile coding modules used by the integrated image archive, not interchangeable archive formats. See the [codec naming guide](docs/CODEC_NAMING.md) for their roles and compatibility boundaries.
 
 ## Architecture at a glance
 
