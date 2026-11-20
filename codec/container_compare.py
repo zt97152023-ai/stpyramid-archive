@@ -37,6 +37,7 @@ def qualified_image(format_name, profile):
     return format_name == NEW_IMAGE_FORMAT and profile in PROFILE_NAMES
 IMAGE_FILES = {"manifest.json", "images.bank", "images.index", "anchors.index", "source.json"}
 MAX_CELLS = 20_000_000
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 
 
@@ -67,9 +68,20 @@ def _name(name):
     return name
 
 
+def _read_bounded(path, limit=MAX_MANIFEST_BYTES):
+    path = _plain(path)
+    info = path.stat()
+    if not path.is_file() or info.st_size <= 0 or info.st_size > limit:
+        raise ValueError("Missing or oversized archive metadata: " + path.name)
+    with path.open("rb") as handle:
+        data = handle.read(limit + 1)
+    if len(data) != info.st_size or len(data) > limit:
+        raise ValueError("Archive metadata changed or exceeded its bound: " + path.name)
+    return data
+
+
 def _json(path):
-    with _plain(path).open("rb") as handle:
-        return json.load(handle)
+    return json.loads(_read_bounded(path))
 
 
 def _identity(desc):
@@ -249,7 +261,7 @@ class IntegratedArchive:
         self.root = _plain(directory)
         if any((self.root / n).exists() for n in ("INCOMPLETE", "failure.json")):
             raise ValueError("Incomplete integrated package")
-        raw = _plain(self.root / "manifest.json").read_bytes()
+        raw = _read_bounded(self.root / "manifest.json")
         self.manifest, self.manifest_bytes = json.loads(raw), len(raw)
         m = self.manifest
         if m.get("format") != FORMAT or m.get("count", {}).get("kind") not in COUNT_KINDS:
