@@ -121,7 +121,7 @@ def model_tables(parts, *, expected_genes, support_builder='numpy', value_builde
     else:
         from .value_tables import fused_value_tables
         binary, tail, cdf = fused_value_tables(q, groups, base, odds, cond, qm)
-    return support_q, binary, tail, cdf, groups
+    return support_q, groups, binary, tail, cdf
 
 class CountStore:
     def __init__(self, root):
@@ -181,7 +181,7 @@ class CountStore:
             get = lambda name: self.member(b["members"][name])
             model_get = lambda name: self.member(self.index["models"][model_id][name])
         if model_id not in self.tables:
-            self.tables[model_id] = model_tables({n: model_get(n) for n in MODEL_NAMES})
+            self.tables[model_id] = model_tables({n: model_get(n) for n in MODEL_NAMES}, expected_genes=ng)
         sq, groups, binary, tail, cdf = self.tables[model_id]
         graph = np.frombuffer(bz2.decompress(get("graph.bz2")), "<i4").reshape(nr, 6).copy()
         for i, row in enumerate(graph):
