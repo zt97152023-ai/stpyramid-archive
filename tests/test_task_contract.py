@@ -1,6 +1,7 @@
 """Unit tests for the desktop task request protocol (standard library only)."""
 from unittest import TestCase, main
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +57,20 @@ class TaskContractTests(TestCase):
         for request in (None, [], {"action": []}):
             with self.subTest(request=request), self.assertRaises(ValueError):
                 validate_task(request)
+
+    def test_worker_rejects_invalid_request_before_codec_loading(self):
+        worker = ROOT / "desktop_worker.py"
+        result = subprocess.run(
+            [sys.executable, "-B", str(worker)], cwd=ROOT, input='{"action":"unknown"}\n',
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Task action must be one of", result.stdout)
+        self.assertNotIn("numpy", result.stderr.lower())
+
+    def test_worker_source_compiles(self):
+        source = (ROOT / "desktop_worker.py").read_text(encoding="utf-8")
+        compile(source, str(ROOT / "desktop_worker.py"), "exec")
 
     def test_keep_work_must_be_boolean(self):
         with self.assertRaisesRegex(ValueError, "keep_work"):
