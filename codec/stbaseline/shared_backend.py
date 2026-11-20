@@ -22,7 +22,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from .comparison import BaselineArchive, csr_from_h5
-from .integrity import sha256, write_json
+from .integrity import bz2_decompress_exact as _bz2_exact, sha256, write_json
 from .reader import MeteredFile
 
 FORMAT = "stbaseline-shared-1"
@@ -36,47 +36,6 @@ MAX_NATIVE_COUNT_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
 MAX_NATIVE_COUNT_MANIFEST_BYTES = 16 * 1024 * 1024
 MAX_MODEL_DECOMPRESSED_BYTES = 64 * 1024 * 1024
 MAX_GRAPH_DECOMPRESSED_BYTES = 512 * 1024 * 1024
-
-
-def _bz2_exact(blob, expected_bytes, label, *, max_bytes=MAX_MODEL_DECOMPRESSED_BYTES):
-    if (type(expected_bytes) is not int or expected_bytes < 0
-            or expected_bytes > max_bytes
-            or not isinstance(blob, (bytes, bytearray, memoryview))):
-        raise ValueError("Invalid bounded Count model member: " + label)
-    decoder = bz2.BZ2Decompressor()
-    try:
-        raw = decoder.decompress(blob, max_length=expected_bytes + 1)
-    except (OSError, EOFError) as exc:
-        raise ValueError("Invalid compressed Count model member: " + label) from exc
-    if len(raw) != expected_bytes or not decoder.eof or decoder.unused_data:
-        raise ValueError("Count model decompressed length/framing mismatch: " + label)
-    return raw
-
-
-@lru_cache(maxsize=1)
-def runtime():
-    vendor = Path(__file__).with_name("_shared_vendor")
-    if not (vendor / "baseline").is_dir():
-        raise RuntimeError("Run python fetch_count_runtime.py to install the pinned Count source")
-    # Use the same canonical manifest/path/size/hash validation as the downloader.
-    # Do not let direct codec imports bypass the dependency trust boundary.
-    from fetch_count_runtime import verify_cached_count_source
-    verify_cached_count_source()
-    sys.path.insert(0, str(vendor))
-    p = vendor / "baseline/evidence/COUNT-HEST-SHARED-K32-001/worker.py"
-    spec = importlib.util.spec_from_file_location("stbaseline_frozen_k32", p)
-    worker = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(worker)
-    rt = worker.load(32)
-    from baseline.hest_large_runtime import shared
-    # Same substitutions as the frozen K32 worker, without diagnostic wrappers.
-    src = inspect.getsource(shared.encode).replace("load_qpatch_runtime()", "_runtime()")
-    src = src.replace("    from .archive import write_shared",
-                      "    info.update(value_group_count=32, value_group_rule='fixed-log-axis-v1')\n    from .archive import write_shared")
-    ns = dict(shared.__dict__)
-    ns.update(_runtime=lambda: rt)
-    exec(compile(src, str(p), "exec"), ns)
-    return rt, ns["encode"], shared.graph_for
 
 
 def canonical(matrix, metadata, rows=None):
