@@ -31,6 +31,7 @@ The published [v0.2.5 release assets](https://github.com/zt97152023-ai/stpyramid
 | Contribute or modify the code | [Contributing guide](CONTRIBUTING.md) |
 | Understand planned engineering improvements | [Refactor roadmap](docs/REFACTOR_ROADMAP.md) |
 | Check methods and evidence | [Results and reproducibility](results/README.md) |
+| Validate a historical integrated archive | [Compatibility verifier](tests/compatibility/README.md) |
 
 ## What is included
 
@@ -144,7 +145,7 @@ For exact input constraints and distribution boundaries, read [OPEN_SOURCE_SCOPE
 | `java-desktop/` | Java desktop application, launchers and package builders |
 | `desktop*.py`, `desktop/` | Python desktop client |
 | `native/`, `CMakeLists.txt` | Native image codec source and build |
-| `tests/` | CLI, runtime, task protocol, packaging and synthetic end-to-end tests |
+| `tests/` | CLI, runtime, task protocol, packaging, native regression and historical compatibility tests |
 | `results/` | Aggregate results, evidence ledger and release reports |
 | `docs/` | Architecture, quick start, task protocol and advanced workflow documentation |
 | `upstream/` | Third-party source and its retained notices |
