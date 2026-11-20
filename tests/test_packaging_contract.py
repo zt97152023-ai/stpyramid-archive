@@ -9,13 +9,13 @@ class PackagingContractTests(TestCase):
     def test_python_portable_script_list_contains_worker_dependencies(self):
         builder = (ROOT / "desktop/build_portable.py").read_text(encoding="utf-8")
         for name in ("desktop_worker.py", "runtime_config.py", "task_contract.py",
-                     "desktop_i18n.py", "fetch_count_runtime.py"):
+                     "desktop_i18n.py", "fetch_count_runtime.py", "context_codec.exe"):
             with self.subTest(name=name):
                 self.assertIn(f'"{name}"', builder)
 
     def test_java_portable_overlay_contains_worker_dependencies(self):
         builder = (ROOT / "java-desktop/package.ps1").read_text(encoding="utf-8")
-        for name in ("desktop_worker.py", "runtime_config.py", "task_contract.py"):
+        for name in ("desktop_worker.py", "runtime_config.py", "task_contract.py", "context_codec.exe"):
             with self.subTest(name=name):
                 self.assertIn(f"'{name}'", builder)
 
@@ -26,6 +26,10 @@ class PackagingContractTests(TestCase):
             with self.subTest(target=target):
                 self.assertIn(f"add_custom_target({target}", cmake)
         self.assertIn("--target stpyramid_native_codecs", workflow)
+        staging = (ROOT / "stage_runtime.py").read_text(encoding="utf-8")
+        for public_name in ("anchor_codec", "context_codec", "hf_detail_codec"):
+            with self.subTest(public_name=public_name):
+                self.assertIn(public_name, staging)
 
     def test_worker_root_imports_are_packaged(self):
         worker = (ROOT / "desktop_worker.py").read_text(encoding="utf-8")
