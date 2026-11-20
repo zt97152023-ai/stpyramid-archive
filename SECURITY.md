@@ -23,6 +23,9 @@ Do not describe archive checksums as authentication. SHA-256 and CRC32 detect un
 - Reject `.` and `..` path segments, absolute paths, Windows drive syntax, backslashes, reserved device names and malformed member names in Java source archive manifests.
 - Bound source archive manifest size before parsing; reject duplicate logical names and unexpected format identifiers; use overflow-safe extracted-length accounting.
 - Preserve the existing source archive format identifier and member payload representation. These checks do not change the scientific Count or TIFF codec streams.
+- Apply 16 MiB bounds to baseline and integrated JSON manifests before parsing; validate baseline member lengths and SHA-256 descriptor syntax.
+- Bound grouped Count compressed-index reads from the declared matrix shape, cap the shared model member at 16 MiB, and bound the occupancy-model read before decompression.
+- Make the Shared Count runtime loader call the same canonical pinned-source verification used by the dependency downloader, so direct codec imports cannot bypass the cache checks.
 
 ## Operational recommendations
 
