@@ -24,6 +24,7 @@ FORMAT = 'stlossless-wsi-shared-1'
 UPSTREAM_COMMIT = '935633b2b2b0cbd0a621b8780df7ec0d99cf9eae'
 MAX_PIXELS = 150_000_000
 MAX_SEGMENT = 128 * 1024 * 1024
+MAX_MANIFEST_BYTES = 16 * 1024 * 1024
 
 
 def _name(value):
@@ -143,6 +144,8 @@ class WSISharedArchive(SharedBlockArchive):
         manifest = self.root / 'manifest.json'
         if manifest.is_symlink():
             raise ValueError('Unsafe manifest')
+        if not manifest.is_file() or not 0 < manifest.stat().st_size <= MAX_MANIFEST_BYTES:
+            raise ValueError('Manifest is empty or exceeds 16 MiB')
         blob = manifest.read_bytes()
         self.manifest, self.manifest_bytes = json.loads(blob), len(blob)
         m = self.manifest
