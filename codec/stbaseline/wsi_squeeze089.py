@@ -107,12 +107,15 @@ def _runtime(runtime_dir=None):
     if receipt.get('abi_version') != ABI_VERSION or (receipt.get('built_dependencies') is not False and receipt.get('release_profile') != 'local-source-v1'):
         raise ValueError('Unqualified Anchor Codec runtime receipt')
     pins = {}
-    for name in ('slide_jxl089.exe', 'slide_jxl089.dll'):
+    for public_name, legacy_name in (('anchor_codec.exe', 'slide_jxl089.exe'),
+                                     ('anchor_codec.dll', 'slide_jxl089.dll')):
+        name = public_name if (root/public_name).is_file() else legacy_name
         path = root/name; info = receipt.get('outputs', {}).get(name, {})
         if (path.is_symlink() or not path.is_file() or path.stat().st_size != info.get('bytes')
                 or sha256(path) != info.get('sha256')):
-            raise ValueError('Runtime differs from build receipt: ' + name)
-        pins[name] = {'bytes': info['bytes'], 'sha256': info['sha256']}
+            raise ValueError('Anchor Codec runtime differs from build receipt: ' + name)
+        # Keep historical manifest pin keys stable while accepting the new public filenames.
+        pins[legacy_name] = {'bytes': info['bytes'], 'sha256': info['sha256']}
     return root, pins
 
 
@@ -122,7 +125,8 @@ class NativeRuntime:
         self.root, self.pins = _runtime(runtime_dir)
         if expected is not None and expected != self.pins:
             raise ValueError('NativeAnchor Codec runtime differs from archive pins')
-        self.library = lib = ctypes.CDLL(str(self.root/'slide_jxl089.dll'))
+        library = self.root/'anchor_codec.dll' if (self.root/'anchor_codec.dll').is_file() else self.root/'slide_jxl089.dll'
+        self.library = lib = ctypes.CDLL(str(library))
         lib.st089_abi_version.argtypes = []; lib.st089_abi_version.restype = ctypes.c_uint32
         if lib.st089_abi_version() != ABI_VERSION:
             raise ValueError('Unsupported Anchor Codec ABI')
@@ -157,7 +161,8 @@ def _native_encode(runtime, spool, target):
     stdout, stderr = target.parent/'native.stdout.txt', target.parent/'native.stderr.txt'
     then = time.perf_counter()
     with stdout.open('x', encoding='utf8') as out, stderr.open('x', encoding='utf8') as err:
-        result = subprocess.run([str(runtime/'slide_jxl089.exe'), 'encode', str(spool), str(target)],
+        executable = runtime/'anchor_codec.exe' if (runtime/'anchor_codec.exe').is_file() else runtime/'slide_jxl089.exe'
+    result = subprocess.run([str(executable), 'encode', str(spool), str(target)],
                                 stdout=out, stderr=err, env=env, timeout=2400,
                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     if result.returncode:
