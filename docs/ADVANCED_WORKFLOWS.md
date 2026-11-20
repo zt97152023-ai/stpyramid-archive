@@ -35,7 +35,7 @@ Do not infer backward compatibility from a successful new synthetic smoke test. 
 After building the **Context Codec** through the descriptive `stpyramid_context` target, the experimental recursive image workflow can use the matching compatibility executable from the staged native runtime. Run with a fresh work directory and output path:
 
 ```powershell
-python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder build/bin/slide_jxl091.exe --preset fast --max-depth 3
+python recursive_image_archive.py encode slide.tif runs/recursive-image --work runs/recursive-work --native-encoder the staged Context Codec compatibility executable --preset fast --max-depth 3
 python recursive_image_archive.py verify runs/recursive-image
 python recursive_image_archive.py restore runs/recursive-image runs/recursive-restored
 ```
