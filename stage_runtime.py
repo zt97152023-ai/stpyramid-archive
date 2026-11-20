@@ -1,4 +1,4 @@
-"""Prepare ABI-checked Windows runtime files from a local native build."""
+"""Stage ABI-checked Anchor, Context and HF-Detail native runtimes from a local build."""
 import argparse
 import ctypes
 import hashlib
