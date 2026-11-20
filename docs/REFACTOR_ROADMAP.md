@@ -48,6 +48,8 @@ Before moving code:
 - [x] Test each documented CLI subcommand's help/parser contract without a runtime.
 - [x] Add standard-library desktop task request validation independent from GUI code.
 - [x] Test the request shapes currently emitted by the Python and Java desktop clients.
+- [x] Validate incoming worker requests before dispatching codec work.
+- [x] Exercise worker rejection of malformed requests and compile its source in the test suite.
 - [ ] Inventory every `sys.path` mutation and flat import before changing package boundaries.
 
 **Acceptance:** tests describe existing behavior first; they must not encode a proposed behavior change as if it were current behavior. CLI and task-contract checks are wired to GitHub Actions on Windows, Linux and macOS.
@@ -62,7 +64,7 @@ Before moving code:
 - [x] Add a bounded `STPYRAMID_TIMEOUT_SECONDS` setting (default 14,400; range 1–86,400) and use it in both integrated and image-only desktop encoding.
 - [ ] Extend the same configuration boundary to runtime directory discovery and platform capability reporting.
 
-**Acceptance:** the worker-count helper preserves prior defaults and overrides. The three-platform CI matrix passed for the initial worker-count configuration. The new task-contract and timeout tests are awaiting their own CI run. No codec or archive-format behavior is intentionally changed.
+**Acceptance:** the worker-count helper preserves prior defaults and overrides. The three-platform CI matrix passed for the initial worker-count configuration. The expanded worker protocol and timeout tests are now included in CI; check the latest run before treating this increment as complete. No codec or archive-format behavior is intentionally changed.
 
 ### R4 — Separate stable application code from research tooling
 
@@ -120,4 +122,4 @@ For each such change, require:
 
 ## Next engineering task
 
-The first code-changing task should be **R2: import and CLI contract tests**, followed by R3 runtime configuration. This creates a safety net before changing imports or moving scripts.
+The next engineering task is to complete **R1: behavior baseline** and **R2: import inventory** before any package moves. Runtime configuration and task request validation are now in place; format-sensitive code remains untouched.
