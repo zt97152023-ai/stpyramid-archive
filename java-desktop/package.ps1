@@ -34,7 +34,11 @@ function Copy-RuntimeTree($From, $To, [string[]] $Extra = @()) {
 New-Item -ItemType Directory -Path $target | Out-Null
 Copy-RuntimeTree $jdkPath "$target/jre"
 Copy-RuntimeTree $runtimePath "$target/runtime" @('/XD', '__pycache__', '/XF', 'STPyramid.exe', 'README-EN.txt', '使用说明.txt', '*.pyc')
-Copy-Item -LiteralPath "$runtimePath/app/bin/slide_jxl091.exe" -Destination "$target/runtime/app/bin/context_codec.exe"
+$contextExecutable = "$runtimePath/app/bin/context_codec.exe"
+if (!(Test-Path -LiteralPath $contextExecutable -PathType Leaf)) {
+    $contextExecutable = "$runtimePath/app/bin/slide_jxl091.exe"
+}
+Copy-Item -LiteralPath $contextExecutable -Destination "$target/runtime/app/bin/context_codec.exe"
 $archiveSources = @(
     'codec/archive_image_encode.py',
     'codec/container_compare.py',
