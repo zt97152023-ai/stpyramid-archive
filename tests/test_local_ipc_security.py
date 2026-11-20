@@ -1,9 +1,16 @@
 """Regression tests for authenticated loopback worker IPC."""
+import importlib.util
+from pathlib import Path
 import socket
 import threading
 import unittest
 
-from codec.stbaseline.local_ipc import authenticate_loopback, new_ipc_token
+MODULE_PATH = Path(__file__).resolve().parents[1] / "codec/stbaseline/local_ipc.py"
+SPEC = importlib.util.spec_from_file_location("stpyramid_local_ipc_test", MODULE_PATH)
+LOCAL_IPC = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(LOCAL_IPC)
+authenticate_loopback = LOCAL_IPC.authenticate_loopback
+new_ipc_token = LOCAL_IPC.new_ipc_token
 
 
 class LocalIpcAuthenticationTests(unittest.TestCase):
