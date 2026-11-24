@@ -8,7 +8,7 @@
 | Maximum compression | [research-20261111](https://github.com/zt97152023-ai/stpyramid-archive/tree/research-20261111) | Original HF+L1 candidate search and Shared Count integration |
 | Fast fused v1 | [fast-fused-v1-20261113](https://github.com/zt97152023-ai/stpyramid-archive/tree/fast-fused-v1-20261113) | One selected encoder per tile for the native RGB image pyramid |
 | Java Desktop v0.2.4 | [java-desktop-v0.2.4](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.4) | No-configuration Java desktop, Windows native backend, Linux/macOS source-archive packages |
-| Source-only v0.2.5 | [java-desktop-v0.2.5](https://github.com/zt97152023-ai/stpyramid-archive/tree/java-desktop-v0.2.5) | Clean open-source tree without native runtime binaries or study data |
+| Published v0.2.5 | [v0.2.5 release](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/v0.2.5) | Source release and platform packages. The tagged Windows integrated encoder writes historical Shared_local Count. |
 
 ## Open-source source release
 
@@ -19,17 +19,24 @@ and the external Count source whose upstream license is pending. See
 [OPEN_SOURCE_SCOPE.md](OPEN_SOURCE_SCOPE.md), [LICENSE](LICENSE) and
 [THIRD_PARTY.md](THIRD_PARTY.md).
 
-The Windows offline package is assembled outside the source repository. Linux
-and macOS users can build a no-configuration package on the matching operating
-system with `java-desktop/package-linux.sh` or
-`java-desktop/package-macos.sh`. The package includes a matching JRE, so the
-target computer does not need Java or JAVA_HOME.
+Windows Java packages include a matching JRE. See the
+[Java desktop build and packaging guide](java-desktop/README.md) for the
+local offline and first-use Count dependency builds. Linux and macOS packages
+provide byte-exact source archiving with a bundled JRE.
 
-This branch adds the fused image encoder, using the original container and a compatible decoder. The [fast Windows quick start](results/fast-fused-v1/README.md) covers encoding, verification, ROI reads and TIFF restoration. [Methods](results/fast-fused-v1/METHODS.md) and [ten-slide results](results/fast-fused-v1/RESULTS.md) report the image component. The integrated commands below still use the maximum-compression image path and Shared Count.
+## Current native Count + TIFF modes
 
-## Maximum-compression integrated workflow
+On Windows, the Java desktop defaults to **Fast fusion** for HEST Count +
+TIFF, and also offers **Maximum compression**. Both modes in the current
+source write Shared 2.0 Count (`Shared_2`) and read historical
+`Shared_local` archives. The Java CLI selects Fast fusion with
+`hest-fused`, `hest-batch-fused` or `paired-fused`.
+The existing Java commands without the suffix and the Python
+`stpyramid.py encode` command use maximum compression.
 
-Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its spatial-transcriptomics H5AD in one lossless directory package. The image encoder selects complete records from direct JPEG XL e9 and the 089/091/HF1 native-pyramid paths. New integrated archives use Shared 2.0 for Count. This checkout reads both Shared 2.0 and historical Shared_local archives. Use the current checkout to read archives that declare `Shared_2`.
+The [Fast-fused methods and ten-slide results](results/fast-fused-v1/RESULTS.md)
+cover the image component. The [Shared 2.0 integration verification](results/shared2-integration.md)
+covers six Count development inputs and one real Fast-fused Count + TIFF pair.
 
 ## Inputs and recovery scope
 
@@ -40,7 +47,9 @@ Research implementation for archiving an RGB8 whole-slide TIFF pyramid and its s
 
 ## Windows quick start
 
-The [desktop app](desktop/README.md) runs the integrated Count and image workflow or the fast image-only workflow from a queue. Use `python desktop_app.py` from a qualified Windows environment, or build the portable app with `python desktop/build_portable.py --output runs/STPyramid-Desktop --zip` after installing the pinned Python dependencies. Open `STPyramid.exe` from the extracted directory. The app downloads and checks the pinned entropy-coding dependency on the first Count job.
+Use the [Java desktop guide](java-desktop/README.md) for the integrated Fast
+fusion workflow. The [Python desktop guide](desktop/README.md) covers its
+maximum-compression Count + TIFF and fast image-only workflows.
 
 Use 64-bit CPython 3.12. The local Windows delivery includes `runtime-windows`. For a source checkout, stage runtime binaries from a local CMake/Ninja build as shown below.
 
@@ -67,7 +76,7 @@ Use fresh outputs. Encoding keeps a sibling `archive.work` directory with interm
 
 1. `stpyramid.py` handles the CLI. `encode_archive` validates the inputs and runtimes, scans the stored image levels, stages each component and publishes the directory once both modalities pass verification. [CLI](stpyramid.py) · [Integrated encoder](codec/integrated_encode.py)
 2. Shared 2.0 stores the typed H5AD structure in `science.h5` and indexes independent Count frames by 1024-pixel L0 spatial block and gene group. Panels with at most 1,024 genes use groups of 64 and cluster same-group frames within runs of 32 blocks. Larger panels use groups of 256 in spatial block order. For blocks with at most 12 spots, the encoder compares the original position stream against the nonzero cardinality and subset rank stream. It keeps the occupancy model only when it lowers the complete Count component size, including the model, index and manifest. [Count component](codec/integrated_encode.py) · [Writer](codec/stbaseline/grouped_count_encode.py) · [Reader](codec/stbaseline/grouped_count.py)
-3. `encode_images` produces direct JPEG XL records and the 089, 091 and HF candidates. It prepares native parent references for L0 and L1, retains the smallest eligible records in the prescribed order, and writes both the direct baseline and the selected HF + L1 image component. [Image candidate generation](codec/archive_image_encode.py) · [Image archive](codec/joint_next.py)
+3. Fast fusion prepares native parent references and writes one selected record per tile. Maximum compression evaluates direct JPEG XL and 089/091/HF candidates before writing the HF + L1 image component. [Fast fusion](pyramid_image_archive.py) · [Maximum-compression candidates](codec/archive_image_encode.py) · [Image archive](codec/joint_next.py)
 4. `pack_integrated` checks the component source and level identities, copies the verified members and binds them in one manifest. `IntegratedArchive.region` selects spots in a half-open L0 box and maps the box to covering pixels at the requested image level. Full restore writes the native TIFF levels and reinserts the decoded Count values into the original H5AD structure. [Integrated container and reader](codec/container_compare.py)
 
 ## Build the native Windows runtime
