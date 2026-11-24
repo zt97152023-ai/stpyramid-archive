@@ -2,6 +2,10 @@
 
 [Download the Windows x64 portable ZIP](https://github.com/zt97152023-ai/stpyramid-archive/releases/tag/desktop-v0.1.0)
 
+This guide describes the tagged Python desktop v0.1.0 package. See the
+[Java desktop guide](../java-desktop/README.md) for the current source workflow
+with Shared 2.0 Count and integrated Fast fusion.
+
 Extract the complete ZIP to a writable folder and open `STPyramid.exe`. The ZIP includes the Python and image codec runtimes. English is the default interface language. Choose **简体中文** in the top-right menu to switch to Chinese.
 
 ![STPyramid Desktop compression controls and job queue in English](preview-en.png)
