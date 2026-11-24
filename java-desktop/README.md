@@ -55,6 +55,14 @@ add `-FetchCountOnFirstUse`. This bundles the Java and native runtimes
 and the dependency pin manifest. The first operation that needs Shared Count
 requires network access and a writable extracted directory.
 
+Build a versioned package from a clean Git checkout. The ZIP records the
+source commit and the dependency mode in `RELEASE_INFO.json` and has a
+separate SHA-256 file.
+
+```powershell
+./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/releases/STPyramid-Java-0.2.6-Windows-x64 -FetchCountOnFirstUse -ReleaseVersion v0.2.6
+```
+
 ## HEST
 
 Select the root containing wsis/, st/ and metadata/. Each complete sample contains wsis/ID.tif (or .tiff), st/ID.h5ad and metadata/ID.json. Batch mode accepts space-separated IDs. Leaving the list blank processes all discoverable trios in sorted order. Choose a new output path for each archive. For a partially completed batch, give the remaining sample IDs on the next run.
