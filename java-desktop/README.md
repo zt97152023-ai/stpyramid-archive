@@ -36,15 +36,24 @@ The JAR manages tasks, validation commands and archives. The native codecs and t
 
 ## Offline distribution
 
-Extract the Windows x64 ZIP and double-click `Launch-STPyramidJava.cmd`. Keep the JAR, `jre/` and `runtime/` together. The launcher uses the bundled Java runtime and preselects the bundled native runtime. The JAR also discovers the adjacent runtime directly. The offline bundle fails with an error if the pinned Count files are missing or invalid.
+Extract the Windows x64 ZIP and double-click `Launch-STPyramidJava.cmd`. Keep
+`STPyramidJava.jar`, `jre/` and `runtime/` together.
+Pass an argument such as `capabilities` to the launcher to run the CLI.
+The bundled Java and native runtime are discovered next to the application.
+An offline bundle requires the verified pinned Count dependency.
 
 To assemble a local offline distribution, use a Windows x64 JDK that includes the desktop modules and an installed qualified Windows runtime that has already prepared its pinned Count component.
 
 ```powershell
-./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/releases/STPyramid-Java-0.2.4-Windows-x64
+./java-desktop/package.ps1 -Jdk C:/path/to/jdk -Runtime C:/path/to/portable -OutputDir D:/builds/STPyramid-Java-Windows-Offline
 ```
 
 The bundle contains third-party components. See `THIRD_PARTY.md` and the Java `legal/` directory. The packaged Count source has a pending original-code license upstream. The offline bundle is for local use until redistribution rights are established.
+
+For a distribution that leaves the separate Count dependency to first use,
+add `-FetchCountOnFirstUse`. This bundles the Java and native runtimes
+and the dependency pin manifest. The first operation that needs Shared Count
+requires network access and a writable extracted directory.
 
 ## HEST
 
@@ -52,13 +61,26 @@ Select the root containing wsis/, st/ and metadata/. Each complete sample contai
 
 ```powershell
 java -jar STPyramidJava.jar list-hest E:/Hestdata
-java -jar STPyramidJava.jar hest E:/Hestdata NCBI29 H:/archive/NCBI29.stpyramid PATH_TO_PORTABLE_RUNTIME
-java -jar STPyramidJava.jar hest-batch E:/Hestdata H:/archive PATH_TO_PORTABLE_RUNTIME NCBI29 NCBI37
+java -jar STPyramidJava.jar hest-fused E:/Hestdata NCBI29 H:/archive/NCBI29.stpyramid PATH_TO_PORTABLE_RUNTIME
+java -jar STPyramidJava.jar hest-batch-fused E:/Hestdata H:/archive PATH_TO_PORTABLE_RUNTIME NCBI29 NCBI37
 java -jar STPyramidJava.jar verify H:/archive/NCBI29.stpyramid PATH_TO_PORTABLE_RUNTIME
 java -jar STPyramidJava.jar restore H:/archive/NCBI29.stpyramid H:/restored/NCBI29 PATH_TO_PORTABLE_RUNTIME
 ```
 
-The integrated HEST mode defaults to **Fast fusion**. Select **Maximum compression** when desired. The CLI commands `hest`, `hest-batch` and `paired` retain maximum compression. Their `-fused` counterparts use the fused native-pyramid codec and the same Shared_local Count component. Fast fusion uses up to eight native workers by default in both integrated and TIFF-only modes. Set `STPYRAMID_FUSED_WORKERS` to an integer from 1 to 8 to tune the allocation. The app prefers permitted logical CPUs with lower observed utilization, and smaller affinity sets reduce the effective worker count. L0 and L1 encoding share a bounded worker pool. Encoded records are written in the original order. Each native record and the published complete archive retain their lossless checks. Both modes verify restored scientific H5AD content and every native TIFF RGB level. They require supported H5AD Count data, pre-aligned L0 coordinates and supported native TIFF geometry and storage. See the repository README for precise limits. The paired CLI command accepts explicitly selected TIFF, H5AD and JSON paths outside a HEST directory.
+The integrated HEST desktop mode defaults to **Fast fusion**. The CLI commands
+`hest`, `hest-batch` and `paired` select **Maximum compression**.
+Their `-fused` counterparts select Fast fusion. Both modes in this source
+revision write `Shared_2` Count and read historical `Shared_local` Count
+archives. The published v0.2.5 tag contains the earlier Count writer.
+
+Fast fusion uses up to eight native workers by default in integrated and
+TIFF-only modes. Set `STPYRAMID_FUSED_WORKERS` to 1–8. The app prefers
+permitted logical CPUs with lower observed utilization and caps the worker
+count to the affinity set. L0 and L1 share a bounded worker pool, and records
+are written in the original order. Both modes verify restored scientific
+H5AD content and every native TIFF RGB level. See the repository README for
+input limits. The paired CLI commands accept explicit TIFF, H5AD and JSON
+paths outside a HEST directory.
 
 Full native validation and restoration decode independent target tiles concurrently while keeping parent lookup, bank reads and stripe assembly ordered. `STPYRAMID_SCAN_WORKERS` controls full-scan workers in standalone verification and restoration. The default is 8 for fast fusion archives and 4 for other native profiles. Supported values are 1 to 8. Faster scans do not change the archive format or the separate region-query reader.
 
