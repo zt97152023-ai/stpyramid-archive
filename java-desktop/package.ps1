@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][string] $Jdk,
     [Parameter(Mandatory)][string] $Runtime,
     [Parameter(Mandatory)][string] $OutputDir,
-    [switch] $FetchCountOnFirstUse
+    [switch] $FetchCountOnFirstUse,
+    [ValidatePattern('^v[0-9]+\.[0-9]+\.[0-9]+$')][string] $ReleaseVersion
 )
 $ErrorActionPreference = 'Stop'
 $source = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
@@ -10,6 +11,11 @@ $jdkPath = (Resolve-Path -LiteralPath $Jdk).Path
 $runtimePath = (Resolve-Path -LiteralPath $Runtime).Path
 $target = [IO.Path]::GetFullPath($OutputDir)
 $zip = $target + '.zip'
+$revision = & git -C $source rev-parse HEAD
+if ($LASTEXITCODE -ne 0) { throw 'Could not read the source revision.' }
+$changes = @(& git -C $source status --porcelain --untracked-files=normal)
+if ($LASTEXITCODE -ne 0) { throw 'Could not check the source worktree.' }
+if ($ReleaseVersion -and $changes.Count) { throw 'A versioned release package requires a clean Git worktree.' }
 if ((Test-Path -LiteralPath $target) -or (Test-Path -LiteralPath $zip)) {
     throw 'Choose a new output directory and ZIP path.'
 }
@@ -25,6 +31,21 @@ foreach ($file in @(
     "$runtimePath/app/bin/slide_jxl091.exe"
 )) {
     if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing runtime file $file" }
+}
+if ($ReleaseVersion) {
+    foreach ($file in @("$jdkPath/bin/java.exe", "$runtimePath/python/python.exe", "$runtimePath/app/bin/slide_jxl091.exe")) {
+        $stream = [IO.File]::OpenRead($file)
+        try {
+            $reader = [IO.BinaryReader]::new($stream)
+            $stream.Position = 0x3c
+            $stream.Position = $reader.ReadUInt32()
+            if ($reader.ReadUInt32() -ne 0x00004550 -or $reader.ReadUInt16() -ne 0x8664) {
+                throw "Windows x64 release requires an AMD64 executable: $file"
+            }
+        } finally {
+            $stream.Dispose()
+        }
+    }
 }
 
 function Copy-RuntimeTree($From, $To, [string[]] $Extra = @()) {
@@ -79,10 +100,18 @@ $jar = "$target/STPyramidJava.jar"
 & "$PSScriptRoot/build.ps1" -Jdk $jdkPath -Output $jar
 & "$target/Launch-STPyramidJava.cmd" capabilities
 if ($LASTEXITCODE -ne 0) { throw 'Bundled launcher capability check failed.' }
-$revision = & git -C $source rev-parse HEAD
-if ($LASTEXITCODE -ne 0) { throw 'Could not read the source revision.' }
-if (& git -C $source status --porcelain --untracked-files=no) { $revision += ' (working tree modified)' }
-Set-Content -LiteralPath "$target/SOURCE_REVISION.txt" -Value $revision -Encoding ascii
+$buildRevision = if ($changes.Count) { "$revision (working tree modified)" } else { $revision }
+Set-Content -LiteralPath "$target/SOURCE_REVISION.txt" -Value $buildRevision -Encoding ascii
+if ($ReleaseVersion) {
+    $countSetup = if ($FetchCountOnFirstUse) { 'fetch-on-first-use' } else { 'bundled' }
+    [ordered]@{
+        version = $ReleaseVersion
+        platform = 'windows'
+        architecture = 'x64'
+        source_revision = $revision
+        count_dependency = $countSetup
+    } | ConvertTo-Json | Set-Content -LiteralPath "$target/RELEASE_INFO.json" -Encoding utf8
+}
 [IO.Compression.ZipFile]::CreateFromDirectory($target, "$zip.partial", [IO.Compression.CompressionLevel]::Fastest, $true)
 Move-Item -LiteralPath "$zip.partial" -Destination $zip
 $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
