@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory)][string] $Jdk,
     [Parameter(Mandatory)][string] $Runtime,
-    [Parameter(Mandatory)][string] $OutputDir
+    [Parameter(Mandatory)][string] $OutputDir,
+    [switch] $FetchCountOnFirstUse
 )
 $ErrorActionPreference = 'Stop'
 $source = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
@@ -19,7 +20,7 @@ foreach ($inputRoot in @($source, $jdkPath, $runtimePath)) {
     }
 }
 foreach ($file in @(
-    "$jdkPath/bin/javac.exe", "$jdkPath/bin/javaw.exe", "$jdkPath/lib/modules",
+    "$jdkPath/bin/javac.exe", "$jdkPath/bin/java.exe", "$jdkPath/bin/javaw.exe", "$jdkPath/lib/modules",
     "$runtimePath/python/python.exe", "$runtimePath/app/desktop_worker.py",
     "$runtimePath/app/bin/slide_jxl091.exe"
 )) {
@@ -33,7 +34,14 @@ function Copy-RuntimeTree($From, $To, [string[]] $Extra = @()) {
 
 New-Item -ItemType Directory -Path $target | Out-Null
 Copy-RuntimeTree $jdkPath "$target/jre"
-Copy-RuntimeTree $runtimePath "$target/runtime" @('/XD', '__pycache__', '/XF', 'STPyramid.exe', 'README-EN.txt', '使用说明.txt', '*.pyc')
+$vendorPath = 'codec/stbaseline/_shared_vendor'
+$excludedDirectories = @('/XD', '__pycache__')
+$excludedFiles = @('/XF', 'STPyramid.exe', 'README-EN.txt', '使用说明.txt', '*.pyc')
+if ($FetchCountOnFirstUse) {
+    $excludedDirectories += (Join-Path $runtimePath "app/$vendorPath")
+    $excludedFiles += (Join-Path $runtimePath 'OFFLINE')
+}
+Copy-RuntimeTree $runtimePath "$target/runtime" ($excludedDirectories + $excludedFiles)
 $archiveSources = @(
     'codec/archive_image_encode.py',
     'codec/container_compare.py',
@@ -42,23 +50,35 @@ $archiveSources = @(
     'codec/stbaseline/count_support_sets.py',
     'codec/stbaseline/grouped_count.py',
     'codec/stbaseline/grouped_count_encode.py',
+    "$vendorPath/SOURCE.json",
+    'fetch_count_runtime.py',
     'native_tile_encoder.py',
     'pyramid_image_archive.py',
     'desktop_worker.py'
 )
 foreach ($path in $archiveSources) {
-    Copy-Item -LiteralPath (Join-Path $source $path) -Destination "$target/runtime/app/$path"
+    $destination = Join-Path "$target/runtime/app" $path
+    [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination)) | Out-Null
+    Copy-Item -LiteralPath (Join-Path $source $path) -Destination $destination
 }
 $python = "$target/runtime/python/python.exe"
 $app = "$target/runtime/app"
-& $python -I -B -c 'import sys; sys.path.insert(0, sys.argv[1]); from fetch_count_runtime import count_source_ready; sys.exit(0 if count_source_ready() else 1)' $app
-if ($LASTEXITCODE -ne 0) { throw 'Install and verify the pinned Count component in the input runtime before packaging.' }
-Set-Content -LiteralPath "$target/runtime/OFFLINE" -Encoding ascii -Value 'Use the pinned runtime included in this package.'
+if ($FetchCountOnFirstUse) {
+    $vendorMembers = @(Get-ChildItem -LiteralPath (Join-Path $app $vendorPath) -Force)
+    if ($vendorMembers.Count -ne 1 -or $vendorMembers[0].Name -ne 'SOURCE.json' -or $vendorMembers[0].PSIsContainer -or
+        (Test-Path -LiteralPath "$target/runtime/OFFLINE")) {
+        throw 'First-use package contains a bundled Count dependency or offline marker.'
+    }
+} else {
+    & $python -I -B -c 'import sys; sys.path.insert(0, sys.argv[1]); from fetch_count_runtime import count_source_ready, fetch_count_source; sys.exit(0 if count_source_ready() and fetch_count_source() else 1)' $app
+    if ($LASTEXITCODE -ne 0) { throw 'Install and verify the pinned Count component in the input runtime before packaging.' }
+    Set-Content -LiteralPath "$target/runtime/OFFLINE" -Encoding ascii -Value 'Use the pinned runtime included in this package.'
+}
 Copy-Item -LiteralPath "$PSScriptRoot/Launch-STPyramidJava.cmd", "$PSScriptRoot/README.md", "$source/THIRD_PARTY.md" -Destination $target
-$jar = "$target/STPyramidJava-0.2.4-windows.jar"
+$jar = "$target/STPyramidJava.jar"
 & "$PSScriptRoot/build.ps1" -Jdk $jdkPath -Output $jar
-& "$target/jre/bin/java.exe" -jar $jar help
-if ($LASTEXITCODE -ne 0) { throw 'Bundled JAR launch failed.' }
+& "$target/Launch-STPyramidJava.cmd" capabilities
+if ($LASTEXITCODE -ne 0) { throw 'Bundled launcher capability check failed.' }
 $revision = & git -C $source rev-parse HEAD
 if ($LASTEXITCODE -ne 0) { throw 'Could not read the source revision.' }
 if (& git -C $source status --porcelain --untracked-files=no) { $revision += ' (working tree modified)' }
