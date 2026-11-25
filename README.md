@@ -1,5 +1,13 @@
 # STPyramid Archive
 
+## Latest development work
+
+The [speed-first native archive study](results/fast-import-20261125/README.md)
+reports Windows Count + TIFF import, independent verification, archive size,
+and region reads. It includes the comparison with direct lossless JPEG XL
+effort 3 and the 8-, 16-, and 24-worker scaling measurements. The Windows
+package listed under Releases is a separately versioned distribution.
+
 ## Choose a version
 
 | Version | Fixed tag | Scope |

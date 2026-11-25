@@ -1,5 +1,8 @@
 # Results and manuscript evidence
 
+The [November 25 native archive study](fast-import-20261125/README.md)
+reports the current speed-first workflow and matched-budget comparator.
+
 The machine-readable ledger separates historical archive measurements, mechanism controls and the release smoke test. The code release did not regenerate the seven-slide benchmark.
 
 The [integrated refactor parity report](integrated-refactor-20261116/README.md) records exact archive-member comparisons, cross-version reads and Count and image restoration checks.
