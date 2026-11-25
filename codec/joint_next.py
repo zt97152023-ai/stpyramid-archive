@@ -249,8 +249,8 @@ def write_package(catalog, census, direct, retained, hf_records, l1_native_dir,
         write_json(target/'failure.json', {'type': type(exc).__name__, 'error': str(exc)}); raise
 
 
-class _ScanReferenceCache:
-    """Bound decoded parent pixels for one sequential native-level scan."""
+class _TileCache:
+    """Keep at most the declared budget of decoded RGB tiles in memory."""
 
     def __init__(self):
         self.tiles = OrderedDict()
@@ -263,19 +263,28 @@ class _ScanReferenceCache:
         return pixels
 
     def put(self, gid, pixels):
+        previous = self.tiles.pop(gid, None)
+        if previous is not None:
+            self.bytes -= previous.nbytes
         while self.bytes + pixels.nbytes > FIXED['cache_bytes']:
             _, oldest = self.tiles.popitem(last=False)
             self.bytes -= oldest.nbytes
         self.tiles[gid] = pixels
         self.bytes += pixels.nbytes
 
+    def clear(self):
+        self.tiles.clear()
+        self.bytes = 0
+
 
 class Reader(prior.Reader):
     _depth_limit = 2
 
-    def __init__(self, directory, r089=None, r091=None, rhf=None, *, scan_workers=1):
+    def __init__(self, directory, r089=None, r091=None, rhf=None, *, scan_workers=1, roi_cache=True):
         if type(scan_workers) is not int or not 1 <= scan_workers <= 8:
             raise ValueError('Scan worker count must be between 1 and 8')
+        if type(roi_cache) is not bool:
+            raise ValueError('ROI cache flag must be boolean')
         self._scan_workers = scan_workers
         self.root = _plain(directory, directory=True)
         if any((self.root/name).exists() for name in ('INCOMPLETE', 'failure.json')): raise ValueError('Incomplete HF/L1 package')
@@ -299,14 +308,37 @@ class Reader(prior.Reader):
         self._native089 = self._native091 = self._native_hf = None
         self._runtime089, self._runtime091, self._runtime_hf = r089, r091, rhf
         self._closed = False
+        self._roi_cache = _TileCache() if roi_cache else None
+        self._roi_identity = self._image_member_identity() if roi_cache else None
         for name in ('index_read_bytes', 'anchor_index_read_bytes', 'jxl_tiles_decoded', 'constant_tiles_filled',
                      'logical_tiles_read', 'decoded_pixels', 'requested_pixels', 'cache_hits',
                      'last_query_cache_bytes', 'last_query_unique_payloads', 'reference_tiles_decoded',
                      'reference_pixels', 'reference_bank_bytes', 'native_tiles_decoded', 'native089_tiles_decoded',
                      'native091_tiles_decoded', 'native_hf_tiles_decoded', 'anchor_requests', 'anchor_cache_hits',
-                     'max_observed_depth', 'scan_parent_cache_peak_bytes'):
+                     'max_observed_depth', 'scan_parent_cache_peak_bytes', 'roi_cache_hits'):
             setattr(self, name, 0)
         self.runtime_load_seconds = self.native_decode_seconds = 0.
+
+    def _image_member_identity(self):
+        stats = [(self.root / name).stat(follow_symlinks=False) for name in sorted(MEMBERS | {'manifest.json'})]
+        return tuple((s.st_dev, s.st_ino, s.st_mode, s.st_size, s.st_mtime_ns, s.st_ctime_ns) for s in stats)
+
+    def _check_roi_identity(self):
+        try:
+            unchanged = self._image_member_identity() == self._roi_identity
+        except OSError:
+            unchanged = False
+        if not unchanged:
+            self._roi_cache.clear()
+            raise ValueError('Image archive files changed; reopen the reader')
+
+    def image(self, level, bbox):
+        if self._roi_cache is None:
+            return super().image(level, bbox)
+        self._check_roi_identity()
+        pixels = super().image(level, bbox)
+        self._check_roi_identity()
+        return pixels
 
     def _configure_layout(self, manifest):
         if manifest.get('format') != FORMAT or manifest.get('parameters') != FIXED or manifest.get('image_only') is not True:
@@ -424,6 +456,15 @@ class Reader(prior.Reader):
         self.max_observed_depth = max(self.max_observed_depth, depth); self.logical_tiles_read += 1
         if cache is not None and gid in cache:
             self.cache_hits += 1; return cache[gid]
+        # ROI requests supply a per-query cache state. Full verify and restore
+        # scans use their own reference cache and never reuse session pixels.
+        roi = self._roi_cache if cache_state is not None else None
+        if roi is not None:
+            pixels = roi.get(gid)
+            if pixels is not None:
+                self.cache_hits += 1
+                self.roi_cache_hits += 1
+                return pixels
         if depth and scan_cache is not None:
             pixels = scan_cache.get(gid)
             if pixels is not None:
@@ -449,6 +490,8 @@ class Reader(prior.Reader):
         if depth and scan_cache is not None:
             scan_cache.put(gid, pixels)
             self.scan_parent_cache_peak_bytes = max(self.scan_parent_cache_peak_bytes, scan_cache.bytes)
+        if roi is not None:
+            roi.put(gid, pixels)
         return pixels
 
     def _stripes(self, info):
@@ -456,7 +499,7 @@ class Reader(prior.Reader):
         level = info['level']
         tile_size = base.TILE
         columns = (width + tile_size - 1) // tile_size
-        scan_cache = _ScanReferenceCache() if self._has_reference_level(level) else None
+        scan_cache = _TileCache() if self._has_reference_level(level) else None
         if self._scan_workers > 1 and columns > 1:
             yield from self._parallel_stripes(info, columns, scan_cache)
             return
@@ -531,8 +574,12 @@ class Reader(prior.Reader):
         result = super().metrics()
         result['native_hf_tiles_decoded'] = self.native_hf_tiles_decoded
         result['scan_parent_cache_peak_bytes'] = self.scan_parent_cache_peak_bytes
+        result['decoded_pixel_cache_bytes'] = self._roi_cache.bytes if self._roi_cache is not None else 0
+        result['roi_cache_hits'] = self.roi_cache_hits
         result['codec_scope'] = 'Native MS L0 or091 L0/L1; every reference remains exact and paid'
         return result
 
     def close(self):
+        if self._roi_cache is not None:
+            self._roi_cache.clear()
         super().close(); self._native_hf = None

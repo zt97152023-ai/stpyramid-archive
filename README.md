@@ -79,6 +79,11 @@ Use fresh outputs. Encoding keeps a sibling `archive.work` directory with interm
 3. Fast fusion prepares native parent references and writes one selected record per tile. Maximum compression evaluates direct JPEG XL and 089/091/HF candidates before writing the HF + L1 image component. [Fast fusion](pyramid_image_archive.py) · [Maximum-compression candidates](codec/archive_image_encode.py) · [Image archive](codec/joint_next.py)
 4. `pack_integrated` checks the component source and level identities, copies the verified members and binds them in one manifest. `IntegratedArchive.region` selects spots in a half-open L0 box and maps the box to covering pixels at the requested image level. Full restore writes the native TIFF levels and reinserts the decoded Count values into the original H5AD structure. [Integrated container and reader](codec/container_compare.py)
 
+For repeated Python ROI reads, keep the same qualified image reader open.
+It keeps up to 8 MiB of decoded RGB tiles per reader and asks the caller
+to reopen an archive whose member files have changed. Set `roi_cache=False`
+on the image reader for cache-disabled measurements.
+
 ## Build the native Windows runtime
 
 With Visual Studio 2022 C++ tools, CMake and Ninja installed, run the following in an x64 Developer PowerShell. A clean Windows source build and the resulting end-to-end smoke passed with this toolchain. Use the resulting runtime for both encoding and verification. Existing archives bind their native runtime hashes and may require the matching historical binaries.

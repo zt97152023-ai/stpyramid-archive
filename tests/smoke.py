@@ -1,6 +1,7 @@
 """Generate synthetic inputs and exercise each CLI stage in its own process."""
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -116,8 +117,28 @@ def run(runtime, output):
         np.testing.assert_array_equal(result["image_bbox"], [0, 1, 8, 26])
         np.testing.assert_array_equal(result["image"], middle[1:26, :8])
         np.testing.assert_array_equal(result["counts"], counts[:1, [3, 1, 2]])
+        initial = reader.metrics()["image"]
+        repeated = reader.region(bbox, level=1, genes=[3, 1, 2])
+        np.testing.assert_array_equal(repeated["image"], result["image"])
+        after = reader.metrics()["image"]
+        assert after["decoded_pixels"] == initial["decoded_pixels"]
+        assert after["roi_cache_hits"] > initial["roi_cache_hits"]
+        assert 0 < after["decoded_pixel_cache_bytes"] <= 8 * 1024**2
     corrupted = output / "corrupted"
     shutil.copytree(package, corrupted)
+    with Reader(corrupted / "image", *runtimes) as reader:
+        roi = [0, 0, 8, 8]
+        np.testing.assert_array_equal(reader.image(0, roi), fine[:8, :8])
+        manifest = corrupted / "image" / "manifest.json"
+        current = manifest.stat()
+        os.utime(manifest, ns=(current.st_atime_ns, current.st_mtime_ns + 2_000_000_000))
+        try:
+            reader.image(0, roi)
+        except ValueError as exc:
+            assert "reopen the reader" in str(exc)
+        else:
+            raise AssertionError("ROI cache returned pixels from a changed archive")
+        assert reader.metrics()["decoded_pixel_cache_bytes"] == 0
     with (corrupted / "image" / "images.bank").open("r+b") as handle:
         value = handle.read(1)
         handle.seek(0)
@@ -126,7 +147,8 @@ def run(runtime, output):
     assert rejected.returncode != 0 and "mismatch" in rejected.stderr.lower(), rejected.stderr
     print(json.dumps({"status": "PASS", "levels": len(levels), "count_shape": list(counts.shape), "image_routes": routes,
                       "verified": ["full_rgb", "tiff_tags", "typed_h5ad", "metadata", "image_roi",
-                                   "count_subset", "aligned_region", "091_and_hf_native_decode", "altered_member_rejected"]}))
+                                   "count_subset", "aligned_region", "roi_cache_reuse", "roi_cache_invalidation",
+                                   "091_and_hf_native_decode", "altered_member_rejected"]}))
 
 
 if __name__ == "__main__":
