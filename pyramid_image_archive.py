@@ -29,13 +29,13 @@ def _decoder_runtime_pins():
             "hf": archive._hf()._runtime(RUNTIMES[2])[1]}
 
 
-def _collect_tile_records(census, catalog, conditional_record_paths, workers):
-    def encode_jxl(gid):
-        return base._encode(scan.read_tile(census, gid, catalog=catalog))
+def _collect_tile_records(census, catalog, conditional_record_paths, workers, *, coarse_effort=9):
+    def encode_jxl(gid, effort):
+        return base._encode(scan.read_tile(census, gid, catalog=catalog), effort=effort)
 
     @lru_cache(maxsize=256)
-    def encode_constant_jxl(canonical_gid):
-        return encode_jxl(canonical_gid)
+    def encode_constant_jxl(canonical_gid, effort):
+        return encode_jxl(canonical_gid, effort)
 
     records = []
     pending = deque()
@@ -47,14 +47,15 @@ def _collect_tile_records(census, catalog, conditional_record_paths, workers):
     with (ThreadPoolExecutor(max_workers=workers) if workers > 1 else nullcontext()) as pool:
         for tile in catalog["tiles"]:
             gid = tile["gid"]
+            effort = coarse_effort if tile["level"] >= 2 else 9
             if gid in conditional_record_paths:
                 records.append((archive.CONDITIONAL091, conditional_record_paths[gid].read_bytes()))
             elif tile["constant_rgb"] is not None:
-                records.append((archive.JXL, encode_constant_jxl(tile["canonical_gid"])))
+                records.append((archive.JXL, encode_constant_jxl(tile["canonical_gid"], effort)))
             elif pool is None:
-                records.append((archive.JXL, encode_jxl(gid)))
+                records.append((archive.JXL, encode_jxl(gid, effort)))
             else:
-                pending.append((len(records), pool.submit(encode_jxl, gid)))
+                pending.append((len(records), pool.submit(encode_jxl, gid, effort)))
                 records.append(None)
                 if len(pending) == workers * 2:
                     collect_jxl()
@@ -122,7 +123,7 @@ def encode_native_pyramid(source, package, work, method="fused_l0_l1", on_stage=
         return result
 
     if prepared_census is None:
-        timed("read_source_and_census", lambda: scan.census(source, census))
+        timed("read_source_and_census", lambda: scan.census(source, census, include_diagnostics=False))
         catalog = timed("verify_census", lambda: base._catalog(census))
     else:
         census, catalog = prepared_census
@@ -136,7 +137,7 @@ def encode_native_pyramid(source, package, work, method="fused_l0_l1", on_stage=
             lambda: _encode_parent_conditioned_tiles(census, catalog, work, timed, workers))
         record_stage = "collect_conditional_and_encode_direct_tiles"
     records, constant_cache = timed(record_stage, lambda: _collect_tile_records(
-        census, catalog, conditional_record_paths, workers
+        census, catalog, conditional_record_paths, workers, coarse_effort=9 if method == "direct9" else 3
     ))
     is_direct = method == "direct9"
     timed("assemble_image_package", lambda: archive.write_tile_archive(

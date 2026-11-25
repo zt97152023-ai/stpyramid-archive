@@ -85,8 +85,9 @@ Fast fusion uses up to eight native workers by default in integrated and
 TIFF-only modes. Set `STPYRAMID_FUSED_WORKERS` to 1–8. The app prefers
 permitted logical CPUs with lower observed utilization and caps the worker
 count to the affinity set. L0 and L1 share a bounded worker pool, and records
-are written in the original order. Both modes verify restored scientific
-H5AD content and every native TIFF RGB level. See the repository README for
+are written in the original order. In integrated modes, use the separate
+Verify command to check restored scientific H5AD content and every native
+TIFF RGB level. See the repository README for
 input limits. The paired CLI commands accept explicit TIFF, H5AD and JSON
 paths outside a HEST directory.
 

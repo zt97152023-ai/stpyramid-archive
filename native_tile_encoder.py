@@ -34,31 +34,29 @@ def write_tile_inputs(census, catalog, input_dir, native_level, *, include_const
             directory.mkdir()
     start = archive.starts(catalog["levels"])[native_level]
 
-    @lru_cache(maxsize=32)
-    def read_parent(gid):
-        return scan.read_tile(census, gid, catalog=catalog)
-
-    for gid, level, x, y, width, height in base._descriptors(catalog["levels"]):
-        if level < native_level:
-            continue
-        if level > native_level:
-            break
-        if not include_constant_tiles and catalog["tiles"][gid]["constant_rgb"] is not None:
-            continue
-        desc = (gid, level, x, y, width, height)
-        rgb = scan.read_tile(census, gid, catalog=catalog)
-        if parent_geometry is None:
-            reference, _ = archive.anchor_pixels(catalog["levels"], desc, read_parent)
-        else:
-            parent_id, rows, columns = parent_geometry(desc)
-            reference = np.ascontiguousarray(read_parent(parent_id)[rows[:, None], columns[None, :]])
-        local_gid = gid - start
-        rgb_name, reference_name = f"{local_gid:06d}.rgb", f"{local_gid:06d}.anchor"
-        directory = directories[len(index_rows) % partitions]
-        (directory / rgb_name).write_bytes(rgb.tobytes())
-        (directory / reference_name).write_bytes(reference.tobytes())
-        # The legacy native index uses level 0 within each independently encoded batch.
-        index_rows[gid] = "\t".join(map(str, (local_gid, 0, x, y, width, height, rgb_name, reference_name)))
+    with scan.open_tile_reader(census, catalog) as read:
+        read_parent = lru_cache(maxsize=32)(read)
+        for gid, level, x, y, width, height in base._descriptors(catalog["levels"]):
+            if level < native_level:
+                continue
+            if level > native_level:
+                break
+            if not include_constant_tiles and catalog["tiles"][gid]["constant_rgb"] is not None:
+                continue
+            desc = (gid, level, x, y, width, height)
+            rgb = read(gid)
+            if parent_geometry is None:
+                reference, _ = archive.anchor_pixels(catalog["levels"], desc, read_parent)
+            else:
+                parent_id, rows, columns = parent_geometry(desc)
+                reference = np.ascontiguousarray(read_parent(parent_id)[rows[:, None], columns[None, :]])
+            local_gid = gid - start
+            rgb_name, reference_name = f"{local_gid:06d}.rgb", f"{local_gid:06d}.anchor"
+            directory = directories[len(index_rows) % partitions]
+            (directory / rgb_name).write_bytes(rgb.tobytes())
+            (directory / reference_name).write_bytes(reference.tobytes())
+            # The legacy native index uses level 0 within each independently encoded batch.
+            index_rows[gid] = "\t".join(map(str, (local_gid, 0, x, y, width, height, rgb_name, reference_name)))
     rows = list(index_rows.values())
     for index, directory in enumerate(directories):
         (directory / "index.tsv").write_text("".join(row + "\n" for row in rows[index::partitions]),

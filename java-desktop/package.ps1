@@ -71,6 +71,8 @@ $archiveSources = @(
     'codec/stbaseline/count_support_sets.py',
     'codec/stbaseline/grouped_count.py',
     'codec/stbaseline/grouped_count_encode.py',
+    'codec/stbaseline/slide_redundancy.py',
+    'codec/stbaseline/slide_redundancy_scan.py',
     "$vendorPath/SOURCE.json",
     'fetch_count_runtime.py',
     'native_tile_encoder.py',

@@ -1,4 +1,4 @@
-"""Stage and publish verified Count and native-image archive components."""
+"""Stage and publish Count and native-image archive components."""
 import json
 import os
 from pathlib import Path
@@ -97,7 +97,7 @@ def write_count_component(counts, metadata, catalog, source_identities, output):
 
 def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, cpu=None, timeout=14400,
                    on_stage=None, image_mode="maximum", fused_workers=1, maximum_workers=1):
-    """Build both modalities, verify the integrated package, and publish the verified directory."""
+    """Build and publish both modalities. Full readback is a separate operation."""
     if image_mode not in {"maximum", "fused"}:
         raise ValueError("Unknown integrated image mode")
     requested = fused_workers if image_mode == "fused" else maximum_workers
@@ -150,7 +150,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
         identities = {key: {"bytes": path.stat().st_size, "sha256": sha256(path)}
                       for key, path in sources.items()}
         census = work / "census"
-        timed("native_image_census", lambda: scan.census(image, census))
+        timed("native_image_census", lambda: scan.census(image, census, include_diagnostics=False))
         catalog = base._catalog(census)
         j.geometry(catalog["levels"])
         count_component = work / "count"
@@ -176,15 +176,15 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
             if path.stat().st_size != identities[key]["bytes"] or sha256(path) != identities[key]["sha256"]:
                 raise ValueError("Source input changed during encoding")
         candidate = work / "candidate"
-        timed("assemble_complete_archive", lambda: archive.pack_integrated(
+        ledger = timed("assemble_complete_archive", lambda: archive.pack_integrated(
             count_component, image_component, candidate, count_kind="Shared_2"))
-        with archive.IntegratedArchive(candidate, image_factory=lambda p: j.Reader(p, *runtimes, scan_workers=workers)) as reader:
-            result = timed("verify_counts_pixels_and_files", reader.verify)
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists() or target.is_symlink():
             raise FileExistsError(target)
         candidate.rename(target)
-        receipt = {"ok": True, "archive": str(target), "verification": result, "stages": events}
+        receipt = {"ok": True, "archive": str(target), "ledger": ledger,
+                   "native_levels": len(catalog["levels"]),
+                   "verification": {"state": "not_run"}, "stages": events}
         _write_json(work / "COMPLETE.json", receipt)
         return receipt
     except BaseException as error:

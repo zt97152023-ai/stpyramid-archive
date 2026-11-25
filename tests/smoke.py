@@ -65,13 +65,21 @@ def run(runtime, output):
             raise RuntimeError(result.stderr)
         return json.loads(result.stdout)
 
-    command("encode", "--image", source / "pyramid.tif", "--counts", source / "counts.h5ad",
+    encoded = command("encode", "--image", source / "pyramid.tif", "--counts", source / "counts.h5ad",
             "--metadata", source / "metadata.json", "--output", package, "--runtime-dir", runtime,
             "--timeout", 240)
+    assert encoded["verification"] == {"state": "not_run"}
+    assert encoded["native_levels"] == len(levels)
+    assert encoded["ledger"]["total_package_bytes"] == sum(
+        path.stat().st_size for path in package.rglob("*") if path.is_file()
+    )
+    assert "verify_counts_pixels_and_files" not in {stage["name"] for stage in encoded["stages"]}
     import hf_adapter
     from stbaseline.wsi_conditioned091 import NativeRuntime as Runtime091
 
     work = package.with_name(package.name + ".work")
+    scan = json.loads((work / "census/scan.json").read_bytes())
+    assert scan["diagnostic_seconds"] == 0
     fine, middle, _ = levels
     height, width, _ = fine.shape
     record091 = (work / "prior091/native/conditional/000000.bin").read_bytes()

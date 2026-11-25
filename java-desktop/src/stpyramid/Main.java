@@ -77,7 +77,7 @@ public final class Main {
                         failures.add(id);
                     }
                 }
-                log.accept("Batch verified " + passed + "/" + ids.size() + " new archives");
+                log.accept("Batch created " + passed + "/" + ids.size() + " new archives");
                 if (!failures.isEmpty()) throw new IOException("Samples requiring attention: " + String.join(", ", failures));
             }
             case "image" -> {

@@ -70,9 +70,9 @@ def encode_job(job, emit):
                                 if mode == "integrated-fused" else 1,
                                 maximum_workers=int(os.environ.get("STPYRAMID_MAXIMUM_WORKERS", "8"))
                                 if mode == "integrated" else 1)
-        verification = result["verification"]
-        total_bytes = verification["ledger"]["total_package_bytes"]
-        levels = verification["image"]["levels"]
+        total_bytes = result["ledger"]["total_package_bytes"]
+        level_count = result["native_levels"]
+        verification_state = result["verification"]["state"]
     else:
         from integrated_encode import _configure_worker
         from native_tile_encoder import RUNTIMES, archive
@@ -89,7 +89,8 @@ def encode_job(job, emit):
         if not verification["ok"]:
             raise ValueError(translate(language, "Lossless image verification failed."))
         total_bytes = result["bytes"]
-        levels = verification["levels"]
+        level_count = len(verification["levels"])
+        verification_state = "passed"
         candidate.rename(_fresh(output, *sources))
 
     if not job.get("keep_work"):
@@ -99,7 +100,8 @@ def encode_job(job, emit):
                 shutil.rmtree(scratch)
             except OSError as exc:
                 emit({"message": translate(language, "Archive saved. Could not remove the temporary folder. {error}", error=exc)})
-    return {"output": str(output), "bytes": total_bytes, "levels": len(levels)}
+    return {"output": str(output), "bytes": total_bytes, "levels": level_count,
+            "verification": verification_state}
 
 
 def read_job(job, emit):

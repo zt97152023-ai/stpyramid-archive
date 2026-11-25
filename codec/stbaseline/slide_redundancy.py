@@ -105,9 +105,9 @@ def _classes(catalog):
     return counts
 
 
-def _encode(pixels):
+def _encode(pixels, *, effort=9):
     import imagecodecs
-    blob = imagecodecs.jpegxl_encode(np.ascontiguousarray(pixels),lossless=True,distance=0,effort=9,numthreads=1)
+    blob = imagecodecs.jpegxl_encode(np.ascontiguousarray(pixels),lossless=True,distance=0,effort=effort,numthreads=1)
     if not 0 < len(blob) <= MAX_PAYLOAD:
         raise ValueError('JXL payload outside bounded profile')
     np.testing.assert_array_equal(imagecodecs.jpegxl_decode(blob,numthreads=1,out=np.empty_like(pixels)),pixels)

@@ -65,8 +65,8 @@ def stage_seconds(logfile):
             e = json.loads(line)
             if "end" in e:
                 events[e["end"]] = e["seconds"]
-    if "verify_counts_pixels_and_files" not in events:
-        raise ValueError("Missing the native encoding/validation stage timings")
+    if "assemble_complete_archive" not in events:
+        raise ValueError("Missing the native archive assembly timing")
     return events
 
 
@@ -253,7 +253,7 @@ def main():
                       encode_jar_sha256=sha256(a.parent / "STPyramidJava.jar"),
                       original_bytes=sum(p.stat().st_size for p in files.values()),
                       encode_process_wall_seconds=None,
-                      encode_stage_seconds_without_final_verification=sum(stages.values()) - stages["verify_counts_pixels_and_files"],
+                      encode_stage_seconds_without_final_verification=sum(stages.values()) - stages.get("verify_counts_pixels_and_files", 0),
                       native_stage_seconds_with_final_verification=sum(stages.values()),
                       encode_timing_scope="Prior run: sum of native stage events; dedicated Java process stopwatch not recorded.")
         publish(args.output / "PILOT.json", result)

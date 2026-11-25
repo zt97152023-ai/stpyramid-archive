@@ -5,6 +5,7 @@ formed only after shape and byte equality, never from a hash alone. The retained
 canonical spool is task workspace, not itself a claimed compressed image.
 """
 import copy
+from contextlib import contextmanager
 import hashlib
 import json
 from pathlib import Path
@@ -189,8 +190,8 @@ def _diagnostics(spool_path, levels, records):
             'meaning': 'Descriptive native-pixel comparisons only; nonconstant also includes noisy background; not entropy, coding gain, tissue classification or biological fidelity'}
 
 
-def census(source, output):
-    """Scan every native level once; other diagnostic passes use retained spool."""
+def census(source, output, *, include_diagnostics=True):
+    """Collect exact native pixels, with optional research diagnostics."""
     started = time.perf_counter()
     source = Path(source).resolve(strict=True)
     out = _disjoint(output, source)
@@ -268,9 +269,12 @@ def census(source, output):
                            'native_metadata':metadata,'whole_file_sha256':before,
                            'exactness':'All native RGB values and typed metadata; not source TIFF container restoration'}
         _write_json(out/'source.json',source_metadata)
-        then = time.perf_counter()
-        diagnostic = _diagnostics(out/'tiles.rgb',levels,records)
-        diagnostic_seconds = time.perf_counter()-then
+        diagnostic = None
+        diagnostic_seconds = 0.0
+        if include_diagnostics:
+            then = time.perf_counter()
+            diagnostic = _diagnostics(out/'tiles.rgb', levels, records)
+            diagnostic_seconds = time.perf_counter()-then
         multiplicity = {}
         for record in records:
             key = str(record['canonical_gid'])
@@ -401,18 +405,29 @@ def load_catalog(directory, *, verify_spool=True):
     return catalog
 
 
-def read_tile(directory, gid, catalog=None):
-    """Read one verified valid RGB tile from the retained canonical spool."""
-    if catalog is None:
-        catalog = load_catalog(directory,verify_spool=False)
+def _read_tile(stream, gid, catalog):
     if not _integer(gid) or not 0 <= gid < len(catalog['tiles']):
         raise ValueError('Logical tile ID outside census')
-    path = Path(directory)/'tiles.rgb'
-    if path.is_symlink():
-        raise ValueError('Symlink spool is not supported')
-    with path.open('rb') as stream:
-        pixels = _read_record(stream,catalog['tiles'][gid])
+    pixels = _read_record(stream, catalog['tiles'][gid])
     constant = catalog['tiles'][gid]['constant_rgb']
     if constant is not None and not np.all(pixels==np.asarray(constant,np.uint8)):
         raise ValueError('Constant declaration differs from retained native pixels')
     return pixels
+
+
+@contextmanager
+def open_tile_reader(directory, catalog=None):
+    """Reuse a spool handle for a serial batch of SHA-256-checked reads."""
+    if catalog is None:
+        catalog = load_catalog(directory,verify_spool=False)
+    path = Path(directory)/'tiles.rgb'
+    if path.is_symlink():
+        raise ValueError('Symlink spool is not supported')
+    with path.open('rb') as stream:
+        yield lambda gid: _read_tile(stream, gid, catalog)
+
+
+def read_tile(directory, gid, catalog=None):
+    """Read one verified valid RGB tile from the retained canonical spool."""
+    with open_tile_reader(directory, catalog) as read:
+        return read(gid)
