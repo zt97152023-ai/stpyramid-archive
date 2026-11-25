@@ -10,6 +10,7 @@ from pathlib import Path
 import time
 
 from native_tile_encoder import ROOT, RUNTIMES, archive, base, run_native_encoder, scan, write_tile_inputs
+from integrated_encode import MAX_FUSED_WORKERS
 
 import psutil
 
@@ -102,8 +103,8 @@ def encode_native_pyramid(source, package, work, method="fused_l0_l1", on_stage=
     process = psutil.Process()
     if method not in {"direct9", "fused_l0_l1"}:
         raise ValueError("Unknown image encoder")
-    if type(workers) is not int or not 1 <= workers <= 8:
-        raise ValueError("Native worker count must be between 1 and 8")
+    if type(workers) is not int or not 1 <= workers <= MAX_FUSED_WORKERS:
+        raise ValueError(f"Native worker count must be between 1 and {MAX_FUSED_WORKERS}")
     if package.exists() or work.exists():
         raise FileExistsError("Image package and work directory must be fresh paths")
     work.mkdir()

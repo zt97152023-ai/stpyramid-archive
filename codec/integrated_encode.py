@@ -1,12 +1,16 @@
 """Stage and publish Count and native-image archive components."""
+import ctypes
 import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import sys
 import tempfile
 from threading import Lock
 import time
+
+MAX_FUSED_WORKERS = 24
 
 
 def _json_bytes(value):
@@ -23,15 +27,46 @@ def runtime_dirs(root):
     return tuple(root / key for key in ("089", "091", "hf"))
 
 
-def _configure_worker(cpu, seconds, workers=1):
+def _physical_cpu_candidates(allowed, utilization):
+    """Choose one logical CPU per physical core in the Windows affinity group."""
+    read = ctypes.WinDLL("kernel32", use_last_error=True).GetSystemCpuSetInformation
+    read.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.POINTER(ctypes.c_ulong),
+                     ctypes.c_void_p, ctypes.c_ulong]
+    size = ctypes.c_ulong()
+    read(None, 0, ctypes.byref(size), None, 0)
+    if not size.value:
+        return []
+    data = ctypes.create_string_buffer(size.value)
+    if not read(data, size, ctypes.byref(size), None, 0):
+        return []
+    cores = {}
+    seen = set()
+    offset = 0
+    while offset + 8 <= size.value:
+        length, kind = struct.unpack_from("<II", data, offset)
+        if length < 8 or offset + length > size.value:
+            return []
+        if kind == 0 and length >= 19:
+            group, logical, core, _, _, efficiency = struct.unpack_from("<H5B", data, offset + 12)
+            if group == 0 and logical in allowed and logical < len(utilization):
+                seen.add(logical)
+                rank = (-efficiency, utilization[logical], logical)
+                if core not in cores or rank < cores[core]:
+                    cores[core] = rank
+        offset += length
+    # Affinity numbering is verified before applying a group-zero topology.
+    return [entry[2] for entry in sorted(cores.values())] if seen == set(allowed) else []
+
+
+def _configure_worker(cpu, seconds, workers=1, *, worker_limit=8):
     import psutil
 
     if sys.platform != "win32":
         raise RuntimeError("The integrated native runtime adapter requires Windows")
     if not 1 <= seconds <= 86400:
         raise ValueError("The encoding timeout must be within 1–86400 seconds")
-    if type(workers) is not int or not 1 <= workers <= 8:
-        raise ValueError("Native worker count must be between 1 and 8")
+    if type(workers) is not int or not 1 <= workers <= worker_limit:
+        raise ValueError(f"Native worker count must be between 1 and {worker_limit}")
     process = psutil.Process()
     allowed = process.cpu_affinity()
     if cpu is not None and cpu not in allowed:
@@ -40,7 +75,8 @@ def _configure_worker(cpu, seconds, workers=1):
         selected = [cpu]
     elif workers > 1:
         utilization = psutil.cpu_percent(interval=0.25, percpu=True)
-        selected = sorted(allowed, key=lambda core: (utilization[core], core))[:workers]
+        candidates = _physical_cpu_candidates(allowed, utilization) if workers > 8 else []
+        selected = (candidates or sorted(allowed, key=lambda core: (utilization[core], core)))[:workers]
     else:
         selected = allowed[-workers:]
     process.cpu_affinity(selected)
@@ -101,7 +137,7 @@ def encode_archive(image, counts, metadata, runtime_dir, output, *, work=None, c
     if image_mode not in {"maximum", "fused"}:
         raise ValueError("Unknown integrated image mode")
     requested = fused_workers if image_mode == "fused" else maximum_workers
-    cpus = _configure_worker(cpu, timeout, requested)
+    cpus = _configure_worker(cpu, timeout, requested, worker_limit=MAX_FUSED_WORKERS if image_mode == "fused" else 8)
     workers = len(cpus)
     import container_compare as archive
     import joint_next as j

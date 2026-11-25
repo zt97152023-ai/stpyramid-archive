@@ -74,17 +74,18 @@ def encode_job(job, emit):
         level_count = result["native_levels"]
         verification_state = result["verification"]["state"]
     else:
-        from integrated_encode import _configure_worker
+        from integrated_encode import MAX_FUSED_WORKERS, _configure_worker
         from native_tile_encoder import RUNTIMES, archive
         from pyramid_image_archive import encode_native_pyramid
 
-        cpus = _configure_worker(None, 14400, int(os.environ.get("STPYRAMID_FUSED_WORKERS", "8")))
+        cpus = _configure_worker(None, 14400, int(os.environ.get("STPYRAMID_FUSED_WORKERS", "8")),
+                                 worker_limit=MAX_FUSED_WORKERS)
         workers = len(cpus)
         emit({"native_workers": workers, "candidate_cpu_affinity": cpus})
         candidate = scratch / "archive"
         result = encode_native_pyramid(image, candidate, scratch / "work", on_stage=emit, workers=workers)
         emit({"begin": "verify_image_archive"})
-        with archive.Reader(candidate, *RUNTIMES, scan_workers=workers) as reader:
+        with archive.Reader(candidate, *RUNTIMES, scan_workers=min(workers, 8)) as reader:
             verification = reader.verify()
         if not verification["ok"]:
             raise ValueError(translate(language, "Lossless image verification failed."))
