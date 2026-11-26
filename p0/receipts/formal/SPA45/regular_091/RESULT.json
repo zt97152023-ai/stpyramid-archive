@@ -1,0 +1,57 @@
+{
+  "state": "PASS",
+  "sample": "SPA45",
+  "arm": "regular_091",
+  "archive": "formal/SPA45/regular_091/package.stpyramid",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "early_image_development"
+  ],
+  "independence": "development",
+  "publish_wall_s": 32.244563499989454,
+  "independent_readback_wall_s": 12.892666400002781,
+  "extra_h5ad_type_check_wall_s": 0.46695220000401605,
+  "package_bytes": 50310253,
+  "image_bytes": 42329245,
+  "native_sha256": [
+    "2087fb7808600dbd09da8335edfdb409797ab1bcc1080a459b71a67a6a1e225d",
+    "6768cab37e029ee76aa6a34383592f0d3daad29380a57cc9d5cd08d4d0fb9469",
+    "e7c0984786c8ff8544bed88200a91d00ae80d70ad2d310b7ac398aa02ea1a549",
+    "ed485e95ecfc030c5690f96734de8ab1e79bfc98f389c06184a95b0fb3947357",
+    "a45771af36166c0858719b943e4c51d5cb677674212d5fd14abb7b1747c8f2f1",
+    "602319d7875bd9d5994d0e9613619994377d365e2249edc4789c1a8507732cb5",
+    "4f4f473f9cc59ca225d578e053ef07afdc85d261594456d30640f62495f45890"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 53018,
+      "sha256": "23f1593f6c62c3d7052d2edd002b838e8b6e9a32a789f0ddb7e647c87ca26d39"
+    },
+    "count/counts.index.zst": {
+      "bytes": 8848,
+      "sha256": "a18eb30e1a6f2189759b305bfa9fc914dd5881e5fcdd7959b1c6d4fd0a5a30f0"
+    },
+    "count/counts.model": {
+      "bytes": 21844,
+      "sha256": "45556080b8860f4e709611f69ebd53aaceb443a45ff52c6c90e2943dc20e6ee9"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 1058,
+      "sha256": "5000069b338ba080ec8ff6dda8e1302190ac47ece9d6bc1d0ea3870a10d25b98"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 1034608,
+      "sha256": "f72ccd07cf073d8df393c0e99d8a017a3090defee15d417a264c2d9ac96be878"
+    },
+    "count/science.h5": {
+      "bytes": 6854027,
+      "sha256": "a92c272a6454f5074d8f85941d49d2b3552d1660771555ffb150c08b734508cc"
+    }
+  },
+  "manifest_sha256": "cbfe6fab5a272fe4edbb25709cd4c4e23177de2477c404dc1dce7bf22872488e",
+  "verified_at": "2026-11-26T01:20:53+08:00"
+}

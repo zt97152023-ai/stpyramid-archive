@@ -1,0 +1,185 @@
+{
+  "sample": "SPA45",
+  "arm": "regular_091",
+  "publish_wall_s": 32.244563499989454,
+  "encode": {
+    "ok": true,
+    "archive": "formal/SPA45/regular_091/package.stpyramid",
+    "ledger": {
+      "members": {
+        "manifest.json": 7605,
+        "count/counts.bank": 53018,
+        "count/counts.index.zst": 8848,
+        "count/counts.model": 21844,
+        "count/HEST_metadata.json": 1058,
+        "count/original_gene_positions.json": 1034608,
+        "count/science.h5": 6854027,
+        "image/anchors.index": 6680,
+        "image/images.bank": 42231511,
+        "image/images.index": 35916,
+        "image/manifest.json": 22199,
+        "image/source.json": 32939
+      },
+      "categories": {
+        "manifest": 7605,
+        "count": 83710,
+        "science_metadata": 6854027,
+        "image": 42329245,
+        "attachments": 1035666
+      },
+      "total_package_bytes": 50310253,
+      "scope": "Actual complete data package; HDF5 Count includes its metadata once; decoder programs excluded and reported separately"
+    },
+    "native_levels": 7,
+    "verification": {
+      "state": "not_run"
+    },
+    "stages": [
+      {
+        "name": "native_image_census",
+        "seconds": 3.273288699987461
+      },
+      {
+        "name": "shared_count_encode",
+        "seconds": 2.1687335000024177
+      },
+      {
+        "name": "fused_image_encode",
+        "seconds": 25.848456399995484
+      },
+      {
+        "name": "assemble_complete_archive",
+        "seconds": 0.20831170000019483
+      }
+    ]
+  },
+  "events": [
+    {
+      "begin": "native_image_census"
+    },
+    {
+      "end": "native_image_census",
+      "seconds": 3.273288699987461
+    },
+    {
+      "begin": "shared_count_encode"
+    },
+    {
+      "end": "shared_count_encode",
+      "seconds": 2.1687335000024177
+    },
+    {
+      "native_workers": 24,
+      "candidate_cpu_affinity": [
+        10,
+        6,
+        8,
+        4,
+        12,
+        14,
+        0,
+        2,
+        16,
+        17,
+        18,
+        19,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        20
+      ]
+    },
+    {
+      "begin": "fused_image_encode"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "pin_runtimes"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "pin_runtimes",
+      "seconds": 0.008546199998818338
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "parent_conditioned_batches"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "prepare_native_L0"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "prepare_native_L0",
+      "seconds": 0.06111789999704342
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "prepare_native_L1"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "prepare_native_L1",
+      "seconds": 10.955356999998912
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "finish_parent_conditioned_batches"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "finish_parent_conditioned_batches",
+      "seconds": 13.931288499996299
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "parent_conditioned_batches",
+      "seconds": 24.963126100003137
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "collect_conditional_and_encode_direct_tiles"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "collect_conditional_and_encode_direct_tiles",
+      "seconds": 0.552118799998425
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "assemble_image_package"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "assemble_image_package",
+      "seconds": 0.2637989000068046
+    },
+    {
+      "end": "fused_image_encode",
+      "seconds": 25.848456399995484
+    },
+    {
+      "begin": "assemble_complete_archive"
+    },
+    {
+      "end": "assemble_complete_archive",
+      "seconds": 0.20831170000019483
+    }
+  ],
+  "routes": {
+    "1": 180,
+    "3": 0,
+    "4": 0,
+    "5": 1615,
+    "6": 0
+  }
+}

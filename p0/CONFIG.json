@@ -1,0 +1,514 @@
+{
+  "created_at": "2026-11-26T01:08:24+08:00",
+  "historical_protocol": "Prior fixed-10 selection protocol; selection and source-plan SHA-256 are recorded.",
+  "historical_limit10_sha256": "151b8f9912d101cd591ad6cbe204b05e71de650c63a5bcbec8144f76be77a934",
+  "source_plan_sha256": "ad9d53612bf7b273098b54b15aae1206ba6fd5856fac63d6d95bbb67cd2ccf4c",
+  "baseline_commit": "fef2915",
+  "native_exe_sha256": "6cf5eb1c4f56afeece15143ac850339d1250dc87f3c41985370ef992e032b1b6",
+  "app_sources_sha256": {
+    "pyramid_image_archive.py": "6153363663026b757de4f061c391e22e500eebd82307e2d02dcf8ed25f46eac3",
+    "native_tile_encoder.py": "5a074548b2c6ded47c02e0455b4d89817ff747af9fb76b79c5854aaf8021bfba",
+    "codec/integrated_encode.py": "3837d5c50fd8fd19a1e911a904e17970ee02bb56160ad41f60765ee46f30628a",
+    "codec/stbaseline/slide_redundancy.py": "34ccca3a35546d8c41a90b6ff2c189d585086ddc2d4bad4d4198dbd523efb71f",
+    "codec/container_compare.py": "a809f55620165ca6827ffb944f31ade45e8d41f139cbe95be46070a230ebb926",
+    "codec/joint_next.py": "4797c8db9a0e283e10cd931d1813028f862e9a66c4d1b63d46899f6090689e1f"
+  },
+  "same_count": "Shared_2; Count members must be byte-identical between arms",
+  "arms": {
+    "regular_091": "unmodified regular 091 shared census; L2+ JXL e3",
+    "direct_jxl_e3": "direct3 experiment option; lossless JXL e3 at every stored level"
+  },
+  "codec_checks": "Immediate reconstruction of independently encoded JXL tiles and native 091 conditional tiles; independent full package verification in another process for both arms.",
+  "encode_timing": "Wall clock immediately before integrated encode_archive until return with package publication receipt. Both arms build fresh census and Count.",
+  "readback_timing": "Fresh process and reader, open archive through verify() of all members, native pixels and H5AD semantic restoration. Extra datatype oracle timed separately.",
+  "affinity": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31
+  ],
+  "encode_workers": 24,
+  "readback_workers": 8,
+  "disk": "Original environment: source inputs on one volume and all output and scratch on a second common volume.",
+  "cache": "OS file cache uncontrolled. Shared JIT cache warmed during the NCBI29 gate. Alternate formal arm order.",
+  "preflight_order": [
+    "regular_091",
+    "direct_jxl_e3"
+  ],
+  "frozen_samples": [
+    "TENX139",
+    "NCBI29",
+    "SPA45",
+    "NCBI815",
+    "SPA127",
+    "SPA91",
+    "SPA5",
+    "NCBI791",
+    "NCBI702",
+    "TENX28"
+  ],
+  "samples": {
+    "TENX139": {
+      "inputs": {
+        "count": {
+          "bytes": 6944026,
+          "path": "st/TENX139.h5ad",
+          "sha256": "a785c38b145ebe0802e6758a5f3e0b3788da2134fe6df399f6892a44a4d33267"
+        },
+        "image": {
+          "bytes": 2253230598,
+          "path": "wsis/TENX139.tif",
+          "sha256": "34ba170d1dc1a854f6ae4cabd72e162da7c6c8638267b4517ad1416a9f52b22f"
+        },
+        "metadata": {
+          "bytes": 2544,
+          "path": "metadata/TENX139.json",
+          "sha256": "d1908afc45711cc461d55beb2908e26cab1b0c6ab448531f9ee5a6a7d9ee3912"
+        }
+      },
+      "native_rgb_bytes": 3511116912,
+      "native_sha256": [
+        "e58d401829c069cb68cc7ac68cc9976846192927d288861096f19db4bd3bb20c",
+        "1f2a1aca4e1f176d3ff46c922e9adfc73f11b8f097f82b4244bf042d04cd6a6e",
+        "8a8a5677d381e4dbf0992fdef10510edec2e3e5281901cccb967ad87288c8490",
+        "bdaa6cee9072f4dcfd7b9509ad2c88a48ac10cca0f0d63d62c03826d11e052da",
+        "7e8a844f6e1da35898043627416f292ed782f9e98119e870864d4cbccf85e78c",
+        "13435a9767f51a27e31bc8d79e6116f1128d12033d3144466b78572c997e2610",
+        "11ab430035da09ad1ee33e7986498f2a34287d19f987825ae743fdd44765e957",
+        "51a3e35248617574bc3a2a671fdfcb98dede8fa5dabf345a1ba9939b739801cb",
+        "c91811eb35df73075913b4a7ab52fd89ae1bf3084c9133e29c47c9fb0c5b19ce"
+      ],
+      "source_semantic_sha256": "217fccc6ff78677b57fbb11f85c6fe2b95687662401baf73cc783e6e15bf10fd",
+      "study": "FFPE Human Colorectal Cancer Data with Human Immuno-Oncology Profiling Panel and Custom Add-on",
+      "platform": "Xenium",
+      "development": true,
+      "development_exposure": [
+        "current_091_development"
+      ],
+      "independence": "development"
+    },
+    "NCBI29": {
+      "inputs": {
+        "count": {
+          "bytes": 44436795,
+          "path": "st/NCBI29.h5ad",
+          "sha256": "d0127b461231c4f698f9500e29617ae8559c566a996b51149fb9e4e996f89f21"
+        },
+        "image": {
+          "bytes": 65438991,
+          "path": "wsis/NCBI29.tif",
+          "sha256": "13afdbe16a6fe427116fc7f85c8c695f5272c7b93db8fd3de8d4f34a02b7f9c2"
+        },
+        "metadata": {
+          "bytes": 1087,
+          "path": "metadata/NCBI29.json",
+          "sha256": "63ace99259a93f183bdf57ff7436f68d78e295a8886a0873e02df46d3dfb0fd3"
+        }
+      },
+      "native_rgb_bytes": 254641641,
+      "native_sha256": [
+        "d377c791eb9945d1d0f8878efd74c92c8f78204797b9cdb06bf397d77ffe4dd1",
+        "870cf19839d6551c467ea16a17c18d557269172b10ac3d42d8a08274c7045aa3",
+        "68d3625d57896e84275fea7bb4c39f7d211445274838e2a631b1479c4162dcf4",
+        "4ac32003d3f2be8293979b63ff2121b675e4ece60af7d54b70316c4282eee192",
+        "a281ffd73923f918f1436a0038998406806244efdb284a7ca61cce0b73eaa1a7",
+        "656b840eeda99b60e770da2e5db4e7081ece17f822d4f65de52f8054c5d5ad62",
+        "93ce561538d8aadcd4d4a2f1194fd162e9092edb9fa93e91247056eab1576829"
+      ],
+      "source_semantic_sha256": "13489aad077ed782a28c0fe9601b60767873ed0e747b7f3b6287b57c56744a29",
+      "study": "https://www.science.org/doi/10.1126/science.aav9776?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed",
+      "platform": "Spatial Transcriptomics",
+      "development": true,
+      "development_exposure": [
+        "shared2_count_development",
+        "current_091_development"
+      ],
+      "independence": "development"
+    },
+    "SPA45": {
+      "inputs": {
+        "count": {
+          "bytes": 24322259,
+          "path": "st/SPA45.h5ad",
+          "sha256": "0ae12bc860a6105e4be92041872f677ac551c2a070b62bf0f0fd1d9c6d193404"
+        },
+        "image": {
+          "bytes": 92642701,
+          "path": "wsis/SPA45.tif",
+          "sha256": "50d81d53f0b823f572ad7a99b9d3fa3ce8afc07792be9842008ab13ef9951ff8"
+        },
+        "metadata": {
+          "bytes": 1058,
+          "path": "metadata/SPA45.json",
+          "sha256": "5000069b338ba080ec8ff6dda8e1302190ac47ece9d6bc1d0ea3870a10d25b98"
+        }
+      },
+      "native_rgb_bytes": 338196663,
+      "native_sha256": [
+        "2087fb7808600dbd09da8335edfdb409797ab1bcc1080a459b71a67a6a1e225d",
+        "6768cab37e029ee76aa6a34383592f0d3daad29380a57cc9d5cd08d4d0fb9469",
+        "e7c0984786c8ff8544bed88200a91d00ae80d70ad2d310b7ac398aa02ea1a549",
+        "ed485e95ecfc030c5690f96734de8ab1e79bfc98f389c06184a95b0fb3947357",
+        "a45771af36166c0858719b943e4c51d5cb677674212d5fd14abb7b1747c8f2f1",
+        "602319d7875bd9d5994d0e9613619994377d365e2249edc4789c1a8507732cb5",
+        "4f4f473f9cc59ca225d578e053ef07afdc85d261594456d30640f62495f45890"
+      ],
+      "source_semantic_sha256": "1618775186bb9628d7571f76d015d42a2fa4758505ce500c1f5edd720cf5215d",
+      "study": "https://www.sciencedirect.com/science/article/pii/S0092867419312826?via%3Dihub",
+      "platform": "Spatial Transcriptomics",
+      "development": true,
+      "development_exposure": [
+        "shared2_count_development",
+        "early_image_development"
+      ],
+      "independence": "development"
+    },
+    "NCBI815": {
+      "inputs": {
+        "count": {
+          "bytes": 10483468,
+          "path": "st/NCBI815.h5ad",
+          "sha256": "e2af76a771c5e6cadb9351ca6f9f541b38474f61c50059df8c058d958d8852de"
+        },
+        "image": {
+          "bytes": 62811107,
+          "path": "wsis/NCBI815.tif",
+          "sha256": "ad6c4a34c90f6e5ae1dd495d0e72deae802b4fd9824e3c634582d31bd49d66c4"
+        },
+        "metadata": {
+          "bytes": 960,
+          "path": "metadata/NCBI815.json",
+          "sha256": "735e092662ec4c7a7585567e621b0c09f346bb21529b5887aed9132fb6294cf1"
+        }
+      },
+      "native_rgb_bytes": 353375664,
+      "native_sha256": [
+        "880ae78cdf681ddbf0437caeab0e56f46d195eaabff83c39433206b8471a0afe",
+        "864d0097539bfd3cfc6fa63909c0ac301557c04655c8204f1918069b29d6b055",
+        "54117250ad683790fc97026421ecf3fc05d2de57371e54dd65a0d8ac77f6e2a2",
+        "57b4ffbc387608dea534f61144c3a0d6d5507a258cdf90cb817a0932b85c7e36",
+        "de93c70d0166673d2d60863af34caee5de37522a82f9cbe1b75e8a00510a2de6",
+        "3ffa9d7259403a6adea54a3e8ffcc97f8315642ba44c408ce38e3e61f2f2e4d8",
+        "2b8cc8741a71e1174e55e30ebdb1c4c4db61c12b5154ca35d331f6e19261e348"
+      ],
+      "source_semantic_sha256": "99fb785d245aa03c269e7bc4bdf0cec4a5599008cf0bbe866fb0aa998100ca69",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/37423216/",
+      "platform": "Visium",
+      "development": true,
+      "development_exposure": [
+        "early_image_development"
+      ],
+      "independence": "development"
+    },
+    "SPA127": {
+      "inputs": {
+        "count": {
+          "bytes": 86465176,
+          "path": "st/SPA127.h5ad",
+          "sha256": "3dfc76dcd14e4d43bb1d1589e7fdbd4109e0d24a218fe67338b34b550c99eee5"
+        },
+        "image": {
+          "bytes": 225710309,
+          "path": "wsis/SPA127.tif",
+          "sha256": "d26a972d4f5c1e8f877cb90bf0ff318667f7a0b262ee319cc0f1f2d7640cb448"
+        },
+        "metadata": {
+          "bytes": 1058,
+          "path": "metadata/SPA127.json",
+          "sha256": "010d4feccedf03f72340f189ac9de584946769070ca57763bd40c0dd2b3d0ca1"
+        }
+      },
+      "native_rgb_bytes": 366824811,
+      "native_sha256": [
+        "710e46621c84935a89dca577e7d6e0d1cf474f6a449b2f42b8369da990e3eb69",
+        "863a70d0fa1f4f7243560b81c15310cd8cee3f838716b21b6a312b5d918d9a2f",
+        "7b2503c5868b3114cb59b0eb6b8d77703bbf378e182809a399537a611935dac2",
+        "a0622053dc86aad74da7b5484e37de770be440bd9c9a7e70c12ed5501fae9c89",
+        "e4eaf971be85c20574d1acc9e2a2970c899abaa063b4fec74c749066cfb5165f",
+        "0a59852360b12bbf8a021e67e78ad8e70527f1aedf3b5fa8a4750b3281456e2b",
+        "0d42db35e07f6713a9e6293638267687a34d775fc5ee70960a618ed095a0c57e"
+      ],
+      "source_semantic_sha256": "10adf4f623b97b6c3cbc300759e15d3432f812f7d7dbcdbfcc854237d35e549c",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/34650042/",
+      "platform": "Spatial Transcriptomics",
+      "development": true,
+      "development_exposure": [
+        "early_image_development"
+      ],
+      "independence": "development"
+    },
+    "SPA91": {
+      "inputs": {
+        "count": {
+          "bytes": 47559805,
+          "path": "st/SPA91.h5ad",
+          "sha256": "f6a523c33d99d39e36cba1915899468f2f859135fe33979460fcc3368b6bdd7e"
+        },
+        "image": {
+          "bytes": 140273037,
+          "path": "wsis/SPA91.tif",
+          "sha256": "8d68990a5c7568f84b1d654bab17e61234dc02fc126742c28d2f8f4e5ed3e143"
+        },
+        "metadata": {
+          "bytes": 1006,
+          "path": "metadata/SPA91.json",
+          "sha256": "58f3d96c3194f3bbc92dc27f55eb51875e7851bc482730a4eda9e8b2866f3c64"
+        }
+      },
+      "native_rgb_bytes": 367130679,
+      "native_sha256": [
+        "bd02638629e9c475245ce74d920fcdd6e0897415fb71db6bb34a473c8d017165",
+        "719425f114269977f1fa31984bbdddd546cb651ad6df8bf69e926a49452a9b12",
+        "ca8e586777ffb8e9c3e8dd8a2cf8bf4c8c07369359794e2b2775d965c09999ce",
+        "0726b116081d9e5381e459b47a8d0b86a33f544c1e57f4189e81b5466a3425f2",
+        "435042b2b95124dee398e5a2e45cf074bedc77a93e4deac92556507f53fccf89",
+        "10ff4c6ef13c8fa0c15591fd35f93ee4ff0aefcc954d5a9d56f3867212171cf2",
+        "9fe850d3ac9a1e45bab648aea86d3e0433edb37880917fa5cbfd9484f571ecef"
+      ],
+      "source_semantic_sha256": "ed3fef391a1509e237e23719d5793f4ee8e93fb4a14f8fcd4a81662f3fc06286",
+      "study": "https://www.science.org/doi/10.1126/science.aaf2403",
+      "platform": "Spatial Transcriptomics",
+      "development": false,
+      "development_exposure": [],
+      "independence": "source_donor_independence_unconfirmed"
+    },
+    "SPA5": {
+      "inputs": {
+        "count": {
+          "bytes": 38322730,
+          "path": "st/SPA5.h5ad",
+          "sha256": "4a878592402b4d9317f842cd072062a94e96ddc4953cbe7963f1ca0c0d9b8e9e"
+        },
+        "image": {
+          "bytes": 84544111,
+          "path": "wsis/SPA5.tif",
+          "sha256": "48b4dcacc13b4e58cb1de75c4cfecc413414e328c5ac3c2c1e5105f7188600d4"
+        },
+        "metadata": {
+          "bytes": 1025,
+          "path": "metadata/SPA5.json",
+          "sha256": "440d362261570e81a09a9cda4388e4a777dc365a9a94b39fabb11d8970d96f7d"
+        }
+      },
+      "native_rgb_bytes": 367693965,
+      "native_sha256": [
+        "d06916fd1aa9723ba7d9b2e2671733dd919b8609b9dafb5d370f8bc64f37697a",
+        "6671f09eccf6056990d11d0e9e38144857af19bdb838bc911726800833439051",
+        "c17424de25e04c60be5c97de34949e6658002dae9df3884a2670b43024a028e2",
+        "6f2964c2d6f6d26b621e1105246f57d7a66f32caa4b41832bdd3dd344fc840e7",
+        "e6db91ddbd30f7572bf4d45cdeb286a90e919fdde3da414f26232bea29e04f64",
+        "5b8d6c9b6c92716629f2b906882cbf6934b0b347a16b7c52f993c838d629317b",
+        "13b50eedfab9c6f0911fea9b736c21e08bc7a68f218bf4edd9c2134852b92af8"
+      ],
+      "source_semantic_sha256": "0636b9eb70a5caa340d6a59a8647e8785600de35967b6cf5f7ba4333572ed204",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/27365449/",
+      "platform": "Spatial Transcriptomics",
+      "development": false,
+      "development_exposure": [],
+      "independence": "source_donor_independence_unconfirmed"
+    },
+    "NCBI791": {
+      "inputs": {
+        "count": {
+          "bytes": 29746183,
+          "path": "st/NCBI791.h5ad",
+          "sha256": "19c74c0bc9a85a4c2d628ffec134c3b36792d93a0e4851486a903852ee4198f4"
+        },
+        "image": {
+          "bytes": 119436351,
+          "path": "wsis/NCBI791.tif",
+          "sha256": "b2c91e592d42cad4d5521ad6cc24b31150ef33bf6c24124ae5868fafd829abd9"
+        },
+        "metadata": {
+          "bytes": 1006,
+          "path": "metadata/NCBI791.json",
+          "sha256": "6ee21a90422745e33aa2d1dcf1335dded33c414d3cee5c5fe012351eb19ea107"
+        }
+      },
+      "native_rgb_bytes": 374975055,
+      "native_sha256": [
+        "aee220bc4c45376cd44cfef2076c2ad0dc80031554dfbe102a90a088c760fcd7",
+        "dca34398d68f410a8ef5cca2e5568e7f41ef013f611015b35574fe3ed98d35a7",
+        "32ced4146e08dc39f292ff77adbd75a304603140f55c0402ca66b17c028eedb9",
+        "40c7e7330933cb12ea9d7a2643757f78d5d21feb9f2af7ca014ce728332f70f6",
+        "66b35e45880428e443d4a908424a6220bdfc2f51926d5f937e4bdaa3c30177fb",
+        "d71c67581ae36e31aebb0f9ba960d10d77183d48cca09509cce650625058cc50",
+        "5a5a8fefaf67d3a4ba72c27d26506fa4aeb61fac42eef0b95848b3500960b684"
+      ],
+      "source_semantic_sha256": "b77a90b399ad50213bc93a0529815ad342b4e48e4b3dd6677a469de9b741e522",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/37598997/",
+      "platform": "Visium",
+      "development": true,
+      "development_exposure": [
+        "shared2_count_development",
+        "early_image_development"
+      ],
+      "independence": "development"
+    },
+    "NCBI702": {
+      "inputs": {
+        "count": {
+          "bytes": 20057739,
+          "path": "st/NCBI702.h5ad",
+          "sha256": "9ffeb6787307ad790f3c4635782b3406ce381c319cfdfeda2f2424d1612ea15f"
+        },
+        "image": {
+          "bytes": 214536897,
+          "path": "wsis/NCBI702.tif",
+          "sha256": "70072fb9fe9d5ae65fcd5f68d857abbe3cefc0ebd02da5ac7f39d0f06b5399ac"
+        },
+        "metadata": {
+          "bytes": 1128,
+          "path": "metadata/NCBI702.json",
+          "sha256": "a98919e75fb9fcc9ff332cdff9d496f344b877a7330c4b948d7217aed586dbd7"
+        }
+      },
+      "native_rgb_bytes": 473299344,
+      "native_sha256": [
+        "b377ef5c0f6784d0f146f9ebaa474c333597dd2677e17b5c369b712c82151fa3",
+        "fd41ff3c9ea05442d23051413b79d6230e468bd6befc6adde694420a384fa90e",
+        "568030b9bc82c4989533d225dafa9ab1da6d253c54d329ee92213eb4bbded59b",
+        "db52d0307970411ec8d82b57118393507e20ad63151284c03ee03423f7e843ad",
+        "e57d74fe581c86b99bf917a4e561777d606e685555599ba379a24467a91a3613",
+        "cc18e02c6e8bb5213db0e6d38b071c75356f840aac3592bf476beb3539b92956",
+        "414030979fe96d5e2bd2ee5473492ac256d9042c9ecfb4a9caacc2a013eaa6ae"
+      ],
+      "source_semantic_sha256": "c784ca084108db888a0b4d2d6d18ab652377b94ca2f6503eb473f2b6ec3f3f07",
+      "study": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10356613/",
+      "platform": "Visium",
+      "development": false,
+      "development_exposure": [],
+      "independence": "source_donor_independence_unconfirmed"
+    },
+    "TENX28": {
+      "inputs": {
+        "count": {
+          "bytes": 12556718,
+          "path": "st/TENX28.h5ad",
+          "sha256": "ac281b3925613118077eb476a00f76ba855f6a665178cef4e402e414aa8b976e"
+        },
+        "image": {
+          "bytes": 359956737,
+          "path": "wsis/TENX28.tif",
+          "sha256": "3eb7d01c7d3736f326bd989a1d200a771389db1d3f0e59ff30fdff15f81a8e0a"
+        },
+        "metadata": {
+          "bytes": 3032,
+          "path": "metadata/TENX28.json",
+          "sha256": "6cdfb8a468e2a3519f79dde65da4a18559525f7943bf1d0bd88e7dae20fb1688"
+        }
+      },
+      "native_rgb_bytes": 710917302,
+      "native_sha256": [
+        "ba3615473f1eaca7e17bdacc04f5ec4b8fc1a4bf1bff81a202fcf44616f6a2d7",
+        "72a7c0b2c443a259f8ba4e3ae4938e8c50574e1cc9bd909ba9cf16fe8e35354d",
+        "0a93462c8eb4e0d89f2b8cf6df6ca6c1ea35cdd0f02b37ffa9b0a04c0fee2be1",
+        "b6a3507d27858b37e559c8ba443da7b8797b05dcd8a612bc5cb1850e9c08cc69",
+        "a3847cfc5582aa20be6305f1f8ddd82c0bd7d7c15590d0e463c0a90d3fdd4e89",
+        "8561c068936af747a97b0f3271384325a26f945df6b745ba3843a209443ebb83",
+        "cf39f55abf664d4dc561d14971561979b379cd888ed135d5b24cf5ef80ac3388"
+      ],
+      "source_semantic_sha256": "459c5aac0eeed524df63c6b9aa9292097cdef920ae0e5d1943d1cc3c6e3ef66d",
+      "study": "Human Colorectal Cancer: Targeted, Gene Signature Panel",
+      "platform": "Visium",
+      "development": true,
+      "development_exposure": [
+        "early_image_development"
+      ],
+      "independence": "development"
+    }
+  },
+  "formal_pairs": [
+    {
+      "sample": "TENX139",
+      "order": [
+        "direct_jxl_e3",
+        "regular_091"
+      ]
+    },
+    {
+      "sample": "NCBI29",
+      "order": [
+        "regular_091",
+        "direct_jxl_e3"
+      ]
+    },
+    {
+      "sample": "SPA45",
+      "order": [
+        "direct_jxl_e3",
+        "regular_091"
+      ]
+    },
+    {
+      "sample": "NCBI815",
+      "order": [
+        "regular_091",
+        "direct_jxl_e3"
+      ]
+    },
+    {
+      "sample": "SPA127",
+      "order": [
+        "direct_jxl_e3",
+        "regular_091"
+      ]
+    },
+    {
+      "sample": "SPA91",
+      "order": [
+        "regular_091",
+        "direct_jxl_e3"
+      ]
+    },
+    {
+      "sample": "SPA5",
+      "order": [
+        "direct_jxl_e3",
+        "regular_091"
+      ]
+    },
+    {
+      "sample": "NCBI791",
+      "order": [
+        "regular_091",
+        "direct_jxl_e3"
+      ]
+    },
+    {
+      "sample": "NCBI702",
+      "order": [
+        "direct_jxl_e3",
+        "regular_091"
+      ]
+    },
+    {
+      "sample": "TENX28",
+      "order": [
+        "regular_091",
+        "direct_jxl_e3"
+      ]
+    }
+  ],
+  "independent_validation": "The ten accepted sections are development-exposed or study-overlapping; independent section count is zero (see receipts/INDEPENDENCE_AUDIT.json)."
+}

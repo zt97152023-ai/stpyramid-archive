@@ -1,0 +1,186 @@
+{
+  "sample": "NCBI702",
+  "arm": "regular_091",
+  "publish_wall_s": 42.58734379999805,
+  "encode": {
+    "ok": true,
+    "archive": "retries/NCBI702_attempt02/regular_091/package.stpyramid",
+    "ledger": {
+      "members": {
+        "manifest.json": 7779,
+        "count/counts.bank": 812397,
+        "count/counts.index.zst": 24824,
+        "count/counts.model": 42038,
+        "count/counts.occupancy.zst": 1134,
+        "count/HEST_metadata.json": 1128,
+        "count/original_gene_positions.json": 589831,
+        "count/science.h5": 7553191,
+        "image/anchors.index": 9328,
+        "image/images.bank": 126226853,
+        "image/images.index": 50216,
+        "image/manifest.json": 27939,
+        "image/source.json": 32993
+      },
+      "categories": {
+        "manifest": 7779,
+        "count": 880393,
+        "science_metadata": 7553191,
+        "image": 126347329,
+        "attachments": 590959
+      },
+      "total_package_bytes": 135379651,
+      "scope": "Actual complete data package; HDF5 Count includes its metadata once; decoder programs excluded and reported separately"
+    },
+    "native_levels": 7,
+    "verification": {
+      "state": "not_run"
+    },
+    "stages": [
+      {
+        "name": "native_image_census",
+        "seconds": 4.400788299986743
+      },
+      {
+        "name": "shared_count_encode",
+        "seconds": 3.956180900000618
+      },
+      {
+        "name": "fused_image_encode",
+        "seconds": 32.04875829999219
+      },
+      {
+        "name": "assemble_complete_archive",
+        "seconds": 0.2797643999947468
+      }
+    ]
+  },
+  "events": [
+    {
+      "begin": "native_image_census"
+    },
+    {
+      "end": "native_image_census",
+      "seconds": 4.400788299986743
+    },
+    {
+      "begin": "shared_count_encode"
+    },
+    {
+      "end": "shared_count_encode",
+      "seconds": 3.956180900000618
+    },
+    {
+      "native_workers": 24,
+      "candidate_cpu_affinity": [
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        0,
+        2,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ]
+    },
+    {
+      "begin": "fused_image_encode"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "pin_runtimes"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "pin_runtimes",
+      "seconds": 0.008235000001150183
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "parent_conditioned_batches"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "prepare_native_L0"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "prepare_native_L0",
+      "seconds": 12.78223810000054
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "prepare_native_L1"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "prepare_native_L1",
+      "seconds": 5.435138300003018
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "finish_parent_conditioned_batches"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "finish_parent_conditioned_batches",
+      "seconds": 12.9183320000011
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "parent_conditioned_batches",
+      "seconds": 31.31234449999465
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "collect_conditional_and_encode_direct_tiles"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "collect_conditional_and_encode_direct_tiles",
+      "seconds": 0.31558600001153536
+    },
+    {
+      "arm": "fused_l0_l1",
+      "begin": "assemble_image_package"
+    },
+    {
+      "arm": "fused_l0_l1",
+      "end": "assemble_image_package",
+      "seconds": 0.32696730000316165
+    },
+    {
+      "end": "fused_image_encode",
+      "seconds": 32.04875829999219
+    },
+    {
+      "begin": "assemble_complete_archive"
+    },
+    {
+      "end": "assemble_complete_archive",
+      "seconds": 0.2797643999947468
+    }
+  ],
+  "routes": {
+    "1": 182,
+    "3": 0,
+    "4": 0,
+    "5": 2328,
+    "6": 0
+  }
+}

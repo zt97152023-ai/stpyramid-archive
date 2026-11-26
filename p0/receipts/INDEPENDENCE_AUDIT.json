@@ -1,0 +1,106 @@
+{
+  "state": "AUDITED",
+  "cutoff": "2026-11-26T01:13:34+08:00",
+  "scope": "Same-source overlap blocks study-level independence. Donor equality was not assumed.",
+  "mapping_sha256": "044cfea6716c4af0bd99f5fe706ac4cce823add0201d5166c288e2dc6b2eb1d4",
+  "formal_sample_count": 10,
+  "direct_development_count": 7,
+  "additional_same_study_count": 3,
+  "confirmed_independent_n": 0,
+  "rows": [
+    {
+      "sample": "TENX139",
+      "direct_development_flags": [
+        "current_091_development"
+      ],
+      "study_label": "FFPE Human Colorectal Cancer Data with Human Immuno-Oncology Profiling Panel and Custom Add-on",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    },
+    {
+      "sample": "NCBI29",
+      "direct_development_flags": [
+        "shared2_count_development",
+        "current_091_development"
+      ],
+      "study_label": "https://www.science.org/doi/10.1126/science.aav9776?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    },
+    {
+      "sample": "SPA45",
+      "direct_development_flags": [
+        "shared2_count_development",
+        "early_image_development"
+      ],
+      "study_label": "https://www.sciencedirect.com/science/article/pii/S0092867419312826?via%3Dihub",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    },
+    {
+      "sample": "NCBI815",
+      "direct_development_flags": [
+        "early_image_development"
+      ],
+      "study_label": "https://pubmed.ncbi.nlm.nih.gov/37423216/",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    },
+    {
+      "sample": "SPA127",
+      "direct_development_flags": [
+        "early_image_development"
+      ],
+      "study_label": "https://pubmed.ncbi.nlm.nih.gov/34650042/",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    },
+    {
+      "sample": "SPA91",
+      "direct_development_flags": [],
+      "study_label": "https://www.science.org/doi/10.1126/science.aaf2403",
+      "classification": "excluded_same_study_as_image_development",
+      "independent": false,
+      "overlapping_development_sample": "SPA61",
+      "overlapping_study_label": "https://www.science.org/doi/10.1126/science.aaf2403"
+    },
+    {
+      "sample": "SPA5",
+      "direct_development_flags": [],
+      "study_label": "https://pubmed.ncbi.nlm.nih.gov/27365449/",
+      "classification": "excluded_same_study_as_image_development",
+      "independent": false,
+      "overlapping_development_sample": "SPA61",
+      "overlapping_study_label": "https://www.science.org/doi/10.1126/science.aaf2403",
+      "primary_source_alias_crosswalk": "https://pubmed.ncbi.nlm.nih.gov/27365449/"
+    },
+    {
+      "sample": "NCBI791",
+      "direct_development_flags": [
+        "shared2_count_development",
+        "early_image_development"
+      ],
+      "study_label": "https://pubmed.ncbi.nlm.nih.gov/37598997/",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    },
+    {
+      "sample": "NCBI702",
+      "direct_development_flags": [],
+      "study_label": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10356613/",
+      "classification": "excluded_same_study_as_image_development",
+      "independent": false,
+      "overlapping_development_sample": "NCBI697",
+      "overlapping_study_label": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10356613/"
+    },
+    {
+      "sample": "TENX28",
+      "direct_development_flags": [
+        "early_image_development"
+      ],
+      "study_label": "Human Colorectal Cancer: Targeted, Gene Signature Panel",
+      "classification": "excluded_direct_development_exposure",
+      "independent": false
+    }
+  ]
+}

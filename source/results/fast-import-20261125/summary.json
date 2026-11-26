@@ -1,0 +1,305 @@
+{
+  "sample": "TENX139",
+  "native_levels": 9,
+  "tiles": 18184,
+  "platform": "Windows x64",
+  "cpu_budget": {
+    "import_workers": 24,
+    "independent_verify_workers": 8,
+    "physical_core_affinity": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ]
+  },
+  "full_slide_arms": {
+    "independent_jxl_e3": {
+      "archive_bytes": 1189752797,
+      "image_component_bytes": 1186101457,
+      "import_seconds": 106.85663170000771,
+      "independent_verify_seconds": 19.737364999993588,
+      "image_stage_seconds": 29.8489191000117,
+      "roi_seconds": [
+        0.015873199998168275,
+        0.021616900005028583,
+        0.0218013000121573,
+        0.021417900003143586,
+        0.021484799988684244,
+        0.020922000010614283,
+        0.01368420000653714,
+        0.02161809999961406,
+        0.010978999998769723,
+        0.009131800004979596,
+        0.021449499996379018,
+        0.021596999999019317,
+        0.022633699991274625,
+        0.021502999996300787,
+        0.02071050000085961,
+        0.020722200002637692,
+        0.016567600003327243,
+        0.02196709999407176,
+        0.013175600004615262,
+        0.021769200000562705,
+        0.02100619999691844,
+        0.02082380000501871,
+        0.02251730000716634,
+        0.020869500003755093
+      ],
+      "roi_median_seconds": 0.021212050000031013,
+      "manifest_sha256": "7f089fe969a96d7095534b56803df16387062333c01467b132528e5fa86d12f1",
+      "run_scope": "Successful independent arm from the 2026-11-25 comparison session"
+    },
+    "fast_fusion_fast_preset": {
+      "archive_bytes": 922157728,
+      "image_component_bytes": 918506381,
+      "import_seconds": 283.7355555999966,
+      "independent_verify_seconds": 143.20642499999667,
+      "image_stage_seconds": 201.27028340000834,
+      "roi_seconds": [
+        0.16919870000856463,
+        0.20366410000133328,
+        0.15846449999662582,
+        0.1528490999917267,
+        0.16147500000079162,
+        0.2204615999944508,
+        0.11442610000085551,
+        0.17464479999034666,
+        0.17685780000465456,
+        0.12132320000091568,
+        0.1137425000051735,
+        0.17004179999639746,
+        0.11081479999120347,
+        0.1765121999924304,
+        0.10476570000173524,
+        0.15368239999224897,
+        0.19941999998991378,
+        0.1497782000078587,
+        0.11663220000627916,
+        0.12054790000547655,
+        0.1515581999992719,
+        0.1438182000129018,
+        0.14090939999732655,
+        0.12405179999768734
+      ],
+      "roi_median_seconds": 0.1522036499954993,
+      "manifest_sha256": "e56325a11117f8c4fd706fca63b27c22f5c2d47b71eef2a755ddb90ca30950ed",
+      "run_scope": "Earlier successful 24-worker development run, ROI measured on the same archive"
+    }
+  },
+  "exactness": {
+    "native_levels": 9,
+    "roi_windows_pixel_sha256_matched": 24,
+    "same_count_member_hashes": true,
+    "typed_h5ad_exact_for_both": true,
+    "json_exact_for_both": true,
+    "rehashed_package_members": 24
+  },
+  "window_protocol": {
+    "count": 24,
+    "dimensions": [
+      256,
+      256
+    ],
+    "level": 0,
+    "seed": 20261125,
+    "reader_warmups": 1,
+    "decoded_tile_cache_enabled": false,
+    "os_cache": "uncontrolled"
+  },
+  "worker_screen": {
+    "tile_count": 2130,
+    "trials": [
+      {
+        "trial": 1,
+        "workers": 8,
+        "seconds": 39.81588829999964,
+        "record_match": 2130,
+        "cpu_affinity": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14
+        ],
+        "slowest_shard_seconds": 31.424818500003312
+      },
+      {
+        "trial": 2,
+        "workers": 16,
+        "seconds": 30.88576939998893,
+        "record_match": 2130,
+        "cpu_affinity": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "slowest_shard_seconds": 24.24331940000411
+      },
+      {
+        "trial": 3,
+        "workers": 24,
+        "seconds": 22.6799927999964,
+        "record_match": 2130,
+        "cpu_affinity": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        "slowest_shard_seconds": 17.77575820000493
+      },
+      {
+        "trial": 4,
+        "workers": 24,
+        "seconds": 22.99608100000478,
+        "record_match": 2130,
+        "cpu_affinity": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31
+        ],
+        "slowest_shard_seconds": 18.028607300002477
+      },
+      {
+        "trial": 5,
+        "workers": 16,
+        "seconds": 31.145603400000255,
+        "record_match": 2130,
+        "cpu_affinity": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "slowest_shard_seconds": 24.543016499999794
+      },
+      {
+        "trial": 6,
+        "workers": 8,
+        "seconds": 38.8348057000112,
+        "record_match": 2130,
+        "cpu_affinity": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14
+        ],
+        "slowest_shard_seconds": 30.869991899991874
+      }
+    ],
+    "median_wall_seconds": {
+      "8": 39.32534700000542,
+      "16": 31.015686399994593,
+      "24": 22.83803690000059
+    }
+  },
+  "interrupted_attempts": [
+    {
+      "arm": "fast_fusion",
+      "outcome": "Python TypeError during image archive assembly"
+    },
+    {
+      "arm": "fast_fusion",
+      "outcome": "Python TypeError during catalog validation"
+    },
+    {
+      "arm": "independent_jxl_e3",
+      "outcome": "Windows access violation during a repeat attempt"
+    }
+  ],
+  "timing_limit": "One successful import timing per method in separate sequential runs. The earlier fusion run retained the immediate check for coarse independent tiles. Root cause of interrupted runs is unresolved."
+}

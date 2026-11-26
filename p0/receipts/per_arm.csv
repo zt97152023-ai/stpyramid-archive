@@ -1,0 +1,21 @@
+sample,arm,state,stage,development,development_exposure,independence,package_bytes,image_bytes,publish_wall_s,independent_readback_wall_s,archive
+TENX139,direct_jxl_e3,PASS,,True,['current_091_development'],development,1189752797,1186101457,156.92046099998697,16.31673249999585,formal/TENX139/direct_jxl_e3/package.stpyramid
+TENX139,regular_091,PASS,,True,['current_091_development'],development,910447948,906796601,280.92098379999516,137.40487429998757,formal/TENX139/regular_091/package.stpyramid
+NCBI29,regular_091,PASS,,True,"['shared2_count_development', 'current_091_development']",development,29393323,24499714,15.16586519998964,6.9293272999930196,formal/NCBI29/regular_091/package.stpyramid
+NCBI29,direct_jxl_e3,PASS,,True,"['shared2_count_development', 'current_091_development']",development,34982552,30088951,6.760691999996197,1.981151999993017,formal/NCBI29/direct_jxl_e3/package.stpyramid
+SPA45,direct_jxl_e3,PASS,,True,"['shared2_count_development', 'early_image_development']",development,71284044,63303044,8.138962199998787,2.6518617999972776,formal/SPA45/direct_jxl_e3/package.stpyramid
+SPA45,regular_091,PASS,,True,"['shared2_count_development', 'early_image_development']",development,50310253,42329245,32.244563499989454,12.892666400002781,formal/SPA45/regular_091/package.stpyramid
+NCBI815,regular_091,PASS,,True,['early_image_development'],development,35759657,25828932,40.30592350001098,12.90155439999944,formal/NCBI815/regular_091/package.stpyramid
+NCBI815,direct_jxl_e3,PASS,,True,['early_image_development'],development,55599477,45668760,13.66379579999193,3.6529556999885244,formal/NCBI815/direct_jxl_e3/package.stpyramid
+SPA127,direct_jxl_e3,PASS,,True,['early_image_development'],development,111586840,106241694,19.116033700003754,4.378239900004701,formal/SPA127/direct_jxl_e3/package.stpyramid
+SPA127,regular_091,PASS,,True,['early_image_development'],development,91133446,85788293,50.24332530000538,10.84943220000423,formal/SPA127/regular_091/package.stpyramid
+SPA91,regular_091,PASS,,False,[],source_donor_independence_unconfirmed,64166917,58653434,26.67032350000227,9.156727699999465,formal/SPA91/regular_091/package.stpyramid
+SPA91,direct_jxl_e3,PASS,,False,[],source_donor_independence_unconfirmed,84445466,78931991,8.52221520000603,2.343426299994462,formal/SPA91/direct_jxl_e3/package.stpyramid
+SPA5,direct_jxl_e3,PASS,,False,[],source_donor_independence_unconfirmed,53448276,47923367,9.68806559999939,2.1051613000017824,formal/SPA5/direct_jxl_e3/package.stpyramid
+SPA5,regular_091,PASS,,False,[],source_donor_independence_unconfirmed,41270098,35745181,22.801776299995254,8.642479100002674,formal/SPA5/regular_091/package.stpyramid
+NCBI791,regular_091,FAIL,verify,True,"['shared2_count_development', 'early_image_development']",development,,,,,
+NCBI791,direct_jxl_e3,FAIL,encode,True,"['shared2_count_development', 'early_image_development']",development,,,,,
+NCBI702,direct_jxl_e3,PASS,,False,[],source_donor_independence_unconfirmed,160514652,151482338,14.70970049999596,3.5458931000030134,formal/NCBI702/direct_jxl_e3/package.stpyramid
+NCBI702,regular_091,FAIL,verify,False,[],source_donor_independence_unconfirmed,,,,,
+TENX28,regular_091,PASS,,True,['early_image_development'],development,188074459,183716783,61.7883826999896,17.337205400006496,formal/TENX28/regular_091/package.stpyramid
+TENX28,direct_jxl_e3,PASS,,True,['early_image_development'],development,233993117,229635449,22.041858199998387,4.356792300008237,formal/TENX28/direct_jxl_e3/package.stpyramid

@@ -1,0 +1,13 @@
+{
+  "state": "FAIL",
+  "sample": "NCBI791",
+  "arm": "regular_091",
+  "stage": "verify",
+  "error": "Exit 1; see verify.stderr.log",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "early_image_development"
+  ],
+  "independence": "development"
+}

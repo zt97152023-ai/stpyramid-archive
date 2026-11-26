@@ -1,0 +1,13 @@
+{
+  "state": "DONE_WITH_FAILURES",
+  "created": 1795626498.8366182,
+  "preflight_pass": 2,
+  "formal_results": 20,
+  "formal_pass": 17,
+  "formal_pairs_pass": 8,
+  "updated_at": "2026-11-26T01:29:49+08:00",
+  "planned_formal_groups": 20,
+  "active": null,
+  "preflight_pair": "PASS",
+  "result": "RESULT.json"
+}

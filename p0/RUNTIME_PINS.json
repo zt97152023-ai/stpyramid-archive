@@ -1,0 +1,33 @@
+{
+  "scope": "Native binaries used historically; binaries are rebuilt or provided by the user. STPyramid original code and separate dependencies retain their respective licensing terms.",
+  "files": {
+    "bin/slide_jxl091.exe": {
+      "bytes": 707584,
+      "sha256": "6cf5eb1c4f56afeece15143ac850339d1250dc87f3c41985370ef992e032b1b6"
+    },
+    "runtime-windows-source/089/slide_jxl089.dll": {
+      "bytes": 322560,
+      "sha256": "6e7d1161859d710f1b12ebf8cbfd361defd960fabae7411764af910549609694"
+    },
+    "runtime-windows-source/089/slide_jxl089.exe": {
+      "bytes": 599552,
+      "sha256": "c360ef40534ce25bd98a9f6bc85ee10da0d7be055efa18d99b1e801d8b2b3a02"
+    },
+    "runtime-windows-source/091/slide_jxl091.dll": {
+      "bytes": 377856,
+      "sha256": "3c340c545efd3e274b0f9bbb96459b5cf75a834586e428c9acc51d56591eb896"
+    },
+    "runtime-windows-source/091/slide_jxl091.exe": {
+      "bytes": 660480,
+      "sha256": "cd7db86c1ded8406bdf3326b1065b1abe1276a2c620a4ca17efc242682abb525"
+    },
+    "runtime-windows-source/hf/slide_hf1.dll": {
+      "bytes": 381952,
+      "sha256": "2fc61ef54e1476978c87f9953294e63799d6d4fe74471fcce6de10a74286d26b"
+    },
+    "runtime-windows-source/hf/slide_hf1.exe": {
+      "bytes": 664064,
+      "sha256": "7f758f39a799228b5ae58718fc492b423e203e72df189c1032abe3e5bde6c828"
+    }
+  }
+}

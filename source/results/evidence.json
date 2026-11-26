@@ -1,0 +1,168 @@
+{
+  "NCBI218": {
+    "e10_encode_cpu_seconds": 1617.234375,
+    "e10_encode_wall_seconds": 1637.7153037985554,
+    "e10_exact_restore": true,
+    "e10_full_restore_seconds": 19.357760199985933,
+    "e11_whole_slide": "Incomplete, memory limit after 523 tiles",
+    "image_direct_e10_bytes": 63568398,
+    "image_joint_bytes": 55315820,
+    "native_levels": 7,
+    "selected_by_e9_saving": true,
+    "tiles": 1962
+  },
+  "NCBI466": {
+    "exact_fixed_image_queries": 280,
+    "image_direct_e9_bytes": 30305985,
+    "image_joint_bytes": 27147235,
+    "integrated_bpcells_direct_e9_bytes": 33656614,
+    "integrated_hdf5_gzip9_direct_e9_bytes": 33331931,
+    "integrated_shared_joint_bytes": 29562396,
+    "native_levels": 6,
+    "source_blocked_exact_full_image_replays": 7,
+    "tiles": 1365
+  },
+  "NCBI466_mechanism": {
+    "089_all_L0_anchored_complete_bytes": 28810930,
+    "089_direct_e9_complete_bytes": 30289466,
+    "089_fixed_detail_bytes": 16585179,
+    "089_independent_low_frequency_bytes": 7436065,
+    "089_native_reference_correction_bytes": 2065475,
+    "089_squeeze_no_reference_complete_bytes": 34177260,
+    "091_all_L0_context_off_complete_bytes": 28648255,
+    "091_all_L0_context_on_complete_bytes": 28293399,
+    "091_same_container_e9_complete_bytes": 30295900
+  },
+  "NCBI466_read": {
+    "direct_e9_full_restore_seconds": 8.872862,
+    "direct_e9_roi_seconds": 0.009121,
+    "full_restore_includes": "Verification, TIFF creation and read-back. OS cache not controlled.",
+    "joint_decoded_pixels": 156491264,
+    "joint_full_restore_seconds": 27.877806,
+    "joint_reference_decodes": 1100,
+    "joint_roi_seconds": 0.031954,
+    "native_output_pixels": 86843904,
+    "tissue_roi_size": [
+      64,
+      64
+    ]
+  },
+  "batch": {
+    "exactly_verified_samples": 7,
+    "planned_inputs": 262,
+    "rows": [
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 45930979,
+        "image_joint_bytes": 40021802,
+        "integrated_bpcells_direct_e9_bytes": 51451998,
+        "integrated_shared_joint_bytes": 45139155,
+        "native_rgb_pixels": 123398792,
+        "sample": "NCBI129"
+      },
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 42661886,
+        "image_joint_bytes": 37450683,
+        "integrated_bpcells_direct_e9_bytes": 47956226,
+        "integrated_shared_joint_bytes": 42416937,
+        "native_rgb_pixels": 122769468,
+        "sample": "NCBI134"
+      },
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 35051021,
+        "image_joint_bytes": 31758117,
+        "integrated_bpcells_direct_e9_bytes": 40385013,
+        "integrated_shared_joint_bytes": 36734105,
+        "native_rgb_pixels": 123562720,
+        "sample": "NCBI166"
+      },
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 54356027,
+        "image_joint_bytes": 47786857,
+        "integrated_bpcells_direct_e9_bytes": 59523484,
+        "integrated_shared_joint_bytes": 52677370,
+        "native_rgb_pixels": 122921307,
+        "sample": "NCBI214"
+      },
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 63575201,
+        "image_joint_bytes": 55315820,
+        "integrated_bpcells_direct_e9_bytes": 68788256,
+        "integrated_shared_joint_bytes": 60231338,
+        "native_rgb_pixels": 122351005,
+        "sample": "NCBI218"
+      },
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 40143787,
+        "image_joint_bytes": 37324429,
+        "integrated_bpcells_direct_e9_bytes": 44938607,
+        "integrated_shared_joint_bytes": 41977684,
+        "native_rgb_pixels": 191423379,
+        "sample": "NCBI224"
+      },
+      {
+        "exact_restore": true,
+        "image_direct_e9_bytes": 52066071,
+        "image_joint_bytes": 47148138,
+        "integrated_bpcells_direct_e9_bytes": 57121834,
+        "integrated_shared_joint_bytes": 51968141,
+        "native_rgb_pixels": 123398792,
+        "sample": "NCBI282"
+      }
+    ],
+    "source": "Single mouse spinal-cord study for the verified subset.",
+    "totals": {
+      "image_direct_e9_bytes": 333784972,
+      "image_joint_bytes": 296805846,
+      "integrated_bpcells_direct_e9_bytes": 370165418,
+      "integrated_shared_joint_bytes": 331144730
+    }
+  },
+  "release_verification": {
+    "historical_NCBI218_ours": {
+      "complete_bytes": 60231338,
+      "native_levels_exact": 7,
+      "scope": "Read-only verify through release code using pinned historical runtime.",
+      "semantic_count_exact": true
+    },
+    "native_source_build": {
+      "cmake": "4.4.4",
+      "compiler": "MSVC 14.38.33130",
+      "generator": "Ninja",
+      "platform": "Windows x64",
+      "status": "PASS",
+      "targets": 6
+    },
+    "windows_synthetic": {
+      "count_shape": [
+        3,
+        4
+      ],
+      "image_routes": {
+        "1": 2,
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 0
+      },
+      "levels": 3,
+      "status": "PASS",
+      "verified": [
+        "full_rgb",
+        "tiff_tags",
+        "typed_h5ad",
+        "metadata",
+        "image_roi",
+        "count_subset",
+        "091_and_hf_native_decode",
+        "altered_member_rejected"
+      ]
+    }
+  },
+  "scope": "Historical complete data package sizes and access observations. Release smoke is a separate synthetic result."
+}

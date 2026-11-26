@@ -1,0 +1,56 @@
+{
+  "state": "PASS",
+  "sample": "SPA127",
+  "arm": "regular_091",
+  "archive": "formal/SPA127/regular_091/package.stpyramid",
+  "development": true,
+  "development_exposure": [
+    "early_image_development"
+  ],
+  "independence": "development",
+  "publish_wall_s": 50.24332530000538,
+  "independent_readback_wall_s": 10.84943220000423,
+  "extra_h5ad_type_check_wall_s": 0.8324609999981476,
+  "package_bytes": 91133446,
+  "image_bytes": 85788293,
+  "native_sha256": [
+    "710e46621c84935a89dca577e7d6e0d1cf474f6a449b2f42b8369da990e3eb69",
+    "863a70d0fa1f4f7243560b81c15310cd8cee3f838716b21b6a312b5d918d9a2f",
+    "7b2503c5868b3114cb59b0eb6b8d77703bbf378e182809a399537a611935dac2",
+    "a0622053dc86aad74da7b5484e37de770be440bd9c9a7e70c12ed5501fae9c89",
+    "e4eaf971be85c20574d1acc9e2a2970c899abaa063b4fec74c749066cfb5165f",
+    "0a59852360b12bbf8a021e67e78ad8e70527f1aedf3b5fa8a4750b3281456e2b",
+    "0d42db35e07f6713a9e6293638267687a34d775fc5ee70960a618ed095a0c57e"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 745053,
+      "sha256": "bc1133572d15d54aca3c928bca759e3f2d86ad9b5ea8885cc298016139cdaa86"
+    },
+    "count/counts.index.zst": {
+      "bytes": 45621,
+      "sha256": "ae2acddd27255e15db915aab0635bf511dae2afa21d39dc0de2377a20783d1a0"
+    },
+    "count/counts.model": {
+      "bytes": 24866,
+      "sha256": "c92766429c32056e16981fc1feeebcc32e5a9c840798ad83dd8b10004249db40"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 1058,
+      "sha256": "010d4feccedf03f72340f189ac9de584946769070ca57763bd40c0dd2b3d0ca1"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 203674,
+      "sha256": "f1ec27576b8f194d83be0601bfccdf5c1d0b8e1e6a3715502af34b2ad1b488e5"
+    },
+    "count/science.h5": {
+      "bytes": 4317272,
+      "sha256": "2fdf8a007b212edeb53feb9402bf1bcb9928c4ebcd68e49032fae8e57332b1d8"
+    }
+  },
+  "manifest_sha256": "0dd216b18e08d8daf46ebe70059b568da7cd9cc274849a109869c33521a9759e",
+  "verified_at": "2026-11-26T01:23:57+08:00"
+}

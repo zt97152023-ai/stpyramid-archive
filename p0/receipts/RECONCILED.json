@@ -1,0 +1,311 @@
+{
+  "state": "PASS",
+  "first_pass": {
+    "arms": {
+      "PASS": 17,
+      "FAIL": 3
+    },
+    "pairs": {
+      "PASS": 8,
+      "INCOMPLETE": 2
+    }
+  },
+  "retries": {
+    "NCBI791_attempt02": {
+      "regular_091": "PASS",
+      "direct_jxl_e3": "PASS"
+    },
+    "NCBI702_attempt02": {
+      "regular_091": "PASS",
+      "direct_jxl_e3": "PASS"
+    }
+  },
+  "selected_pair_states": {
+    "PASS": 10
+  },
+  "preflight": {
+    "regular_091": {
+      "package_bytes": 29393323,
+      "publish_wall_s": 17.030802199995378,
+      "independent_readback_wall_s": 9.298452999995789
+    },
+    "direct_jxl_e3": {
+      "package_bytes": 34982552,
+      "publish_wall_s": 5.7353495999996085,
+      "independent_readback_wall_s": 1.8904193000053056
+    }
+  },
+  "performance": {
+    "n": 10,
+    "samples": [
+      "TENX139",
+      "NCBI29",
+      "SPA45",
+      "NCBI815",
+      "SPA127",
+      "SPA91",
+      "SPA5",
+      "NCBI791",
+      "NCBI702",
+      "TENX28"
+    ],
+    "package_bytes": {
+      "regular_091_sum": 1624220193,
+      "direct_jxl_e3_sum": 2096637549,
+      "regular_091_wins": 10,
+      "direct_jxl_e3_wins": 0,
+      "regular_091_saving_pct": 22.532142297333245,
+      "median_regular_091_over_direct_e3": 0.7735055104232432
+    },
+    "publish_wall_s": {
+      "regular_091_sum": 608.4047428999766,
+      "direct_jxl_e3_sum": 273.80717529996764,
+      "regular_091_wins": 0,
+      "direct_jxl_e3_wins": 10,
+      "regular_091_saving_pct": -122.2018989215468,
+      "median_regular_091_over_direct_e3": 2.715781753389334
+    },
+    "independent_readback_wall_s": {
+      "regular_091_sum": 236.79178069999034,
+      "direct_jxl_e3_sum": 44.72389449998445,
+      "regular_091_wins": 0,
+      "direct_jxl_e3_wins": 10,
+      "regular_091_saving_pct": -429.45250709343446,
+      "median_regular_091_over_direct_e3": 3.719611294977703
+    }
+  },
+  "first_pass_performance": {
+    "n": 8,
+    "samples": [
+      "TENX139",
+      "NCBI29",
+      "SPA45",
+      "NCBI815",
+      "SPA127",
+      "SPA91",
+      "SPA5",
+      "TENX28"
+    ],
+    "package_bytes": {
+      "regular_091_sum": 1410556101,
+      "direct_jxl_e3_sum": 1835092569,
+      "regular_091_wins": 8,
+      "direct_jxl_e3_wins": 0,
+      "regular_091_saving_pct": 23.134335301207354,
+      "median_regular_091_over_direct_e3": 0.7686957471157734
+    },
+    "publish_wall_s": {
+      "regular_091_sum": 530.1411437999777,
+      "direct_jxl_e3_sum": 244.85208369998145,
+      "regular_091_wins": 0,
+      "direct_jxl_e3_wins": 8,
+      "regular_091_saving_pct": -116.51485900751513,
+      "median_regular_091_over_direct_e3": 2.715781753389334
+    },
+    "independent_readback_wall_s": {
+      "regular_091_sum": 216.11426679999568,
+      "direct_jxl_e3_sum": 37.78632179998385,
+      "regular_091_wins": 0,
+      "direct_jxl_e3_wins": 8,
+      "regular_091_saving_pct": -471.9378243375042,
+      "median_regular_091_over_direct_e3": 3.943380527360148
+    }
+  },
+  "confirmed_independent_n": 0,
+  "same_study_excluded_n": 3,
+  "rows": [
+    {
+      "sample": "TENX139",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "current_091_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "formal/TENX139",
+      "regular_091_package_bytes": 910447948,
+      "regular_091_publish_wall_s": 280.92098379999516,
+      "regular_091_independent_readback_wall_s": 137.40487429998757,
+      "direct_jxl_e3_package_bytes": 1189752797,
+      "direct_jxl_e3_publish_wall_s": 156.92046099998697,
+      "direct_jxl_e3_independent_readback_wall_s": 16.31673249999585,
+      "package_bytes_saving_pct": 23.47587244209689,
+      "publish_wall_s_saving_pct": -79.02125829213469,
+      "independent_readback_wall_s_saving_pct": -742.1102343868326
+    },
+    {
+      "sample": "NCBI29",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "shared2_count_development|current_091_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "formal/NCBI29",
+      "regular_091_package_bytes": 29393323,
+      "regular_091_publish_wall_s": 15.16586519998964,
+      "regular_091_independent_readback_wall_s": 6.9293272999930196,
+      "direct_jxl_e3_package_bytes": 34982552,
+      "direct_jxl_e3_publish_wall_s": 6.760691999996197,
+      "direct_jxl_e3_independent_readback_wall_s": 1.981151999993017,
+      "package_bytes_saving_pct": 15.977190572031452,
+      "publish_wall_s_saving_pct": -124.32415498292437,
+      "independent_readback_wall_s_saving_pct": -249.76252705584648
+    },
+    {
+      "sample": "SPA45",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "shared2_count_development|early_image_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "formal/SPA45",
+      "regular_091_package_bytes": 50310253,
+      "regular_091_publish_wall_s": 32.244563499989454,
+      "regular_091_independent_readback_wall_s": 12.892666400002781,
+      "direct_jxl_e3_package_bytes": 71284044,
+      "direct_jxl_e3_publish_wall_s": 8.138962199998787,
+      "direct_jxl_e3_independent_readback_wall_s": 2.6518617999972776,
+      "package_bytes_saving_pct": 29.422841105928278,
+      "publish_wall_s_saving_pct": -296.1753686482812,
+      "independent_readback_wall_s_saving_pct": -386.1741437663161
+    },
+    {
+      "sample": "NCBI815",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "early_image_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "formal/NCBI815",
+      "regular_091_package_bytes": 35759657,
+      "regular_091_publish_wall_s": 40.30592350001098,
+      "regular_091_independent_readback_wall_s": 12.90155439999944,
+      "direct_jxl_e3_package_bytes": 55599477,
+      "direct_jxl_e3_publish_wall_s": 13.66379579999193,
+      "direct_jxl_e3_independent_readback_wall_s": 3.6529556999885244,
+      "package_bytes_saving_pct": 35.68346515201932,
+      "publish_wall_s_saving_pct": -194.98335667483246,
+      "independent_readback_wall_s_saving_pct": -253.18124443830433
+    },
+    {
+      "sample": "SPA127",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "early_image_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "formal/SPA127",
+      "regular_091_package_bytes": 91133446,
+      "regular_091_publish_wall_s": 50.24332530000538,
+      "regular_091_independent_readback_wall_s": 10.84943220000423,
+      "direct_jxl_e3_package_bytes": 111586840,
+      "direct_jxl_e3_publish_wall_s": 19.116033700003754,
+      "direct_jxl_e3_independent_readback_wall_s": 4.378239900004701,
+      "package_bytes_saving_pct": 18.32957542305168,
+      "publish_wall_s_saving_pct": -162.83342082618066,
+      "independent_readback_wall_s_saving_pct": -147.80351117791835
+    },
+    {
+      "sample": "SPA91",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "",
+      "independence_classification": "excluded_same_study_as_image_development",
+      "overlapping_development_sample": "SPA61",
+      "independent": false,
+      "selected_receipts": "formal/SPA91",
+      "regular_091_package_bytes": 64166917,
+      "regular_091_publish_wall_s": 26.67032350000227,
+      "regular_091_independent_readback_wall_s": 9.156727699999465,
+      "direct_jxl_e3_package_bytes": 84445466,
+      "direct_jxl_e3_publish_wall_s": 8.52221520000603,
+      "direct_jxl_e3_independent_readback_wall_s": 2.343426299994462,
+      "package_bytes_saving_pct": 24.01378068065845,
+      "publish_wall_s_saving_pct": -212.9505988065567,
+      "independent_readback_wall_s_saving_pct": -290.74101455723627
+    },
+    {
+      "sample": "SPA5",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "",
+      "independence_classification": "excluded_same_study_as_image_development",
+      "overlapping_development_sample": "SPA61",
+      "independent": false,
+      "selected_receipts": "formal/SPA5",
+      "regular_091_package_bytes": 41270098,
+      "regular_091_publish_wall_s": 22.801776299995254,
+      "regular_091_independent_readback_wall_s": 8.642479100002674,
+      "direct_jxl_e3_package_bytes": 53448276,
+      "direct_jxl_e3_publish_wall_s": 9.68806559999939,
+      "direct_jxl_e3_independent_readback_wall_s": 2.1051613000017824,
+      "package_bytes_saving_pct": 22.784978134748446,
+      "publish_wall_s_saving_pct": -135.35943336300994,
+      "independent_readback_wall_s_saving_pct": -310.53762008618327
+    },
+    {
+      "sample": "NCBI791",
+      "first_pair_state": "INCOMPLETE",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "shared2_count_development|early_image_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "retries/NCBI791_attempt02",
+      "regular_091_package_bytes": 78284441,
+      "regular_091_publish_wall_s": 35.676255300000776,
+      "regular_091_independent_readback_wall_s": 9.743192800000543,
+      "regular_091_retry_manifest_matches_first": true,
+      "direct_jxl_e3_package_bytes": 101030328,
+      "direct_jxl_e3_publish_wall_s": 12.080679399994551,
+      "direct_jxl_e3_independent_readback_wall_s": 3.3341571999917505,
+      "package_bytes_saving_pct": 22.513919780602908,
+      "publish_wall_s_saving_pct": -195.3166301227799,
+      "independent_readback_wall_s_saving_pct": -192.22355802613774
+    },
+    {
+      "sample": "NCBI702",
+      "first_pair_state": "INCOMPLETE",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "",
+      "independence_classification": "excluded_same_study_as_image_development",
+      "overlapping_development_sample": "NCBI697",
+      "independent": false,
+      "selected_receipts": "retries/NCBI702_attempt02",
+      "regular_091_package_bytes": 135379651,
+      "regular_091_publish_wall_s": 42.58734379999805,
+      "regular_091_independent_readback_wall_s": 10.934321099994122,
+      "regular_091_retry_manifest_matches_first": true,
+      "direct_jxl_e3_package_bytes": 160514652,
+      "direct_jxl_e3_publish_wall_s": 16.87441219999164,
+      "direct_jxl_e3_independent_readback_wall_s": 3.6034155000088504,
+      "direct_jxl_e3_retry_manifest_matches_first": true,
+      "package_bytes_saving_pct": 15.659007253742796,
+      "publish_wall_s_saving_pct": -152.37823572911861,
+      "independent_readback_wall_s_saving_pct": -203.44324988243145
+    },
+    {
+      "sample": "TENX28",
+      "first_pair_state": "PASS",
+      "selected_pair_state": "PASS",
+      "direct_development_flags": "early_image_development",
+      "independence_classification": "excluded_direct_development_exposure",
+      "overlapping_development_sample": "",
+      "independent": false,
+      "selected_receipts": "formal/TENX28",
+      "regular_091_package_bytes": 188074459,
+      "regular_091_publish_wall_s": 61.7883826999896,
+      "regular_091_independent_readback_wall_s": 17.337205400006496,
+      "direct_jxl_e3_package_bytes": 233993117,
+      "direct_jxl_e3_publish_wall_s": 22.041858199998387,
+      "direct_jxl_e3_independent_readback_wall_s": 4.356792300008237,
+      "package_bytes_saving_pct": 19.62393534849147,
+      "publish_wall_s_saving_pct": -180.3229298516861,
+      "independent_readback_wall_s_saving_pct": -297.93509091479336
+    }
+  ]
+}

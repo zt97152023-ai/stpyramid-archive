@@ -1,0 +1,36 @@
+{
+  "scope": "Fresh NCBI29 two-arm preflight of the portable runner; distinct from the historical formal cohort.",
+  "exact_historical_runtime": true,
+  "arms": {
+    "regular_091": {
+      "state": "PASS",
+      "manifest_sha256": "6ab801a977d0aaac863f340a4362f10802bf3f9d3dc54d97b94988e9ac5c0615",
+      "package_bytes": 29393323,
+      "matches_historical": {
+        "manifest_sha256": true,
+        "package_bytes": true,
+        "native_sha256": true,
+        "count_members": true
+      },
+      "typed_h5ad_exact": true,
+      "original_json_exact": true,
+      "all_members_verified": true,
+      "completed_at": "2026-11-26T09:53:24+08:00"
+    },
+    "direct_jxl_e3": {
+      "state": "PASS",
+      "manifest_sha256": "787e26b5df2c90742c5555e5e7c1f1accb56d9bac081013bbacd49540cd3fad8",
+      "package_bytes": 34982552,
+      "matches_historical": {
+        "manifest_sha256": true,
+        "package_bytes": true,
+        "native_sha256": true,
+        "count_members": true
+      },
+      "typed_h5ad_exact": true,
+      "original_json_exact": true,
+      "all_members_verified": true,
+      "completed_at": "2026-11-26T09:53:40+08:00"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "state": "PASS",
+  "sample": "NCBI702",
+  "arm": "direct_jxl_e3",
+  "archive": "retries/NCBI702_attempt02/direct_jxl_e3/package.stpyramid",
+  "development": false,
+  "development_exposure": [],
+  "independence": "source_donor_independence_unconfirmed",
+  "publish_wall_s": 16.87441219999164,
+  "independent_readback_wall_s": 3.6034155000088504,
+  "extra_h5ad_type_check_wall_s": 0.9291682000039145,
+  "package_bytes": 160514652,
+  "image_bytes": 151482338,
+  "native_sha256": [
+    "b377ef5c0f6784d0f146f9ebaa474c333597dd2677e17b5c369b712c82151fa3",
+    "fd41ff3c9ea05442d23051413b79d6230e468bd6befc6adde694420a384fa90e",
+    "568030b9bc82c4989533d225dafa9ab1da6d253c54d329ee92213eb4bbded59b",
+    "db52d0307970411ec8d82b57118393507e20ad63151284c03ee03423f7e843ad",
+    "e57d74fe581c86b99bf917a4e561777d606e685555599ba379a24467a91a3613",
+    "cc18e02c6e8bb5213db0e6d38b071c75356f840aac3592bf476beb3539b92956",
+    "414030979fe96d5e2bd2ee5473492ac256d9042c9ecfb4a9caacc2a013eaa6ae"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 812397,
+      "sha256": "57e1caf878f05e65cc3742eab58cc833d7909269b8d32f452effbfbc81aae548"
+    },
+    "count/counts.index.zst": {
+      "bytes": 24824,
+      "sha256": "d10e0aa40557273ce4eed78ff365e94fefacda095b04c90d092fb5387ef4948a"
+    },
+    "count/counts.model": {
+      "bytes": 42038,
+      "sha256": "5bbb292112eada1e7321445935ce505cf8b5368709b17f03dc7564ce6d618a23"
+    },
+    "count/counts.occupancy.zst": {
+      "bytes": 1134,
+      "sha256": "6158369b0d380ca73a83e9ad078d019bc280e56014822729125b312f85ba6c98"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 1128,
+      "sha256": "a98919e75fb9fcc9ff332cdff9d496f344b877a7330c4b948d7217aed586dbd7"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 589831,
+      "sha256": "3129292370ee1e20842f49b952370cd7188c322db1df201f4ce916b8130cc0e3"
+    },
+    "count/science.h5": {
+      "bytes": 7553191,
+      "sha256": "e47d5fb3038445cadd7527cc91ec5accda7136cbf25518c3c441391f1e83d710"
+    }
+  },
+  "manifest_sha256": "76ee57621ce5219d47534c7a8468be4feb61e316b25633b1e4cb51dd45cd0347",
+  "verified_at": "2026-11-26T01:31:32+08:00"
+}

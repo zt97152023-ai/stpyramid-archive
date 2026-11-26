@@ -1,0 +1,34 @@
+{
+  "sample": "NCBI29",
+  "platform": "Spatial Transcriptomics",
+  "study": "https://www.science.org/doi/10.1126/science.aav9776?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "current_091_development"
+  ],
+  "independence": "development",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 29393323,
+    "image_bytes": 24499714,
+    "publish_wall_s": 17.030802199995378,
+    "independent_readback_wall_s": 9.298452999995789
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 34982552,
+    "image_bytes": 30088951,
+    "publish_wall_s": 5.7353495999996085,
+    "independent_readback_wall_s": 1.8904193000053056
+  },
+  "package_bytes_saving_pct": 15.977190572031452,
+  "image_bytes_saving_pct": 18.57571239356267,
+  "publish_wall_s_saving_pct": -196.9444478152917,
+  "independent_readback_wall_s_saving_pct": -391.8725173811806,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

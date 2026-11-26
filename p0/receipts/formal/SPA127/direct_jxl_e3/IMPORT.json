@@ -1,0 +1,149 @@
+{
+  "sample": "SPA127",
+  "arm": "direct_jxl_e3",
+  "publish_wall_s": 19.116033700003754,
+  "encode": {
+    "ok": true,
+    "archive": "formal/SPA127/direct_jxl_e3/package.stpyramid",
+    "ledger": {
+      "members": {
+        "manifest.json": 7602,
+        "count/counts.bank": 745053,
+        "count/counts.index.zst": 45621,
+        "count/counts.model": 24866,
+        "count/HEST_metadata.json": 1058,
+        "count/original_gene_positions.json": 203674,
+        "count/science.h5": 4317272,
+        "image/anchors.index": 7308,
+        "image/images.bank": 106138647,
+        "image/images.index": 39256,
+        "image/manifest.json": 23540,
+        "image/source.json": 32943
+      },
+      "categories": {
+        "manifest": 7602,
+        "count": 815540,
+        "science_metadata": 4317272,
+        "image": 106241694,
+        "attachments": 204732
+      },
+      "total_package_bytes": 111586840,
+      "scope": "Actual complete data package; HDF5 Count includes its metadata once; decoder programs excluded and reported separately"
+    },
+    "native_levels": 7,
+    "verification": {
+      "state": "not_run"
+    },
+    "stages": [
+      {
+        "name": "native_image_census",
+        "seconds": 5.4157991999964
+      },
+      {
+        "name": "shared_count_encode",
+        "seconds": 5.661611499992432
+      },
+      {
+        "name": "fused_image_encode",
+        "seconds": 4.215861699995003
+      },
+      {
+        "name": "assemble_complete_archive",
+        "seconds": 0.34179379999113735
+      }
+    ]
+  },
+  "events": [
+    {
+      "begin": "native_image_census"
+    },
+    {
+      "end": "native_image_census",
+      "seconds": 5.4157991999964
+    },
+    {
+      "begin": "shared_count_encode"
+    },
+    {
+      "end": "shared_count_encode",
+      "seconds": 5.661611499992432
+    },
+    {
+      "native_workers": 24,
+      "candidate_cpu_affinity": [
+        0,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        2,
+        17,
+        18,
+        19,
+        21,
+        22,
+        23,
+        26,
+        27,
+        30,
+        31,
+        16,
+        29,
+        25,
+        20,
+        24,
+        28
+      ]
+    },
+    {
+      "begin": "fused_image_encode"
+    },
+    {
+      "arm": "direct3",
+      "begin": "pin_runtimes"
+    },
+    {
+      "arm": "direct3",
+      "end": "pin_runtimes",
+      "seconds": 0.011769999997341074
+    },
+    {
+      "arm": "direct3",
+      "begin": "encode_direct_tiles"
+    },
+    {
+      "arm": "direct3",
+      "end": "encode_direct_tiles",
+      "seconds": 3.705738400007249
+    },
+    {
+      "arm": "direct3",
+      "begin": "assemble_image_package"
+    },
+    {
+      "arm": "direct3",
+      "end": "assemble_image_package",
+      "seconds": 0.40243590000318363
+    },
+    {
+      "end": "fused_image_encode",
+      "seconds": 4.215861699995003
+    },
+    {
+      "begin": "assemble_complete_archive"
+    },
+    {
+      "end": "assemble_complete_archive",
+      "seconds": 0.34179379999113735
+    }
+  ],
+  "routes": {
+    "1": 1962,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0
+  }
+}

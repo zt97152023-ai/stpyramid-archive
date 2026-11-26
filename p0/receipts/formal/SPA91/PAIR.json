@@ -1,0 +1,31 @@
+{
+  "sample": "SPA91",
+  "platform": "Spatial Transcriptomics",
+  "study": "https://www.science.org/doi/10.1126/science.aaf2403",
+  "development": false,
+  "development_exposure": [],
+  "independence": "source_donor_independence_unconfirmed",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 64166917,
+    "image_bytes": 58653434,
+    "publish_wall_s": 26.67032350000227,
+    "independent_readback_wall_s": 9.156727699999465
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 84445466,
+    "image_bytes": 78931991,
+    "publish_wall_s": 8.52221520000603,
+    "independent_readback_wall_s": 2.343426299994462
+  },
+  "package_bytes_saving_pct": 24.01378068065845,
+  "image_bytes_saving_pct": 25.691176344455823,
+  "publish_wall_s_saving_pct": -212.9505988065567,
+  "independent_readback_wall_s_saving_pct": -290.74101455723627,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

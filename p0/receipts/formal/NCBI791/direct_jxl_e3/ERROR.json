@@ -1,0 +1,13 @@
+{
+  "state": "FAIL",
+  "sample": "NCBI791",
+  "arm": "direct_jxl_e3",
+  "stage": "encode",
+  "error": "Exit 1; see encode.stderr.log",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "early_image_development"
+  ],
+  "independence": "development"
+}

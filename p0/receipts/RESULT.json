@@ -1,0 +1,445 @@
+{
+  "state": "DONE_WITH_FAILURES",
+  "fixed_n": 10,
+  "formal_actions": {
+    "PASS": 17,
+    "FAIL": 3
+  },
+  "pair_states": {
+    "PASS": 8,
+    "INCOMPLETE": 2
+  },
+  "all_fixed": {
+    "groups": 10,
+    "pairs": 8,
+    "samples": [
+      "TENX139",
+      "NCBI29",
+      "SPA45",
+      "NCBI815",
+      "SPA127",
+      "SPA91",
+      "SPA5",
+      "NCBI791",
+      "NCBI702",
+      "TENX28"
+    ],
+    "package_bytes": {
+      "regular_091_sum": 1410556101,
+      "direct_jxl_e3_sum": 1835092569,
+      "regular_091_wins": 8,
+      "ties": 0,
+      "aggregate_saving_pct": 23.134335301207354,
+      "median_pair_ratio": 0.7686957471157734
+    },
+    "publish_wall_s": {
+      "regular_091_sum": 530.1411437999777,
+      "direct_jxl_e3_sum": 244.85208369998145,
+      "regular_091_wins": 0,
+      "ties": 0,
+      "aggregate_saving_pct": -116.51485900751513,
+      "median_pair_ratio": 2.715781753389334
+    },
+    "independent_readback_wall_s": {
+      "regular_091_sum": 216.11426679999568,
+      "direct_jxl_e3_sum": 37.78632179998385,
+      "regular_091_wins": 0,
+      "ties": 0,
+      "aggregate_saving_pct": -471.9378243375042,
+      "median_pair_ratio": 3.943380527360148
+    }
+  },
+  "development": {
+    "groups": 7,
+    "pairs": 6,
+    "samples": [
+      "TENX139",
+      "NCBI29",
+      "SPA45",
+      "NCBI815",
+      "SPA127",
+      "NCBI791",
+      "TENX28"
+    ],
+    "package_bytes": {
+      "regular_091_sum": 1305119086,
+      "direct_jxl_e3_sum": 1697198827,
+      "regular_091_wins": 6,
+      "ties": 0,
+      "aggregate_saving_pct": 23.101579777370418,
+      "median_pair_ratio": 0.7845009610470581
+    },
+    "publish_wall_s": {
+      "regular_091_sum": 480.6690439999802,
+      "direct_jxl_e3_sum": 226.64180289997603,
+      "regular_091_wins": 0,
+      "ties": 0,
+      "aggregate_saving_pct": -112.08313640715,
+      "median_pair_ratio": 2.715781753389334
+    },
+    "independent_readback_wall_s": {
+      "regular_091_sum": 198.31505999999354,
+      "direct_jxl_e3_sum": 33.33773419998761,
+      "regular_091_wins": 0,
+      "ties": 0,
+      "aggregate_saving_pct": -494.866642136907,
+      "median_pair_ratio": 3.7555816767654884
+    }
+  },
+  "no_known_development_id": {
+    "groups": 3,
+    "pairs": 2,
+    "samples": [
+      "SPA91",
+      "SPA5",
+      "NCBI702"
+    ],
+    "package_bytes": {
+      "regular_091_sum": 105437015,
+      "direct_jxl_e3_sum": 137893742,
+      "regular_091_wins": 2,
+      "ties": 0,
+      "aggregate_saving_pct": 23.537490918188297,
+      "median_pair_ratio": 0.7660062059229655
+    },
+    "publish_wall_s": {
+      "regular_091_sum": 49.47209979999752,
+      "direct_jxl_e3_sum": 18.21028080000542,
+      "regular_091_wins": 0,
+      "ties": 0,
+      "aggregate_saving_pct": -171.6712627516584,
+      "median_pair_ratio": 2.741550160847833
+    },
+    "independent_readback_wall_s": {
+      "regular_091_sum": 17.79920680000214,
+      "direct_jxl_e3_sum": 4.4485875999962445,
+      "regular_091_wins": 0,
+      "ties": 0,
+      "aggregate_saving_pct": -300.10916723359935,
+      "median_pair_ratio": 4.006393173217098
+    }
+  },
+  "confirmed_independent": {
+    "groups": 0,
+    "pairs": 0,
+    "samples": []
+  },
+  "pairs": [
+    {
+      "sample": "TENX139",
+      "platform": "Xenium",
+      "study": "FFPE Human Colorectal Cancer Data with Human Immuno-Oncology Profiling Panel and Custom Add-on",
+      "development": true,
+      "development_exposure": [
+        "current_091_development"
+      ],
+      "independence": "development",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 910447948,
+        "image_bytes": 906796601,
+        "publish_wall_s": 280.92098379999516,
+        "independent_readback_wall_s": 137.40487429998757
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 1189752797,
+        "image_bytes": 1186101457,
+        "publish_wall_s": 156.92046099998697,
+        "independent_readback_wall_s": 16.31673249999585
+      },
+      "package_bytes_saving_pct": 23.47587244209689,
+      "image_bytes_saving_pct": 23.548142054090736,
+      "publish_wall_s_saving_pct": -79.02125829213469,
+      "independent_readback_wall_s_saving_pct": -742.1102343868326,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "NCBI29",
+      "platform": "Spatial Transcriptomics",
+      "study": "https://www.science.org/doi/10.1126/science.aav9776?url_ver=Z39.88-2003&rfr_id=ori:rid:crossref.org&rfr_dat=cr_pub%20%200pubmed",
+      "development": true,
+      "development_exposure": [
+        "shared2_count_development",
+        "current_091_development"
+      ],
+      "independence": "development",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 29393323,
+        "image_bytes": 24499714,
+        "publish_wall_s": 15.16586519998964,
+        "independent_readback_wall_s": 6.9293272999930196
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 34982552,
+        "image_bytes": 30088951,
+        "publish_wall_s": 6.760691999996197,
+        "independent_readback_wall_s": 1.981151999993017
+      },
+      "package_bytes_saving_pct": 15.977190572031452,
+      "image_bytes_saving_pct": 18.57571239356267,
+      "publish_wall_s_saving_pct": -124.32415498292437,
+      "independent_readback_wall_s_saving_pct": -249.76252705584648,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "SPA45",
+      "platform": "Spatial Transcriptomics",
+      "study": "https://www.sciencedirect.com/science/article/pii/S0092867419312826?via%3Dihub",
+      "development": true,
+      "development_exposure": [
+        "shared2_count_development",
+        "early_image_development"
+      ],
+      "independence": "development",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 50310253,
+        "image_bytes": 42329245,
+        "publish_wall_s": 32.244563499989454,
+        "independent_readback_wall_s": 12.892666400002781
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 71284044,
+        "image_bytes": 63303044,
+        "publish_wall_s": 8.138962199998787,
+        "independent_readback_wall_s": 2.6518617999972776
+      },
+      "package_bytes_saving_pct": 29.422841105928278,
+      "image_bytes_saving_pct": 33.13237038016686,
+      "publish_wall_s_saving_pct": -296.1753686482812,
+      "independent_readback_wall_s_saving_pct": -386.1741437663161,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "NCBI815",
+      "platform": "Visium",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/37423216/",
+      "development": true,
+      "development_exposure": [
+        "early_image_development"
+      ],
+      "independence": "development",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 35759657,
+        "image_bytes": 25828932,
+        "publish_wall_s": 40.30592350001098,
+        "independent_readback_wall_s": 12.90155439999944
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 55599477,
+        "image_bytes": 45668760,
+        "publish_wall_s": 13.66379579999193,
+        "independent_readback_wall_s": 3.6529556999885244
+      },
+      "package_bytes_saving_pct": 35.68346515201932,
+      "image_bytes_saving_pct": 43.44288743552486,
+      "publish_wall_s_saving_pct": -194.98335667483246,
+      "independent_readback_wall_s_saving_pct": -253.18124443830433,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "SPA127",
+      "platform": "Spatial Transcriptomics",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/34650042/",
+      "development": true,
+      "development_exposure": [
+        "early_image_development"
+      ],
+      "independence": "development",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 91133446,
+        "image_bytes": 85788293,
+        "publish_wall_s": 50.24332530000538,
+        "independent_readback_wall_s": 10.84943220000423
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 111586840,
+        "image_bytes": 106241694,
+        "publish_wall_s": 19.116033700003754,
+        "independent_readback_wall_s": 4.378239900004701
+      },
+      "package_bytes_saving_pct": 18.32957542305168,
+      "image_bytes_saving_pct": 19.251764754428713,
+      "publish_wall_s_saving_pct": -162.83342082618066,
+      "independent_readback_wall_s_saving_pct": -147.80351117791835,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "SPA91",
+      "platform": "Spatial Transcriptomics",
+      "study": "https://www.science.org/doi/10.1126/science.aaf2403",
+      "development": false,
+      "development_exposure": [],
+      "independence": "source_donor_independence_unconfirmed",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 64166917,
+        "image_bytes": 58653434,
+        "publish_wall_s": 26.67032350000227,
+        "independent_readback_wall_s": 9.156727699999465
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 84445466,
+        "image_bytes": 78931991,
+        "publish_wall_s": 8.52221520000603,
+        "independent_readback_wall_s": 2.343426299994462
+      },
+      "package_bytes_saving_pct": 24.01378068065845,
+      "image_bytes_saving_pct": 25.691176344455823,
+      "publish_wall_s_saving_pct": -212.9505988065567,
+      "independent_readback_wall_s_saving_pct": -290.74101455723627,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "SPA5",
+      "platform": "Spatial Transcriptomics",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/27365449/",
+      "development": false,
+      "development_exposure": [],
+      "independence": "source_donor_independence_unconfirmed",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 41270098,
+        "image_bytes": 35745181,
+        "publish_wall_s": 22.801776299995254,
+        "independent_readback_wall_s": 8.642479100002674
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 53448276,
+        "image_bytes": 47923367,
+        "publish_wall_s": 9.68806559999939,
+        "independent_readback_wall_s": 2.1051613000017824
+      },
+      "package_bytes_saving_pct": 22.784978134748446,
+      "image_bytes_saving_pct": 25.4117912875362,
+      "publish_wall_s_saving_pct": -135.35943336300994,
+      "independent_readback_wall_s_saving_pct": -310.53762008618327,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    },
+    {
+      "sample": "NCBI791",
+      "platform": "Visium",
+      "study": "https://pubmed.ncbi.nlm.nih.gov/37598997/",
+      "development": true,
+      "development_exposure": [
+        "shared2_count_development",
+        "early_image_development"
+      ],
+      "independence": "development",
+      "state": "INCOMPLETE",
+      "regular_091": {
+        "state": "FAIL",
+        "stage": "verify",
+        "package_bytes": null,
+        "image_bytes": null,
+        "publish_wall_s": null,
+        "independent_readback_wall_s": null
+      },
+      "direct_jxl_e3": {
+        "state": "FAIL",
+        "stage": "encode",
+        "package_bytes": null,
+        "image_bytes": null,
+        "publish_wall_s": null,
+        "independent_readback_wall_s": null
+      }
+    },
+    {
+      "sample": "NCBI702",
+      "platform": "Visium",
+      "study": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10356613/",
+      "development": false,
+      "development_exposure": [],
+      "independence": "source_donor_independence_unconfirmed",
+      "state": "INCOMPLETE",
+      "regular_091": {
+        "state": "FAIL",
+        "stage": "verify",
+        "package_bytes": null,
+        "image_bytes": null,
+        "publish_wall_s": null,
+        "independent_readback_wall_s": null
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 160514652,
+        "image_bytes": 151482338,
+        "publish_wall_s": 14.70970049999596,
+        "independent_readback_wall_s": 3.5458931000030134
+      }
+    },
+    {
+      "sample": "TENX28",
+      "platform": "Visium",
+      "study": "Human Colorectal Cancer: Targeted, Gene Signature Panel",
+      "development": true,
+      "development_exposure": [
+        "early_image_development"
+      ],
+      "independence": "development",
+      "state": "PASS",
+      "regular_091": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 188074459,
+        "image_bytes": 183716783,
+        "publish_wall_s": 61.7883826999896,
+        "independent_readback_wall_s": 17.337205400006496
+      },
+      "direct_jxl_e3": {
+        "state": "PASS",
+        "stage": null,
+        "package_bytes": 233993117,
+        "image_bytes": 229635449,
+        "publish_wall_s": 22.041858199998387,
+        "independent_readback_wall_s": 4.356792300008237
+      },
+      "package_bytes_saving_pct": 19.62393534849147,
+      "image_bytes_saving_pct": 19.996331663932253,
+      "publish_wall_s_saving_pct": -180.3229298516861,
+      "independent_readback_wall_s_saving_pct": -297.93509091479336,
+      "count_members_identical": true,
+      "native_pixels_identical": true
+    }
+  ],
+  "finished_at": "2026-11-26T01:29:49+08:00"
+}

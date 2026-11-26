@@ -1,0 +1,28 @@
+{
+  "sample": "NCBI791",
+  "platform": "Visium",
+  "study": "https://pubmed.ncbi.nlm.nih.gov/37598997/",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "early_image_development"
+  ],
+  "independence": "development",
+  "state": "INCOMPLETE",
+  "regular_091": {
+    "state": "FAIL",
+    "stage": "verify",
+    "package_bytes": null,
+    "image_bytes": null,
+    "publish_wall_s": null,
+    "independent_readback_wall_s": null
+  },
+  "direct_jxl_e3": {
+    "state": "FAIL",
+    "stage": "encode",
+    "package_bytes": null,
+    "image_bytes": null,
+    "publish_wall_s": null,
+    "independent_readback_wall_s": null
+  }
+}

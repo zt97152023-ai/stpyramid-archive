@@ -1,0 +1,33 @@
+{
+  "sample": "TENX28",
+  "platform": "Visium",
+  "study": "Human Colorectal Cancer: Targeted, Gene Signature Panel",
+  "development": true,
+  "development_exposure": [
+    "early_image_development"
+  ],
+  "independence": "development",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 188074459,
+    "image_bytes": 183716783,
+    "publish_wall_s": 61.7883826999896,
+    "independent_readback_wall_s": 17.337205400006496
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 233993117,
+    "image_bytes": 229635449,
+    "publish_wall_s": 22.041858199998387,
+    "independent_readback_wall_s": 4.356792300008237
+  },
+  "package_bytes_saving_pct": 19.62393534849147,
+  "image_bytes_saving_pct": 19.996331663932253,
+  "publish_wall_s_saving_pct": -180.3229298516861,
+  "independent_readback_wall_s_saving_pct": -297.93509091479336,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

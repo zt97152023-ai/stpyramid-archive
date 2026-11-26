@@ -1,0 +1,56 @@
+{
+  "state": "PASS",
+  "sample": "TENX28",
+  "arm": "direct_jxl_e3",
+  "archive": "formal/TENX28/direct_jxl_e3/package.stpyramid",
+  "development": true,
+  "development_exposure": [
+    "early_image_development"
+  ],
+  "independence": "development",
+  "publish_wall_s": 22.041858199998387,
+  "independent_readback_wall_s": 4.356792300008237,
+  "extra_h5ad_type_check_wall_s": 0.48088210000423715,
+  "package_bytes": 233993117,
+  "image_bytes": 229635449,
+  "native_sha256": [
+    "ba3615473f1eaca7e17bdacc04f5ec4b8fc1a4bf1bff81a202fcf44616f6a2d7",
+    "72a7c0b2c443a259f8ba4e3ae4938e8c50574e1cc9bd909ba9cf16fe8e35354d",
+    "0a93462c8eb4e0d89f2b8cf6df6ca6c1ea35cdd0f02b37ffa9b0a04c0fee2be1",
+    "b6a3507d27858b37e559c8ba443da7b8797b05dcd8a612bc5cb1850e9c08cc69",
+    "a3847cfc5582aa20be6305f1f8ddd82c0bd7d7c15590d0e463c0a90d3fdd4e89",
+    "8561c068936af747a97b0f3271384325a26f945df6b745ba3843a209443ebb83",
+    "cf39f55abf664d4dc561d14971561979b379cd888ed135d5b24cf5ef80ac3388"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 572839,
+      "sha256": "366b735e51b0ed85e333d9ae89e50264aa12253f13313771a523938b10e823b6"
+    },
+    "count/counts.index.zst": {
+      "bytes": 11949,
+      "sha256": "8df0990d3518e0c9c909bed327d199623879b2cca00edd717fe61760781d9568"
+    },
+    "count/counts.model": {
+      "bytes": 5411,
+      "sha256": "8b6885986d411f8f2fb70799e5a9115a6e54d1700e4e665f6a956ebc92a47705"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 3032,
+      "sha256": "6cdfb8a468e2a3519f79dde65da4a18559525f7943bf1d0bd88e7dae20fb1688"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 13964,
+      "sha256": "728760bf5395abc4c60d0950cf737a043acebb9eed62bd45661270241b8ae08e"
+    },
+    "count/science.h5": {
+      "bytes": 3742854,
+      "sha256": "528d728c09f9c75dcfd54f8e5792a15a54b60bc880fd10e6716d11a95c3993f4"
+    }
+  },
+  "manifest_sha256": "b459720709ef0a8646ea7b2370df525b694bf276edb194e237d18f786daf0504",
+  "verified_at": "2026-11-26T01:29:48+08:00"
+}

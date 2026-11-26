@@ -1,0 +1,33 @@
+{
+  "sample": "NCBI815",
+  "platform": "Visium",
+  "study": "https://pubmed.ncbi.nlm.nih.gov/37423216/",
+  "development": true,
+  "development_exposure": [
+    "early_image_development"
+  ],
+  "independence": "development",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 35759657,
+    "image_bytes": 25828932,
+    "publish_wall_s": 40.30592350001098,
+    "independent_readback_wall_s": 12.90155439999944
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 55599477,
+    "image_bytes": 45668760,
+    "publish_wall_s": 13.66379579999193,
+    "independent_readback_wall_s": 3.6529556999885244
+  },
+  "package_bytes_saving_pct": 35.68346515201932,
+  "image_bytes_saving_pct": 43.44288743552486,
+  "publish_wall_s_saving_pct": -194.98335667483246,
+  "independent_readback_wall_s_saving_pct": -253.18124443830433,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

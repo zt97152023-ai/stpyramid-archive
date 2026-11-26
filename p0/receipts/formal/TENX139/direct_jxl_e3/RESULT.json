@@ -1,0 +1,62 @@
+{
+  "state": "PASS",
+  "sample": "TENX139",
+  "arm": "direct_jxl_e3",
+  "archive": "formal/TENX139/direct_jxl_e3/package.stpyramid",
+  "development": true,
+  "development_exposure": [
+    "current_091_development"
+  ],
+  "independence": "development",
+  "publish_wall_s": 156.92046099998697,
+  "independent_readback_wall_s": 16.31673249999585,
+  "extra_h5ad_type_check_wall_s": 0.2623897000012221,
+  "package_bytes": 1189752797,
+  "image_bytes": 1186101457,
+  "native_sha256": [
+    "e58d401829c069cb68cc7ac68cc9976846192927d288861096f19db4bd3bb20c",
+    "1f2a1aca4e1f176d3ff46c922e9adfc73f11b8f097f82b4244bf042d04cd6a6e",
+    "8a8a5677d381e4dbf0992fdef10510edec2e3e5281901cccb967ad87288c8490",
+    "bdaa6cee9072f4dcfd7b9509ad2c88a48ac10cca0f0d63d62c03826d11e052da",
+    "7e8a844f6e1da35898043627416f292ed782f9e98119e870864d4cbccf85e78c",
+    "13435a9767f51a27e31bc8d79e6116f1128d12033d3144466b78572c997e2610",
+    "11ab430035da09ad1ee33e7986498f2a34287d19f987825ae743fdd44765e957",
+    "51a3e35248617574bc3a2a671fdfcb98dede8fa5dabf345a1ba9939b739801cb",
+    "c91811eb35df73075913b4a7ab52fd89ae1bf3084c9133e29c47c9fb0c5b19ce"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 1117483,
+      "sha256": "0c76583ef38219fb10881ddc7a531117ab5a9bce125934ea8671ee10eb69651f"
+    },
+    "count/counts.index.zst": {
+      "bytes": 65079,
+      "sha256": "42e273f680fe502785f3835c07212c33b91c7ebb002679eff5f081dcbeaa45f9"
+    },
+    "count/counts.model": {
+      "bytes": 5878,
+      "sha256": "0754eade38808e39fc8bcdb57cc469317d014c2066fac4d5ed30d91c4efd6165"
+    },
+    "count/counts.occupancy.zst": {
+      "bytes": 1362,
+      "sha256": "96b3c9f7d847d1a0407f9d70398e9166f5a0b372309e714041b7405ecbe0f687"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 2544,
+      "sha256": "d1908afc45711cc461d55beb2908e26cab1b0c6ab448531f9ee5a6a7d9ee3912"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 7526,
+      "sha256": "ea5283f8b12e1d985a0de4c8742936f084e08173943279c13cfbbcdd756cee13"
+    },
+    "count/science.h5": {
+      "bytes": 2442407,
+      "sha256": "25231a540d1fbfd659c1129c02cbadb70d0535035b31ae243f1ba1244fb553f1"
+    }
+  },
+  "manifest_sha256": "53780c47acc2308071ae2bdcabb2efbf2d8c6b8b52558b5a990997f5cbd0b195",
+  "verified_at": "2026-11-26T01:12:03+08:00"
+}

@@ -1,0 +1,57 @@
+{
+  "state": "PASS",
+  "sample": "NCBI29",
+  "arm": "regular_091",
+  "archive": "preflight/NCBI29/regular_091/package.stpyramid",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "current_091_development"
+  ],
+  "independence": "development",
+  "publish_wall_s": 17.030802199995378,
+  "independent_readback_wall_s": 9.298452999995789,
+  "extra_h5ad_type_check_wall_s": 0.3737070000061067,
+  "package_bytes": 29393323,
+  "image_bytes": 24499714,
+  "native_sha256": [
+    "d377c791eb9945d1d0f8878efd74c92c8f78204797b9cdb06bf397d77ffe4dd1",
+    "870cf19839d6551c467ea16a17c18d557269172b10ac3d42d8a08274c7045aa3",
+    "68d3625d57896e84275fea7bb4c39f7d211445274838e2a631b1479c4162dcf4",
+    "4ac32003d3f2be8293979b63ff2121b675e4ece60af7d54b70316c4282eee192",
+    "a281ffd73923f918f1436a0038998406806244efdb284a7ca61cce0b73eaa1a7",
+    "656b840eeda99b60e770da2e5db4e7081ece17f822d4f65de52f8054c5d5ad62",
+    "93ce561538d8aadcd4d4a2f1194fd162e9092edb9fa93e91247056eab1576829"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 292232,
+      "sha256": "b089d06fb77a23a1df2be8ba84cbb98b5d8d6e3ae7f5672f85e8ea57fa26596b"
+    },
+    "count/counts.index.zst": {
+      "bytes": 24613,
+      "sha256": "11d0702d7a515605656bad0fd3a65a114606b2ede96ea9e857a8c06d21625cb1"
+    },
+    "count/counts.model": {
+      "bytes": 22283,
+      "sha256": "b8d6e178e8af7efe6b28735f330a73bf56de82be155a8db94594ec06440203b7"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 1087,
+      "sha256": "63ace99259a93f183bdf57ff7436f68d78e295a8886a0873e02df46d3dfb0fd3"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 226907,
+      "sha256": "a179aeb4d9242bdb1cf920660cf49e437ec66623b63c71f36be1372bd66eea0d"
+    },
+    "count/science.h5": {
+      "bytes": 4318883,
+      "sha256": "20e217b2756bcac158dbd6525b04e94a391234effd1b0c81579fb2a0652211c4"
+    }
+  },
+  "manifest_sha256": "6ab801a977d0aaac863f340a4362f10802bf3f9d3dc54d97b94988e9ac5c0615",
+  "verified_at": "2026-11-26T01:08:54+08:00"
+}

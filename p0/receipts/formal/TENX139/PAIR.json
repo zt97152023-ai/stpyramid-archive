@@ -1,0 +1,33 @@
+{
+  "sample": "TENX139",
+  "platform": "Xenium",
+  "study": "FFPE Human Colorectal Cancer Data with Human Immuno-Oncology Profiling Panel and Custom Add-on",
+  "development": true,
+  "development_exposure": [
+    "current_091_development"
+  ],
+  "independence": "development",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 910447948,
+    "image_bytes": 906796601,
+    "publish_wall_s": 280.92098379999516,
+    "independent_readback_wall_s": 137.40487429998757
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 1189752797,
+    "image_bytes": 1186101457,
+    "publish_wall_s": 156.92046099998697,
+    "independent_readback_wall_s": 16.31673249999585
+  },
+  "package_bytes_saving_pct": 23.47587244209689,
+  "image_bytes_saving_pct": 23.548142054090736,
+  "publish_wall_s_saving_pct": -79.02125829213469,
+  "independent_readback_wall_s_saving_pct": -742.1102343868326,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

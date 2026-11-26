@@ -1,0 +1,8 @@
+{
+  "reason": "Historical HF+L1 archives require their distinct pinned native decoder runtime. Historical TENX28 file timestamps changed with identical TIFF bytes and native metadata. Assign the two unstarted second-wave cases to spare E-cores.",
+  "impact": "Only the historical read runtime changes. New and direct e9 encoder code, sample selection, and their read runtime are unchanged. Each pair uses a single core for all its own timings. Fresh source metadata hashes must still match. Historical typed image metadata and source SHA-256 must still match, with filesystem timestamps logged separately.",
+  "retained_existing_measurements": [
+    "direct9",
+    "fused_l0_l1"
+  ]
+}

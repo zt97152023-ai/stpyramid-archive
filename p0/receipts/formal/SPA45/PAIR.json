@@ -1,0 +1,34 @@
+{
+  "sample": "SPA45",
+  "platform": "Spatial Transcriptomics",
+  "study": "https://www.sciencedirect.com/science/article/pii/S0092867419312826?via%3Dihub",
+  "development": true,
+  "development_exposure": [
+    "shared2_count_development",
+    "early_image_development"
+  ],
+  "independence": "development",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 50310253,
+    "image_bytes": 42329245,
+    "publish_wall_s": 32.244563499989454,
+    "independent_readback_wall_s": 12.892666400002781
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 71284044,
+    "image_bytes": 63303044,
+    "publish_wall_s": 8.138962199998787,
+    "independent_readback_wall_s": 2.6518617999972776
+  },
+  "package_bytes_saving_pct": 29.422841105928278,
+  "image_bytes_saving_pct": 33.13237038016686,
+  "publish_wall_s_saving_pct": -296.1753686482812,
+  "independent_readback_wall_s_saving_pct": -386.1741437663161,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

@@ -1,0 +1,58 @@
+{
+  "state": "PASS",
+  "sample": "SPA5",
+  "arm": "direct_jxl_e3",
+  "archive": "formal/SPA5/direct_jxl_e3/package.stpyramid",
+  "development": false,
+  "development_exposure": [],
+  "independence": "source_donor_independence_unconfirmed",
+  "publish_wall_s": 9.68806559999939,
+  "independent_readback_wall_s": 2.1051613000017824,
+  "extra_h5ad_type_check_wall_s": 0.43330649999552406,
+  "package_bytes": 53448276,
+  "image_bytes": 47923367,
+  "native_sha256": [
+    "d06916fd1aa9723ba7d9b2e2671733dd919b8609b9dafb5d370f8bc64f37697a",
+    "6671f09eccf6056990d11d0e9e38144857af19bdb838bc911726800833439051",
+    "c17424de25e04c60be5c97de34949e6658002dae9df3884a2670b43024a028e2",
+    "6f2964c2d6f6d26b621e1105246f57d7a66f32caa4b41832bdd3dd344fc840e7",
+    "e6db91ddbd30f7572bf4d45cdeb286a90e919fdde3da414f26232bea29e04f64",
+    "5b8d6c9b6c92716629f2b906882cbf6934b0b347a16b7c52f993c838d629317b",
+    "13b50eedfab9c6f0911fea9b736c21e08bc7a68f218bf4edd9c2134852b92af8"
+  ],
+  "typed_h5ad_exact": true,
+  "original_json_exact": true,
+  "all_members_verified": true,
+  "count_members": {
+    "count/counts.bank": {
+      "bytes": 900405,
+      "sha256": "03981bcfae0588f876296d351bf500c9ccaf9a531554df4ba4a0fb787db268ea"
+    },
+    "count/counts.index.zst": {
+      "bytes": 23404,
+      "sha256": "59629e89ae04048e69d7178b936c3e8ec90d54274d2da3107d34ce537433b467"
+    },
+    "count/counts.model": {
+      "bytes": 26803,
+      "sha256": "50489cd7b55254b87e11a5a3cd4f257a2766dd57104fadaecfc3d3337f20706e"
+    },
+    "count/counts.occupancy.zst": {
+      "bytes": 1897,
+      "sha256": "a67449a17d09e5dbf88f8c939cf2af6c282c5e629dfcd4eaa89da613f1457135"
+    },
+    "count/HEST_metadata.json": {
+      "bytes": 1025,
+      "sha256": "440d362261570e81a09a9cda4388e4a777dc365a9a94b39fabb11d8970d96f7d"
+    },
+    "count/original_gene_positions.json": {
+      "bytes": 230310,
+      "sha256": "08c446a26caabea47ec87710e71216d9768b5dae1893df06508ea9ebb5f0f719"
+    },
+    "count/science.h5": {
+      "bytes": 4333314,
+      "sha256": "2db240d5bd01dc6b57b3bbee1a6164263d7c2e9dc48d8e9c8eb211c07d717cfa"
+    }
+  },
+  "manifest_sha256": "42a0a5718dea86029fc68a1e5a1d3ed49c419d836e885baa2b629c7d7767431b",
+  "verified_at": "2026-11-26T01:25:08+08:00"
+}

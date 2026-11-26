@@ -1,0 +1,10 @@
+{
+  "state": "FAIL",
+  "sample": "NCBI702",
+  "arm": "regular_091",
+  "stage": "verify",
+  "error": "Exit 3221225477; see verify.stderr.log",
+  "development": false,
+  "development_exposure": [],
+  "independence": "source_donor_independence_unconfirmed"
+}

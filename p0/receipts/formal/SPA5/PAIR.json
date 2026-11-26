@@ -1,0 +1,31 @@
+{
+  "sample": "SPA5",
+  "platform": "Spatial Transcriptomics",
+  "study": "https://pubmed.ncbi.nlm.nih.gov/27365449/",
+  "development": false,
+  "development_exposure": [],
+  "independence": "source_donor_independence_unconfirmed",
+  "state": "PASS",
+  "regular_091": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 41270098,
+    "image_bytes": 35745181,
+    "publish_wall_s": 22.801776299995254,
+    "independent_readback_wall_s": 8.642479100002674
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 53448276,
+    "image_bytes": 47923367,
+    "publish_wall_s": 9.68806559999939,
+    "independent_readback_wall_s": 2.1051613000017824
+  },
+  "package_bytes_saving_pct": 22.784978134748446,
+  "image_bytes_saving_pct": 25.4117912875362,
+  "publish_wall_s_saving_pct": -135.35943336300994,
+  "independent_readback_wall_s_saving_pct": -310.53762008618327,
+  "count_members_identical": true,
+  "native_pixels_identical": true
+}

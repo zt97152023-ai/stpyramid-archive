@@ -1,0 +1,25 @@
+{
+  "sample": "NCBI702",
+  "platform": "Visium",
+  "study": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10356613/",
+  "development": false,
+  "development_exposure": [],
+  "independence": "source_donor_independence_unconfirmed",
+  "state": "INCOMPLETE",
+  "regular_091": {
+    "state": "FAIL",
+    "stage": "verify",
+    "package_bytes": null,
+    "image_bytes": null,
+    "publish_wall_s": null,
+    "independent_readback_wall_s": null
+  },
+  "direct_jxl_e3": {
+    "state": "PASS",
+    "stage": null,
+    "package_bytes": 160514652,
+    "image_bytes": 151482338,
+    "publish_wall_s": 14.70970049999596,
+    "independent_readback_wall_s": 3.5458931000030134
+  }
+}
