@@ -1,0 +1,1 @@
+{"status": "PASS", "levels": 3, "count_shape": [3, 4], "image_routes": {"1": 2, "3": 0, "4": 0, "5": 1, "6": 0}, "verified": ["full_rgb", "tiff_tags", "typed_h5ad", "metadata", "image_roi", "count_subset", "aligned_region", "091_and_hf_native_decode", "altered_member_rejected"]}

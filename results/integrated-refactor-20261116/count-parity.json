@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "exact_members": {
+    "HDF.json": {
+      "bytes": 1300,
+      "sha256": "ab8c1620e39b33e37144a692b5d1f9406ba49bd73bb3cb473549251f351c5654"
+    },
+    "hdf5/count/expression.h5ad": {
+      "bytes": 14840,
+      "sha256": "880a13ec8c0365910811640d6f3662b526b9cca713c634cd25e7f5d34f2fea05"
+    },
+    "hdf5/count/HEST_metadata.json": {
+      "bytes": 21,
+      "sha256": "0bd830989ddda8d7374ea109bd1fdca5e049c126d5d87807cf6a719dbdbf22ad"
+    },
+    "hdf5/count/original_gene_positions.json": {
+      "bytes": 198,
+      "sha256": "edbfd6d59dc9823f9e9817fc117e6349cb6f04dfd58f6e5ea4ba4591ced618de"
+    },
+    "hdf5/image/anchors.index": {
+      "bytes": 24,
+      "sha256": "09d0110262447845ba7eb2e2e2795702ca55ab186587d24c11160dd1e741f70e"
+    },
+    "hdf5/image/images.bank": {
+      "bytes": 9424,
+      "sha256": "d7b18d0b698bd8ac07bbdbf6cba81397dddabe3401b1ac09606d03b381a06b5b"
+    },
+    "hdf5/image/images.index": {
+      "bytes": 76,
+      "sha256": "bea3e4578a93871271287de56a5b22381378df119443d44e360cefa341fd4b1c"
+    },
+    "hdf5/image/manifest.json": {
+      "bytes": 5290,
+      "sha256": "fdfd1c91a51b555b8a547693a65428d670f1e0991361b0535628281fdac82b2e"
+    },
+    "hdf5/image/source.json": {
+      "bytes": 14425,
+      "sha256": "dd077592b9e784be736e4619cf7eb1828cd2a77745c11ac53c6074def14a4582"
+    },
+    "hdf5/manifest.json": {
+      "bytes": 4583,
+      "sha256": "6e8abccaada72b1d1ddfd782d839c84af74ff414e425dac4f2c4dcb1db9c7fc0"
+    },
+    "Shared_blocks/counts.bank": {
+      "bytes": 4392,
+      "sha256": "9ea27314033efc72425f66c539beda7254d42b76cfd81d316aa216d80a2669ec"
+    },
+    "Shared_blocks/counts.index.json": {
+      "bytes": 7421,
+      "sha256": "794d6be7230dc722e6725104e7f02caea0f620377ccc94575337f1938a9e9d1c"
+    },
+    "Shared_local/counts.bank": {
+      "bytes": 1645,
+      "sha256": "5f2ffe67c37c138b8134ccfc3a74976d47ce0a4e32b532eacafd3cd34e808d13"
+    },
+    "Shared_local/counts.index.json": {
+      "bytes": 4565,
+      "sha256": "c95a830646640381e8ca1220f11bed3cdee7cda848ea2b55a04482587da0d6a2"
+    },
+    "Shared_whole/counts.index.json": {
+      "bytes": 274,
+      "sha256": "671ccbc5b2dac9a02c2dfc03bbc9236883ce4990f179d63be30844201f6a2ef6"
+    },
+    "Shared_whole/counts.whole.cnt": {
+      "bytes": 4719,
+      "sha256": "8f904e1cba01d66c22d19357574f463ddb923c9803a0f8f308a1ec777a79f416"
+    }
+  },
+  "read_checks": [
+    "Shared_local multiblock",
+    "Shared_blocks multiblock",
+    "Shared_whole",
+    "archived HDF5 override and subset read"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "scope": "Exact local validated source and runtime bytes for the listed files. Public input paths and per-sample receipts were prepared separately.",
+  "libjxl": "libjxl 0.12.0",
+  "imagecodecs": "2026.10.10",
+  "validation_source_sha256": {
+    "METHODS.md": "48babdbe649bfdd031fc72ba164b3111dee6a0e85aaf09e396c135dc3ccbaf8d",
+    "RESULTS.md": "bd7756881f596fe54c5d3d26906c74dcbe923aeb68b106888948ee9d9fdc987a",
+    "benchmark_read.py": "70f683183934731f665e8b16d5e517a10c1c76eafde76e081ead350030a8ff19",
+    "bin/slide_jxl091.exe": "18deb4aaaf7500141a3eb9fbc65967d27ee673b5d7d9b68debc3d82ef93a4be4",
+    "build_full.py": "188a6be753c24ab5858d4a9e4448923f92e65d0110fbcd7be2024f67b4419e85",
+    "codec/joint_next.py": "ec7e0038166c22e1020db8e0c823fc700534035fcee96733154a9fe61bccea79",
+    "cohort.py": "3805d435006ec44b519e22d951fa509ba91aa26e8b774e39aca4707f2cd863fc",
+    "encode_image.py": "d7a8782e275d6a73da1b5a1b44b99041b90cdf9be589109c2f7862e57f95b68f",
+    "native/091/slide_jxl091.cc": "351f474f585465ef765983d85a5d4ca8333ecd1b25dd784fe33563b0bfe11206",
+    "runtime-windows-source/089/build_receipt.json": "0fa2ba916ac20ba92fd531addc4b6ed6f2fdd5b7bd191f6fb7215f5d47af528a",
+    "runtime-windows-source/089/slide_jxl089.dll": "6e7d1161859d710f1b12ebf8cbfd361defd960fabae7411764af910549609694",
+    "runtime-windows-source/089/slide_jxl089.exe": "c360ef40534ce25bd98a9f6bc85ee10da0d7be055efa18d99b1e801d8b2b3a02",
+    "runtime-windows-source/091/build_receipt.json": "e2150e7758807b1771c22236638c8ace1667f060889274bf044b5473c952cf42",
+    "runtime-windows-source/091/slide_jxl091.dll": "3c340c545efd3e274b0f9bbb96459b5cf75a834586e428c9acc51d56591eb896",
+    "runtime-windows-source/091/slide_jxl091.exe": "cd7db86c1ded8406bdf3326b1065b1abe1276a2c620a4ca17efc242682abb525",
+    "runtime-windows-source/hf/build_receipt.json": "0d36ea47fc7630d76dd26b1c7dc3033b17a5366a079770134348050c7d55fbb4",
+    "runtime-windows-source/hf/slide_hf1.dll": "2fc61ef54e1476978c87f9953294e63799d6d4fe74471fcce6de10a74286d26b",
+    "runtime-windows-source/hf/slide_hf1.exe": "7f758f39a799228b5ae58718fc492b423e203e72df189c1032abe3e5bde6c828",
+    "select_cohort.py": "c957f6a1e0613095cda09ddf11b030dcd454854e0867466a407cd0e2267077fc"
+  }
+}

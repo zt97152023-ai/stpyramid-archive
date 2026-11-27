@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "platform": "Windows x64",
+  "default_language": "English",
+  "language_switch_preserves_jobs_and_modes": true,
+  "fast_image_offline": true,
+  "first_integrated_job_downloaded_and_verified_pins": 19,
+  "verification_and_restore_reused_pins_offline": true,
+  "unicode_paths": true,
+  "image_and_integrated_outputs": [
+    {
+      "mode": "image",
+      "archive_bytes": 246509,
+      "byte_identical_members": 5
+    },
+    {
+      "mode": "integrated",
+      "archive_bytes": 56788,
+      "byte_identical_members": 11
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "compiler": "MSVC 14.38.33130",
+  "rebuilt_encoder_sha256": "a3786c7c4fdcd8559a4d2d628ab051f48c20ec45fb49ac346f418d45b5c55f1d",
+  "fused_fixture_byte_identical_records": {
+    "0": 8,
+    "1": 3
+  }
+}
